@@ -1,0 +1,259 @@
+.center-panel {
+    position: relative;
+    text-align: center;
+}
+
+.section-top,
+.section-middle,
+.section-bottom {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+.section-top {
+    flex: 2 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.25rem;
+}
+
+.center-panel .panel-section.section-middle {
+    justify-content: flex-end;
+    padding-bottom: 0.375rem;
+}
+
+.section-bottom {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+}
+
+.karma-label {
+    font-family: var(--font-ui);
+    font-size: clamp(1rem, 2vw, 1.375rem);
+    font-weight: 600;
+    color: #a8b3bf;
+}
+
+.karma-value {
+    font-family: var(--font-ui);
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 700;
+    color: #ffd166;
+}
+
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+        "su yiyecek"
+        "odun maden"
+        "bilgi inanc"
+        "baharat sarap"
+        "ipek ipek";
+    gap: 0.75rem;
+    width: 100%;
+    margin-top: auto;
+}
+
+.resource-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.375rem;
+    min-width: 0;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #3a4553;
+    border-left: 3px solid var(--res, #ffd166);
+    background: linear-gradient(145deg, #2a323d, #1d232b);
+    text-align: left;
+}
+
+.resource-tile.resource-su {
+    grid-area: su;
+}
+
+.resource-tile.resource-yiyecek {
+    grid-area: yiyecek;
+}
+
+.resource-tile.resource-odun {
+    grid-area: odun;
+}
+
+.resource-tile.resource-maden {
+    grid-area: maden;
+}
+
+.resource-tile.resource-bilgi {
+    grid-area: bilgi;
+}
+
+.resource-tile.resource-inanc {
+    grid-area: inanc;
+}
+
+.resource-tile.resource-baharat {
+    grid-area: baharat;
+}
+
+.resource-tile.resource-sarap {
+    grid-area: sarap;
+}
+
+.resource-tile.resource-ipek {
+    grid-area: ipek;
+}
+
+.resource-tile-head {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 0;
+}
+
+.resource-tile-emoji {
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.125rem;
+    border: 1px solid var(--res, #ffd166);
+}
+
+.resource-tile-name {
+    font-family: var(--font-ui);
+    font-size: clamp(0.875rem, 1.6vw, 1.0625rem);
+    font-weight: 700;
+    color: var(--res, #d7dde4);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: none;
+    width: 3.25em;
+}
+
+.resource-bar-track {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.55);
+    background: #20262e;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+}
+
+.resource-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 0.25s linear;
+}
+
+.resource-tile-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.resource-bar-production {
+    font-family: var(--font-ui);
+    font-size: var(--font-prod-size);
+    font-weight: var(--font-prod-weight);
+    color: var(--res, #ffd166);
+    white-space: nowrap;
+}
+
+.resource-tile-cap {
+    font-family: var(--font-ui);
+    font-size: var(--font-prod-size);
+    font-weight: var(--font-prod-weight);
+    color: var(--res, #ffd166);
+    white-space: nowrap;
+}
+
+.circle-btn {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid #2b333d;
+    background: linear-gradient(145deg, #3a4450, #232a33);
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.55),
+        inset 0 2px 4px rgba(255, 255, 255, 0.12),
+        inset 0 -6px 12px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease;
+}
+
+.circle-btn:hover {
+    background: linear-gradient(145deg, #404b58, #2a313a);
+}
+
+.circle-btn:active {
+    transform: translateY(6px) scale(0.97);
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.5),
+        inset 0 3px 8px rgba(0, 0, 0, 0.45),
+        inset 0 -2px 4px rgba(255, 255, 255, 0.05);
+}
+
+.production-label {
+    font-family: var(--font-ui);
+    font-size: clamp(0.875rem, 1.6vw, 1rem);
+    font-weight: 600;
+    color: #a8b3bf;
+}
+
+.production-value {
+    font-family: var(--font-ui);
+    font-size: var(--font-prod-size);
+    font-weight: var(--font-prod-weight);
+    color: var(--c-karma);
+}
+
+.float-count {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+    font-family: var(--font-ui);
+    font-size: clamp(1.2rem, 2.4vw, 1.8rem);
+    font-weight: 700;
+    color: var(--c-karma);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    transform: translate(-50%, -100%);
+    animation: count-float var(--dur, 1.2s) ease-out forwards;
+}
+
+.float-count.float-crit {
+    color: #ff5a5a;
+    font-size: clamp(1.4rem, 2.8vw, 2.1rem);
+    text-shadow: 0 0 12px rgba(255, 90, 90, 0.7), 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes count-float {
+    0% {
+        opacity: 1;
+        translate: 0 0;
+    }
+
+    100% {
+        opacity: 0;
+        translate: var(--dx, 0px) -160px;
+    }
+}
