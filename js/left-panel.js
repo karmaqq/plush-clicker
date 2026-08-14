@@ -3,6 +3,7 @@ import {
     canAfford,
     formatCount,
     formatNumber,
+    formatDuration,
     createNumberCounter,
     createLockOverlay,
     triggerShake,
@@ -21,6 +22,7 @@ import {
     getOutputMultiplier,
     getResource,
     getTotalProduction,
+    getNetRate,
     getPackCount,
     getPackCost,
     getUnlock,
@@ -426,10 +428,14 @@ export function buildBuildingTooltip(id, data) {
 
         value.append(haveEl, slashEl, needEl);
 
-        row.append(label, value);
+        const timeEl = document.createElement("span");
+        timeEl.className = "cost-time";
+        timeEl.hidden = true;
+
+        row.append(label, timeEl, value);
         costs.appendChild(row);
 
-        tooltipLive.rows.push({ resource, amount, value, haveEl, needEl, slashEl });
+        tooltipLive.rows.push({ resource, amount, value, haveEl, needEl, slashEl, timeEl });
     }
 
     tooltip.element.appendChild(costs);
@@ -460,6 +466,15 @@ export function refreshBuildingTooltip() {
         row.needEl.textContent = enough ? "" : formatCount(row.amount);
         row.slashEl.hidden = enough;
         row.value.classList.toggle("cost-missing", !enough);
+
+        const missing = row.amount - have;
+        const net = getNetRate(row.resource);
+        if (!enough && missing > 0 && net > 0) {
+            row.timeEl.textContent = formatDuration(missing / net);
+            row.timeEl.hidden = false;
+        } else {
+            row.timeEl.hidden = true;
+        }
     }
 }
 

@@ -341,6 +341,10 @@ export function getTotalProduction(resource) {
     return getResourceProduction(resource) + getIndustryOutput(resource);
 }
 
+export function getNetRate(resource) {
+    return getTotalProduction(resource) - getResourceConsumption(resource);
+}
+
 const POP_SU_RATE = 0.001;
 const POP_YIYECEK_RATE = 0.0012;
 const POP_EKMEK_RATE = 0.0005;

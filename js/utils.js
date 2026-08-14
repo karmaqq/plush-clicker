@@ -44,6 +44,25 @@ export function formatCount(value) {
     return Math.floor(value).toLocaleString("tr-TR");
 }
 
+export function formatDuration(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 1) return "0s";
+    const s = Math.floor(seconds);
+    if (s < 60) return s + "s";
+    const m = Math.floor(s / 60);
+    if (m < 60) {
+        const rem = s % 60;
+        return rem > 0 ? m + "m" + rem + "s" : m + "m";
+    }
+    const h = Math.floor(m / 60);
+    if (h < 24) {
+        const rem = m % 60;
+        return rem > 0 ? h + "h" + rem + "m" : h + "h";
+    }
+    const d = Math.floor(h / 24);
+    const rem = h % 24;
+    return rem > 0 ? d + "g" + rem + "h" : d + "g";
+}
+
 export function createNumberCounter() {
     const span = document.createElement("span");
     span.className = "num-display";

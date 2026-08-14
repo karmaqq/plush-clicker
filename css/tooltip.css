@@ -158,6 +158,7 @@
 }
 
 .cost-label {
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -172,4 +173,20 @@
 
 .cost-value.cost-missing .cost-have {
     color: #ff5a5a;
+}
+
+.cost-time {
+    flex: none;
+    font-size: 1em;
+    font-weight: 700;
+    color: #ffb454;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.tt-time {
+    color: #ffd166;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }

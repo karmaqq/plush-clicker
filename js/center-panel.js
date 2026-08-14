@@ -1,6 +1,7 @@
 import {
     formatCount,
     formatNumber,
+    formatDuration,
     strong,
     badge,
     resetResourceClass,
@@ -20,6 +21,7 @@ import {
     isSellable,
     getAutoSell,
     toggleAutoSell,
+    getNetRate,
     onChange,
 } from "./game-state.js";
 
@@ -225,7 +227,7 @@ function createResourceTile(id) {
     return { element, update };
 }
 
-const tooltipLive = { id: null, capEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null };
+const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null };
 
 function buildResourceTooltip(id) {
     const meta = RESOURCES[id];
@@ -239,6 +241,15 @@ function buildResourceTooltip(id) {
     title.className = "tt-title";
     title.append(meta.emoji + " ", meta.name);
     tooltip.element.appendChild(title);
+
+    const cap = document.createElement("div");
+    cap.className = "tt-cap";
+    const capStrong = strong("");
+    const timeEl = document.createElement("span");
+    timeEl.className = "tt-time";
+    timeEl.hidden = true;
+    cap.append("Depo: ", capStrong, " ", timeEl);
+    tooltip.element.appendChild(cap);
 
     const buildingRows = [];
     for (const bid of Object.keys(BUILDINGS_DATA)) {
@@ -256,8 +267,6 @@ function buildResourceTooltip(id) {
     }
 
     if (buildingRows.length) {
-        tooltip.element.appendChild(sectionHeader(" Üretim Binaları"));
-
         for (const r of buildingRows) {
             const row = document.createElement("div");
             row.className = "tt-row";
@@ -306,8 +315,6 @@ function buildResourceTooltip(id) {
     }
 
     if (bonusRows.length) {
-        tooltip.element.appendChild(sectionHeader("Bonus Binaları"));
-
         for (const r of bonusRows) {
             const row = document.createElement("div");
             row.className = "tt-row";
@@ -318,24 +325,6 @@ function buildResourceTooltip(id) {
         }
     }
 
-    const cap = document.createElement("div");
-    cap.className = "tt-cap";
-    const capStrong = strong("");
-    cap.append("🗄️ Depo: ", capStrong);
-    tooltip.element.appendChild(cap);
-
-    const totalRow = document.createElement("div");
-    totalRow.className = "tt-total";
-    const totalStrong = strong("");
-    totalRow.append("Toplam ", meta.name, " Üretimi: ", totalStrong);
-    tooltip.element.appendChild(totalRow);
-
-    const consRow = document.createElement("div");
-    consRow.className = "tt-total";
-    const consStrong = strong("");
-    consRow.append("Tüketim: ", consStrong);
-    tooltip.element.appendChild(consRow);
-
     const sellRow = document.createElement("div");
     sellRow.className = "tt-total";
     const sellStrong = strong("");
@@ -343,8 +332,21 @@ function buildResourceTooltip(id) {
     sellRow.hidden = !sellable;
     tooltip.element.appendChild(sellRow);
 
+    const consRow = document.createElement("div");
+    consRow.className = "tt-total";
+    const consStrong = strong("");
+    consRow.append("Tüketim: ", consStrong);
+    tooltip.element.appendChild(consRow);
+
+    const totalRow = document.createElement("div");
+    totalRow.className = "tt-total";
+    const totalStrong = strong("");
+    totalRow.append("Üretim: ", totalStrong);
+    tooltip.element.appendChild(totalRow);
+
     tooltipLive.id = id;
     tooltipLive.capEl = capStrong;
+    tooltipLive.timeEl = timeEl;
     tooltipLive.totalEl = totalStrong;
     tooltipLive.consEl = consStrong;
     tooltipLive.sellEl = sellStrong;
@@ -366,13 +368,15 @@ function refreshResourceTooltip(snapshot) {
     tooltipLive.consEl.textContent = consumptionValue > 0 ? "−" + formatNumber(consumptionValue) + "/s" : "−";
     tooltipLive.sellRow.hidden = !isSellable(id);
     tooltipLive.sellEl.textContent = formatCount(getSellPrice(id)) + " 🪙";
-}
 
-function sectionHeader(text) {
-    const h = document.createElement("div");
-    h.className = "tt-section";
-    h.textContent = text;
-    return h;
+    const net = snapshot ? snapshot.derived[id].net : getNetRate(id);
+    const remaining = capacity - current;
+    if (Number.isFinite(capacity) && remaining > 0.5 && net > 0.0001) {
+        tooltipLive.timeEl.textContent = formatDuration(remaining / net);
+        tooltipLive.timeEl.hidden = false;
+    } else {
+        tooltipLive.timeEl.hidden = true;
+    }
 }
 
 function getBarColor(id, pct) {
