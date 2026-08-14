@@ -113,6 +113,22 @@
     text-align: left;
 }
 
+.storage-cap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.125rem 0.5rem;
+    margin-top: 0.25rem;
+    max-height: 11rem;
+    overflow-y: auto;
+}
+
+.storage-cap-item {
+    font-size: clamp(0.72rem, 1.35vw, 0.875rem);
+    font-weight: 600;
+    color: #b8c2cc;
+    white-space: nowrap;
+}
+
 .effect-label {
     color: #ffffff;
 }

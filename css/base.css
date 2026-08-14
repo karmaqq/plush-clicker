@@ -3,9 +3,9 @@
     --font-prod-size: clamp(0.8rem, 1.5vw, 1rem);
     --font-prod-weight: 700;
 
-    --c-karma: #ffd166;
-    --c-karma-bright: #ffe08a;
-    --c-karma-dark: #a8862f;
+    --c-power: #ffd166;
+    --c-power-bright: #ffe08a;
+    --c-power-dark: #a8862f;
     --c-su: #5bc9ff;
     --c-su-bright: #8fdbff;
     --c-su-dark: #1f6fa8;
@@ -33,13 +33,22 @@
     --c-ipek: #f0b6d0;
     --c-ipek-bright: #ffd9e8;
     --c-ipek-dark: #b06f93;
+    --c-tas: #8f8f7e;
+    --c-tas-bright: #b8b8a8;
+    --c-tas-dark: #6e6e5c;
+    --c-mermer: #c9c2b2;
+    --c-mermer-bright: #f0ede6;
+    --c-mermer-dark: #a8a096;
+    --c-heykel: #b7a878;
+    --c-heykel-bright: #e8dcc0;
+    --c-heykel-dark: #8a7a58;
 }
 
-.resource-karma {
-    --res: var(--c-karma);
-    --res-bright: var(--c-karma-bright);
-    --res-dark: var(--c-karma-dark);
-    color: var(--c-karma);
+.resource-power {
+    --res: var(--c-power);
+    --res-bright: var(--c-power-bright);
+    --res-dark: var(--c-power-dark);
+    color: var(--c-power);
 }
 
 .resource-su {
@@ -103,6 +112,27 @@
     --res-bright: var(--c-ipek-bright);
     --res-dark: var(--c-ipek-dark);
     color: var(--c-ipek);
+}
+
+.resource-tas {
+    --res: var(--c-tas);
+    --res-bright: var(--c-tas-bright);
+    --res-dark: var(--c-tas-dark);
+    color: var(--c-tas);
+}
+
+.resource-mermer {
+    --res: var(--c-mermer);
+    --res-bright: var(--c-mermer-bright);
+    --res-dark: var(--c-mermer-dark);
+    color: var(--c-mermer);
+}
+
+.resource-heykel {
+    --res: var(--c-heykel);
+    --res-bright: var(--c-heykel-bright);
+    --res-dark: var(--c-heykel-dark);
+    color: var(--c-heykel);
 }
 
 * {
@@ -189,17 +219,6 @@ body {
     background: #3a1d24;
     border-color: #ff5a5a;
     color: #ff9a9a;
-}
-
-.list-title {
-    flex: none;
-    padding: 0.625rem 0 0.25rem;
-    font-family: var(--font-ui);
-    font-size: clamp(1.25rem, 2.6vw, 1.75rem);
-    font-weight: 700;
-    color: #e6ebf0;
-    text-align: center;
-    border-bottom: 1px solid #3a4553;
 }
 
 .lock-overlay {

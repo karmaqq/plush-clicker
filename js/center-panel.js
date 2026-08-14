@@ -1,150 +1,110 @@
 import {
-    loadCss,
-    getBadgeTier,
     formatCount,
     formatNumber,
-    createNumberCounter,
+    strong,
+    badge,
+    resetResourceClass,
 } from "./utils.js";
 import { createTooltip } from "./tooltip.js";
 import { RESOURCES } from "./resources.js";
 import { BUILDINGS_DATA } from "./buildings.js";
+import { createBuildingCard } from "./left-panel.js";
 import {
-    getClickValue,
-    getKarma,
-    getKarmaProduction,
-    addKarma,
+    getPower,
     getResource,
     getResourceCapacity,
-    getResourceProduction,
+    getTotalProduction,
+    getResourceConsumption,
     getBuildingCount,
-    getCritChance,
-    CRIT_MULTIPLIER,
+    getSellPrice,
+    isSellable,
+    getAutoSell,
+    toggleAutoSell,
     onChange,
 } from "./game-state.js";
 
-loadCss("css/center-panel.css");
-
 const tooltip = createTooltip("resource-tooltip");
+const RAW_TILE_ORDER = ["su", "yiyecek", "odun", "tas", "maden", "bilgi", "inanc", "baharat", "sarap", "ipek"];
 
-const RESOURCE_TILE_ORDER = ["su", "yiyecek", "odun", "maden", "bilgi", "inanc", "baharat", "sarap", "ipek"];
+const PRODUCT_TILE_ORDER = ["ekmek", "kereste", "demir", "kumas", "konyak", "ilac", "celik", "mobilya", "mucevher", "mermer", "heykel"];
 
 export function createCenterPanel() {
     const panel = document.createElement("section");
     panel.className = "panel center-panel";
 
-    const top = document.createElement("div");
-    top.className = "panel-section section-top";
+    const header = document.createElement("div");
+    header.className = "center-header";
 
-    const middle = document.createElement("div");
-    middle.className = "panel-section section-middle";
+    const powerValue = document.createElement("span");
+    powerValue.className = "power-value";
+    const powerSpan = document.createElement("span");
+    powerSpan.className = "num-display";
+    powerValue.append("🏆 ", powerSpan);
 
-    const bottom = document.createElement("div");
-    bottom.className = "panel-section section-bottom";
+    header.append(powerValue);
 
-    const karmaText = document.createElement("span");
-    karmaText.className = "karma-label";
-    karmaText.textContent = "Karma";
+    const resourceArea = document.createElement("div");
+    resourceArea.className = "resource-area";
 
-    const karmaValue = document.createElement("span");
-    karmaValue.className = "karma-value";
-    const karmaCounter = createNumberCounter();
-    karmaValue.append("🔅 ", karmaCounter.span);
+    const rawTitle = sectionTitle("Hammaddeler");
+    const rawGrid = document.createElement("div");
+    rawGrid.className = "resource-grid raw-grid";
 
-    onChange(() => karmaCounter.update(getKarma()));
-    karmaCounter.update(getKarma());
-
-    const grid = document.createElement("div");
-    grid.className = "resource-grid";
+    const productTitle = sectionTitle("Ürünler");
+    const productGrid = document.createElement("div");
+    productGrid.className = "resource-grid product-grid";
 
     const tileMap = {};
-    for (const id of RESOURCE_TILE_ORDER) {
+
+    for (const id of RAW_TILE_ORDER) {
         tileMap[id] = createResourceTile(id);
-        grid.appendChild(tileMap[id].element);
+        rawGrid.appendChild(tileMap[id].element);
     }
 
-    function updateTiles() {
+    for (const id of PRODUCT_TILE_ORDER) {
+        tileMap[id] = createResourceTile(id);
+        productGrid.appendChild(tileMap[id].element);
+    }
+
+    resourceArea.append(rawTitle, rawGrid, productTitle, productGrid);
+
+    const storageTitle = sectionTitle("Depolama");
+    const storageRow = document.createElement("div");
+    storageRow.className = "storage-row";
+    storageRow.appendChild(createBuildingCard("depo", BUILDINGS_DATA.depo));
+    storageRow.appendChild(createBuildingCard("ambar", BUILDINGS_DATA.ambar));
+
+    const storageSection = document.createElement("div");
+    storageSection.className = "storage-section";
+    storageSection.append(storageTitle, storageRow);
+
+    function update(snapshot) {
+        powerSpan.textContent = formatCount(getPower());
+
         for (const id of Object.keys(tileMap)) {
-            tileMap[id].update();
+            tileMap[id].update(snapshot);
         }
 
-        refreshResourceTooltip();
+        refreshResourceTooltip(snapshot);
     }
 
-    onChange(updateTiles);
-    updateTiles();
+    onChange((state, snapshot) => update(snapshot));
+    update();
 
-    top.append(karmaText, karmaValue, grid);
-
-    const button = document.createElement("button");
-    button.className = "circle-btn";
-    middle.appendChild(button);
-
-    const floats = [];
-
-    button.addEventListener("click", (e) => {
-        const clickValue = getClickValue();
-        const isCrit = Math.random() < getCritChance();
-        const gained = isCrit ? clickValue * CRIT_MULTIPLIER : clickValue;
-        addKarma(gained);
-
-        const dx = (Math.random() * 44 - 22).toFixed(1);
-
-        const el = document.createElement("div");
-        el.className = isCrit ? "float-count float-crit" : "float-count";
-        if (isCrit) el.append("💥 ");
-        const floatCounter = createNumberCounter();
-        el.append("+", floatCounter.span);
-        floatCounter.update(gained);
-        el.style.left = e.clientX + "px";
-        el.style.top = e.clientY - 12 - Math.random() * 14 + "px";
-        el.style.setProperty("--dx", dx + "px");
-        el.style.setProperty("--dur", (0.75 + Math.random() * 0.35).toFixed(2) + "s");
-        document.body.appendChild(el);
-        el.addEventListener("animationend", () => el.remove());
-
-        floats.push(el);
-        while (floats.length > 5) {
-            const oldest = floats.shift();
-            if (!oldest.isConnected) continue;
-            oldest.style.transition = "opacity 0.3s ease";
-            oldest.style.opacity = "0";
-            setTimeout(() => oldest.remove(), 300);
-        }
-    });
-
-    const productionLabel = document.createElement("span");
-    productionLabel.className = "production-label";
-    productionLabel.textContent = "Karma üretimi";
-    productionLabel.title = "Her saniye kazanılan karma";
-
-    const productionValue = document.createElement("span");
-    productionValue.className = "production-value";
-    const prodCounter = createNumberCounter();
-    productionValue.append("+", prodCounter.span, "/s");
-
-    function updateProduction() {
-        const production = getKarmaProduction();
-        const active = production > 0;
-
-        if (productionLabel.hidden === active) {
-            productionLabel.hidden = !active;
-            productionValue.hidden = !active;
-        }
-
-        if (active) prodCounter.update(production);
-    }
-
-    onChange(updateProduction);
-    updateProduction();
-
-    bottom.append(productionLabel, productionValue);
-
-    panel.append(top, middle, bottom);
+    panel.append(header, resourceArea, storageSection);
     return panel;
+}
+
+function sectionTitle(text) {
+    const el = document.createElement("div");
+    el.className = "resource-group-title";
+    el.textContent = text;
+    return el;
 }
 
 function createResourceTile(id) {
     const meta = RESOURCES[id];
+    const sellable = isSellable(id);
 
     const element = document.createElement("div");
     element.className = "resource-tile resource-" + id;
@@ -161,6 +121,11 @@ function createResourceTile(id) {
     name.className = "resource-tile-name";
     name.textContent = meta.name;
 
+    const capLabel = document.createElement("span");
+    capLabel.className = "resource-tile-cap";
+
+    head.append(emoji, name, capLabel);
+
     const bar = document.createElement("div");
     bar.className = "resource-bar-track";
 
@@ -169,20 +134,29 @@ function createResourceTile(id) {
 
     bar.appendChild(fill);
 
-    head.append(emoji, name, bar);
-
     const foot = document.createElement("div");
     foot.className = "resource-tile-foot";
 
     const production = document.createElement("span");
     production.className = "resource-bar-production";
 
-    const capLabel = document.createElement("span");
-    capLabel.className = "resource-tile-cap";
+    foot.append(production);
 
-    foot.append(production, capLabel);
+    let autoSellBtn = null;
 
-    element.append(head, foot);
+    if (sellable) {
+        autoSellBtn = document.createElement("button");
+        autoSellBtn.type = "button";
+        autoSellBtn.className = "auto-sell-btn";
+        autoSellBtn.textContent = "⟳";
+        autoSellBtn.title = "Otomatik satış";
+
+        autoSellBtn.addEventListener("click", () => toggleAutoSell(id));
+
+        foot.appendChild(autoSellBtn);
+    }
+
+    element.append(head, bar, foot);
 
     element.addEventListener("mouseenter", () => {
         buildResourceTooltip(id);
@@ -198,11 +172,14 @@ function createResourceTile(id) {
     let lastFillPct = null;
     let lastProdText = null;
 
-    function update() {
+    function update(snapshot) {
         const current = getResource(id);
-        const capacity = getResourceCapacity(id);
-        const productionValue = getResourceProduction(id);
-        const active = productionValue > 0 || capacity > meta.baseCapacity;
+        const capacity = snapshot ? snapshot.derived[id].capacity : getResourceCapacity(id);
+        const productionValue = snapshot ? snapshot.derived[id].production : getTotalProduction(id);
+        const consumptionValue = snapshot ? snapshot.derived[id].consumption : getResourceConsumption(id);
+        const net = productionValue - consumptionValue;
+
+        const active = productionValue > 0 || current > 0;
 
         if (element.hidden === active) {
             element.hidden = !active;
@@ -228,25 +205,33 @@ function createResourceTile(id) {
             fill.style.background = getBarColor(id, pctClamped);
         }
 
-        const prodText = "+" + formatNumber(productionValue) + "/s";
+        const prodText =
+            net > 0
+                ? "+" + formatNumber(net) + "/s"
+                : net < 0
+                  ? "−" + formatNumber(-net) + "/s"
+                  : "";
         if (prodText !== lastProdText) {
             lastProdText = prodText;
             production.textContent = prodText;
+        }
+
+        if (sellable) {
+            autoSellBtn.classList.toggle("auto-on", getAutoSell(id));
+            autoSellBtn.title = getAutoSell(id) ? "Otomatik satış: AÇIK" : "Otomatik satış: KAPALI";
         }
     }
 
     return { element, update };
 }
 
-const tooltipLive = { id: null, capEl: null, totalEl: null };
+const tooltipLive = { id: null, capEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null };
 
 function buildResourceTooltip(id) {
     const meta = RESOURCES[id];
+    const sellable = isSellable(id);
 
-    for (const r of Object.keys(RESOURCES)) {
-        tooltip.element.classList.remove("resource-" + r);
-    }
-    tooltip.element.classList.add("resource-" + id);
+    resetResourceClass(tooltip.element, id);
 
     tooltip.element.textContent = "";
 
@@ -286,6 +271,28 @@ function buildResourceTooltip(id) {
     const bonusRows = [];
     for (const bid of Object.keys(BUILDINGS_DATA)) {
         const b = BUILDINGS_DATA[bid];
+        if (b.type === "capacityBonus") {
+            const count = getBuildingCount(bid);
+            if (count <= 0) continue;
+
+            bonusRows.push({
+                b,
+                count,
+                info: "%" + Math.round(count * b.capacityBonusPerLevel * 100),
+            });
+            continue;
+        }
+        if (b.type === "storageBonus") {
+            const count = getBuildingCount(bid);
+            if (count <= 0) continue;
+
+            bonusRows.push({
+                b,
+                count,
+                info: "%" + Math.round(count * b.storageBonusPerLevel * 100),
+            });
+            continue;
+        }
         if (b.type !== "bonus" || b.targetResource !== id) continue;
 
         const count = getBuildingCount(bid);
@@ -323,21 +330,42 @@ function buildResourceTooltip(id) {
     totalRow.append("Toplam ", meta.name, " Üretimi: ", totalStrong);
     tooltip.element.appendChild(totalRow);
 
+    const consRow = document.createElement("div");
+    consRow.className = "tt-total";
+    const consStrong = strong("");
+    consRow.append("Tüketim: ", consStrong);
+    tooltip.element.appendChild(consRow);
+
+    const sellRow = document.createElement("div");
+    sellRow.className = "tt-total";
+    const sellStrong = strong("");
+    sellRow.append("Satış Fiyatı: ", sellStrong);
+    sellRow.hidden = !sellable;
+    tooltip.element.appendChild(sellRow);
+
     tooltipLive.id = id;
     tooltipLive.capEl = capStrong;
     tooltipLive.totalEl = totalStrong;
+    tooltipLive.consEl = consStrong;
+    tooltipLive.sellEl = sellStrong;
+    tooltipLive.sellRow = sellRow;
     refreshResourceTooltip();
 }
 
-function refreshResourceTooltip() {
+function refreshResourceTooltip(snapshot) {
     if (tooltipLive.id == null) return;
 
     const id = tooltipLive.id;
     const current = getResource(id);
-    const capacity = getResourceCapacity(id);
+    const capacity = snapshot ? snapshot.derived[id].capacity : getResourceCapacity(id);
+    const productionValue = snapshot ? snapshot.derived[id].production : getTotalProduction(id);
+    const consumptionValue = snapshot ? snapshot.derived[id].consumption : getResourceConsumption(id);
 
     tooltipLive.capEl.textContent = formatCount(current) + " / " + formatCount(capacity);
-    tooltipLive.totalEl.textContent = "+" + formatNumber(getResourceProduction(id)) + "/s";
+    tooltipLive.totalEl.textContent = "+" + formatNumber(productionValue) + "/s";
+    tooltipLive.consEl.textContent = consumptionValue > 0 ? "−" + formatNumber(consumptionValue) + "/s" : "−";
+    tooltipLive.sellRow.hidden = !isSellable(id);
+    tooltipLive.sellEl.textContent = formatCount(getSellPrice(id)) + " 🪙";
 }
 
 function sectionHeader(text) {
@@ -345,19 +373,6 @@ function sectionHeader(text) {
     h.className = "tt-section";
     h.textContent = text;
     return h;
-}
-
-function strong(text) {
-    const s = document.createElement("strong");
-    s.textContent = text;
-    return s;
-}
-
-function badge(value) {
-    const s = document.createElement("span");
-    s.className = "badge tt-badge badge-tier-" + getBadgeTier(value);
-    s.textContent = String(value);
-    return s;
 }
 
 function getBarColor(id, pct) {

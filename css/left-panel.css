@@ -55,6 +55,12 @@
     background: linear-gradient(145deg, #233040, #172029);
 }
 
+.building-card.building-storage,
+.building-card.building-capacity-bonus {
+    border-color: #8a5f3a;
+    background: linear-gradient(145deg, #3a2c20, #261c14);
+}
+
 .building-card:not(.locked):not(.building-slot) {
     cursor: pointer;
 }

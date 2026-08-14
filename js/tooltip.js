@@ -1,7 +1,3 @@
-import { loadCss } from "./utils.js";
-
-loadCss("css/tooltip.css");
-
 export function createTooltip(extraClass) {
     const element = document.createElement("div");
     element.className = "tooltip" + (extraClass ? " " + extraClass : "");

@@ -1,13 +1,23 @@
-const loaded = new Set();
+import { RESOURCES } from "./resources.js";
 
-export function loadCss(href) {
-    if (loaded.has(href)) return;
-    loaded.add(href);
+export function strong(text) {
+    const s = document.createElement("strong");
+    s.textContent = text;
+    return s;
+}
 
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    document.head.appendChild(link);
+export function badge(value) {
+    const s = document.createElement("span");
+    s.className = "badge tt-badge badge-tier-" + getBadgeTier(value);
+    s.textContent = String(value);
+    return s;
+}
+
+export function resetResourceClass(tooltipElement, id) {
+    for (const r of Object.keys(RESOURCES)) {
+        tooltipElement.classList.remove("resource-" + r);
+    }
+    tooltipElement.classList.add("resource-" + id);
 }
 
 export function getBadgeTier(value) {
