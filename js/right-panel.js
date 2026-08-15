@@ -25,7 +25,6 @@ import {
     getTradeCount,
     getTradeInterval,
     acceptTrade,
-    getBuildingCount,
     onChange,
 } from "./game-state.js";
 
@@ -143,8 +142,6 @@ function createTradeSection() {
 
     section.append(postCard, offerCard);
 
-    let lastState = null;
-
     function update() {
         const current = getTradeCurrent();
         const timer = getTradeTimer();
@@ -170,11 +167,6 @@ function createTradeSection() {
 
         accepted.textContent = "✅ Kabul edilen: " + count;
         interval.textContent = "Tüccar sıklığı: ~" + Math.round(getTradeInterval()) + " sn";
-
-        const key = (hasOffer ? "1" : "0") + "|" + timer.toFixed(1) + "|" + count;
-        if (key !== lastState) {
-            lastState = key;
-        }
     }
 
     onChange(update);

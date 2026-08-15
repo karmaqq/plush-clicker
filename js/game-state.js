@@ -4,9 +4,9 @@ import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import { canAfford } from "./utils.js";
 
-export const SEASON_DURATION = 45;
+const SEASON_DURATION = 45;
 
-export const SEASONS_DATA = {
+const SEASONS_DATA = {
     ilkbahar: {
         name: "İlkbahar",
         emoji: "🌱",
@@ -31,7 +31,7 @@ export const SEASONS_DATA = {
 
 const SEASON_ORDER = Object.keys(SEASONS_DATA);
 
-export const TRADE_INTERVAL = 45;
+const TRADE_INTERVAL = 45;
 
 const TRADE_PRICES = {
     odun: 1,
@@ -159,10 +159,6 @@ function loadState() {
 
 function loadResources(saved) {
     if (!saved || typeof saved !== "object") return;
-    if (saved.power == null && Number.isFinite(saved.karma)) {
-        saved.power = saved.karma;
-    }
-    delete saved.karma;
     for (const id of Object.keys(state.resources)) {
         if (Number.isFinite(saved[id])) {
             state.resources[id] = saved[id];
@@ -181,10 +177,6 @@ function loadBuildings(saved) {
 
 function loadPacks(saved) {
     if (!saved || typeof saved !== "object") return;
-    if (saved.powerPatronage == null && Number.isFinite(saved.karmaPatronage)) {
-        saved.powerPatronage = saved.karmaPatronage;
-    }
-    delete saved.karmaPatronage;
     for (const id of Object.keys(state.packs)) {
         if (Number.isFinite(saved[id])) {
             state.packs[id] = Math.floor(saved[id]);
@@ -441,7 +433,7 @@ export function getCapacityBonus(id) {
     return getBuildingCount(id) * (building.capacityBonusPerLevel || 0) * 100;
 }
 
-export function getResourceProduction(resource) {
+function getResourceProduction(resource) {
     let base = 0;
 
     for (const id of Object.keys(BUILDINGS_DATA)) {
@@ -470,7 +462,7 @@ export function getSeasonTimer() {
     return state.season.timer;
 }
 
-export function getIndustryOutput(resource) {
+function getIndustryOutput(resource) {
     let total = 0;
 
     for (const id of Object.keys(INDUSTRY_DATA)) {
@@ -594,7 +586,7 @@ function getCostDiscount() {
     return Math.max(0.5, 1 - discount);
 }
 
-export function getWorkerMultiplier() {
+function getWorkerMultiplier() {
     let bonus = 0;
     for (const id of Object.keys(BUILDINGS_DATA)) {
         const building = BUILDINGS_DATA[id];
@@ -605,11 +597,11 @@ export function getWorkerMultiplier() {
     return 1 + bonus;
 }
 
-export function getPowerProduction() {
+function getPowerProduction() {
     return Math.max(0, getResourceProduction("power") - getPowerMaintenance());
 }
 
-export function getPowerMaintenance() {
+function getPowerMaintenance() {
     let maintenance = 0;
 
     for (const id of Object.keys(BUILDINGS_DATA)) {
@@ -761,13 +753,6 @@ export function buyPack(id) {
     return true;
 }
 
-export function addPower(amount) {
-    if (amount > 0) {
-        state.resources.power += amount;
-        emit();
-    }
-}
-
 export function getIndustry(id) {
     return state.industry[id];
 }
@@ -871,10 +856,6 @@ export function getHappinessBreakdown() {
     return computeHappinessBreakdown();
 }
 
-export function getHappinessTarget() {
-    return computeHappinessBreakdown().target;
-}
-
 export function getMigrationInterval() {
     const sat = state.population.satisfaction;
     if (sat >= 70) return 45;
@@ -883,7 +864,7 @@ export function getMigrationInterval() {
     return 120;
 }
 
-export const ARRIVAL_DURATION = 30;
+const ARRIVAL_DURATION = 30;
 
 export function getArrivalDuration() {
     return ARRIVAL_DURATION;
@@ -893,7 +874,7 @@ export function getPopulationMigrants() {
     return state.population.migrants;
 }
 
-export function arriveMigrant() {
+function arriveMigrant() {
     if (state.population.migrants <= 0) return;
 
     const capacity = getPopulationCapacity();
@@ -904,7 +885,7 @@ export function arriveMigrant() {
     emit();
 }
 
-export function getInfoProduction() {
+function getInfoProduction() {
     return getResourceProduction("bilgi");
 }
 
@@ -930,29 +911,6 @@ export function toggleAutoSell(resource) {
     if (!isSellable(resource)) return;
     state.settings.autoSell[resource] = !getAutoSell(resource);
     emit();
-}
-
-export function sellResource(resource, amount) {
-    if (!isSellable(resource)) return false;
-    const price = getSellPrice(resource);
-    const actual = Math.min(getResource(resource), amount);
-    if (actual <= 0) return false;
-
-    state.resources[resource] -= actual;
-    state.resources.altin += actual * price;
-    emit();
-    return true;
-}
-
-export function sellSurplus(resource) {
-    const capacity = getResourceCapacity(resource);
-    if (!Number.isFinite(capacity)) return false;
-
-    const threshold = capacity * 0.5;
-    const surplus = getResource(resource) - threshold;
-    if (surplus <= 0) return false;
-
-    return sellResource(resource, surplus);
 }
 
 const TICKS_PER_SECOND = 5;

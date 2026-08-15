@@ -109,11 +109,6 @@
     white-space: nowrap;
 }
 
-.header-stat.warn {
-    color: #ff8a8a;
-    border-color: #5a2f2f;
-}
-
 /* --- Sol panel: sekmeler --- */
 .tab-bar {
     display: flex;
@@ -164,98 +159,6 @@
 
 .left-panel .upgrade-list {
     width: 100%;
-}
-
-/* --- Orta panel: grup başlıkları, ürün aksiyonları, ipucu --- */
-.resource-grid.product-grid {
-    grid-template-areas: none;
-}
-
-.resource-bar-consumption {
-    font-family: var(--font-ui);
-    font-size: var(--font-prod-size);
-    font-weight: var(--font-prod-weight);
-    color: rgba(235, 111, 111, 0.8);
-    white-space: nowrap;
-}
-
-.resource-group-title {
-    font-family: var(--font-ui);
-    font-size: clamp(0.75rem, 1.4vw, 0.9rem);
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #8895a3;
-    width: 100%;
-    text-align: left;
-    margin-top: 0.5rem;
-    padding-bottom: 0.125rem;
-    border-bottom: 1px solid #2e3742;
-}
-
-.section-top.scrollable {
-    overflow-y: auto;
-    padding-right: 0.25rem;
-    scrollbar-width: thin;
-}
-
-.product-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.375rem;
-}
-
-.sell-btn,
-.auto-sell-btn {
-    font-family: var(--font-ui);
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #d7dde4;
-    background: #2b333d;
-    border: 1px solid #3a4553;
-    border-radius: 0.375rem;
-    padding: 0.2rem 0.45rem;
-    cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
-}
-
-.sell-btn:hover {
-    background: #3a4450;
-}
-
-.sell-btn.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.auto-sell-btn {
-    width: 1.9rem;
-}
-
-.auto-sell-btn.auto-on {
-    color: #9fd88f;
-    border-color: #2f5a36;
-    background: #1e2f24;
-}
-
-.tile-consumption {
-    font-family: var(--font-ui);
-    font-size: clamp(0.7rem, 1.3vw, 0.82rem);
-    font-weight: 600;
-    color: rgba(235, 111, 111, 0.75);
-}
-
-.hint-bar {
-    font-family: var(--font-ui);
-    font-size: clamp(0.7rem, 1.3vw, 0.82rem);
-    font-weight: 600;
-    color: #a8b3bf;
-    background: #1c232c;
-    border: 1px solid #2e3742;
-    border-radius: 0.5rem;
-    padding: 0.3rem 0.6rem;
-    max-width: 26rem;
 }
 
 .lock-req-industry {

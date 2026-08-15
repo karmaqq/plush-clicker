@@ -61,7 +61,7 @@
     background: linear-gradient(145deg, #3a2c20, #261c14);
 }
 
-.building-card:not(.locked):not(.building-slot) {
+.building-card:not(.locked) {
     cursor: pointer;
 }
 
@@ -98,13 +98,6 @@
 .building-card.affordable {
     border-color: #ffffff;
     cursor: pointer;
-}
-
-.building-slot {
-    background: transparent;
-    border: 2px dashed #3a4553;
-    padding: 0;
-    cursor: default;
 }
 
 .building-name,

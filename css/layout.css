@@ -22,18 +22,6 @@
     flex-direction: column;
 }
 
-.panel-section {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-}
-
-.panel-section:nth-child(2) {
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-}
-
 .row .panel:first-child {
     margin-left: 0;
 }

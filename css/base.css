@@ -169,10 +169,6 @@ body {
     white-space: nowrap;
 }
 
-.num-frac {
-    opacity: 1;
-}
-
 .badge {
     flex: none;
     min-width: 2.4em;

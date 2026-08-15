@@ -196,14 +196,6 @@
     min-height: 42px;
 }
 
-.trade-title {
-    font-family: var(--font-ui);
-    font-size: clamp(1rem, 2vw, 1.25rem);
-    font-weight: 700;
-    color: #d7dde4;
-    padding: 0.125rem 0.25rem;
-}
-
 .trade-offer {
     padding: 0.625rem;
     border-radius: 0.5rem;
@@ -258,15 +250,6 @@
     font-family: var(--font-ui);
     font-size: clamp(0.9rem, 1.8vw, 1.1rem);
     font-weight: 700;
-}
-
-.trade-offer-give {
-    color: #ffd166;
-}
-
-.trade-offer-for {
-    color: #9aa7b5;
-    font-weight: 500;
 }
 
 .trade-offer-get {
