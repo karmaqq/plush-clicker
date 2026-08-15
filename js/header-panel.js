@@ -15,9 +15,15 @@ import {
     getHappinessBreakdown,
     getMigrationInterval,
     getWorkerCount,
-    arriveMigrant,
     onChange,
     resetGame,
+    getArrivalDuration,
+    getSeason,
+    getSeasonTimer,
+    getParagon,
+    getKarma,
+    getPrestigeResets,
+    getPrestigeProductionBonus,
 } from "./game-state.js";
 import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingTooltip } from "./left-panel.js";
 
@@ -34,11 +40,13 @@ export function createHeaderPanel() {
     right.className = "header-right";
 
     const happinessChip = createHappinessChip();
+    const seasonChip = createSeasonChip();
+    const prestigeChip = createPrestigeChip();
     const goldStat = createStat("🪙");
 
     const resetBtn = document.createElement("button");
     resetBtn.className = "reset-btn";
-    resetBtn.textContent = "Sıfırla";
+    resetBtn.textContent = "↺";
     resetBtn.title = "Tüm ilerlemeyi sıfırla";
 
     resetBtn.addEventListener("click", () => {
@@ -52,6 +60,8 @@ export function createHeaderPanel() {
         createHousingChip("baraka"),
         createHousingChip("ev"),
         happinessChip.el,
+        seasonChip.el,
+        prestigeChip.el,
         goldStat.el,
         resetBtn
     );
@@ -67,6 +77,8 @@ export function createHeaderPanel() {
         popBlock.update(alive, capacity, workers, Math.max(0, alive - workers), migrants);
 
         happinessChip.update();
+        seasonChip.update();
+        prestigeChip.update();
 
         goldStat.value.textContent = formatCount(getAltin());
 
@@ -223,6 +235,195 @@ function createStat(emoji) {
     return { el, value };
 }
 
+function createSeasonChip() {
+    const el = document.createElement("div");
+    el.className = "season-chip";
+    el.tabIndex = 0;
+
+    const icon = document.createElement("span");
+    icon.className = "season-chip-icon";
+
+    el.append(icon);
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "season-tooltip";
+    tooltip.hidden = true;
+
+    const title = document.createElement("div");
+    title.className = "season-tooltip-title";
+
+    const list = document.createElement("div");
+    list.className = "season-tooltip-list";
+
+    tooltip.append(title, list);
+    el.appendChild(tooltip);
+
+    let active = false;
+
+    el.addEventListener("mouseenter", () => {
+        active = true;
+        refresh();
+    });
+    el.addEventListener("mouseleave", () => {
+        active = false;
+        tooltip.hidden = true;
+    });
+    el.addEventListener("focus", () => {
+        active = true;
+        refresh();
+    });
+    el.addEventListener("blur", () => {
+        active = false;
+        tooltip.hidden = true;
+    });
+
+    function refresh() {
+        const season = getSeason();
+        const timer = getSeasonTimer();
+
+        title.textContent = season.emoji + " " + season.name + "  ·  değişime " + Math.max(0, Math.ceil(timer)) + " sn";
+
+        while (list.firstChild) list.removeChild(list.firstChild);
+
+        const rows = [
+            ["🌾 Yiyecek", season.modifiers.yiyecek],
+            ["💧 Su", season.modifiers.su],
+            ["🪵 Odun", season.modifiers.odun],
+            ["💎 Mineral", season.modifiers.maden],
+        ];
+
+        for (const [label, value] of rows) {
+            if (typeof value !== "number" || value === 1) continue;
+            const row = document.createElement("div");
+            row.className = "season-row";
+            const labelEl = document.createElement("span");
+            labelEl.className = "tt-label";
+            labelEl.textContent = label;
+            const valueEl = document.createElement("span");
+            valueEl.className = "tt-value";
+            valueEl.textContent = (value > 1 ? "+" : "") + (Math.round((value - 1) * 100)) + "%";
+            valueEl.style.color = value > 1 ? "#7ee2a8" : "#ff9a5a";
+            row.append(labelEl, valueEl);
+            list.appendChild(row);
+        }
+
+        tooltip.hidden = false;
+    }
+
+    function update() {
+        const season = getSeason();
+        icon.textContent = season.emoji;
+
+        if (active) refresh();
+    }
+
+    onChange(update);
+    update();
+
+    return { el, update };
+}
+
+function createPrestigeChip() {
+    const el = document.createElement("div");
+    el.className = "prestige-chip";
+    el.tabIndex = 0;
+
+    const paragon = document.createElement("span");
+    paragon.className = "prestige-pg";
+    const karma = document.createElement("span");
+    karma.className = "prestige-karma";
+
+    el.append(paragon, karma);
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "prestige-tooltip";
+    tooltip.hidden = true;
+
+    const title = document.createElement("div");
+    title.className = "prestige-tooltip-title";
+    title.textContent = "⛩️ Prestij";
+
+    const rows = {};
+
+    const rowDefs = [
+        ["Paragon", "pg", "#e8b46a"],
+        ["Karma", "karma", "#7fb2e0"],
+        ["Sıfırlama", "resets", "#8895a3"],
+    ];
+    for (const [label, key, color] of rowDefs) {
+        const row = document.createElement("div");
+        row.className = "prestige-tooltip-row";
+        const labelEl = document.createElement("span");
+        labelEl.className = "tt-label";
+        labelEl.textContent = label;
+        const valueEl = document.createElement("span");
+        valueEl.className = "tt-value";
+        valueEl.style.color = color;
+        row.append(labelEl, valueEl);
+        rows[key] = valueEl;
+        tooltip.appendChild(row);
+    }
+
+    const info = document.createElement("div");
+    info.className = "prestige-info";
+    tooltip.appendChild(info);
+
+    el.appendChild(tooltip);
+
+    let active = false;
+
+    el.addEventListener("mouseenter", () => {
+        active = true;
+        refresh();
+    });
+    el.addEventListener("mouseleave", () => {
+        active = false;
+        tooltip.hidden = true;
+    });
+    el.addEventListener("focus", () => {
+        active = true;
+        refresh();
+    });
+    el.addEventListener("blur", () => {
+        active = false;
+        tooltip.hidden = true;
+    });
+
+    function refresh() {
+        const pg = getParagon();
+        const km = getKarma();
+
+        rows.pg.textContent = String(pg);
+        rows.karma.textContent = String(km);
+        rows.resets.textContent = String(getPrestigeResets());
+
+        info.textContent =
+            "⛩️ Paragon: +%" +
+            (getPrestigeProductionBonus() * 100).toFixed(1) +
+            " üretim  ·  🌟 Karma: +%" +
+            (km * 0.25).toFixed(1) +
+            " mutluluk";
+
+        tooltip.hidden = false;
+    }
+
+    function update() {
+        const pg = getParagon();
+        const km = getKarma();
+
+        el.classList.toggle("empty", pg === 0 && km === 0);
+        paragon.textContent = "⛩️ " + formatCount(pg);
+        karma.textContent = "🌟 " + formatCount(km);
+
+        if (active) refresh();
+    }
+
+    onChange(update);
+    update();
+
+    return { el, update };
+}
+
 function createHappinessChip() {
     const el = document.createElement("div");
     el.className = "happiness-chip";
@@ -235,13 +436,7 @@ function createHappinessChip() {
     const value = document.createElement("span");
     value.className = "header-stat-value";
 
-    const bar = document.createElement("div");
-    bar.className = "happiness-bar";
-    const fill = document.createElement("div");
-    fill.className = "happiness-bar-fill";
-    bar.appendChild(fill);
-
-    el.append(icon, value, bar);
+    el.append(icon, value);
 
     const tooltip = document.createElement("div");
     tooltip.className = "happiness-tooltip";
@@ -295,7 +490,7 @@ function createHappinessChip() {
         const deficiency = getPopulationDeficiency();
         const parts = [];
         if (deficiency > 0.05) parts.push("⚠️ Temel ihtiyaç açığı: nüfus risk altında");
-        parts.push("🚶 Göç: ~" + getMigrationInterval() + " sn / kişi");
+        parts.push("🚶 Göç: ~" + getMigrationInterval() + " sn / kişi · Varış ~" + getArrivalDuration() + " sn");
         infoText.textContent = parts.join("  ·  ");
 
         tooltip.hidden = false;
@@ -304,8 +499,6 @@ function createHappinessChip() {
     function update() {
         const satisfaction = getPopulationSatisfaction();
         value.textContent = String(Math.round(satisfaction));
-        fill.style.width = Math.round(satisfaction) + "%";
-        fill.style.background = happinessColor(satisfaction);
         el.classList.toggle("warn", satisfaction < 50);
 
         if (active) refresh();
@@ -354,13 +547,6 @@ function fillHappinessList(sec, items) {
     sec.section.hidden = items.length === 0;
 }
 
-function happinessColor(value) {
-    if (value >= 70) return "linear-gradient(90deg, #2e9e5b, #7ee2a8)";
-    if (value >= 50) return "linear-gradient(90deg, #c9982a, #ffd166)";
-    if (value >= 30) return "linear-gradient(90deg, #c46a2a, #ff9a5a)";
-    return "linear-gradient(90deg, #a83232, #ff5a5a)";
-}
-
 function spawnMigrant(strip) {
     const el = document.createElement("span");
     el.className = "migrant";
@@ -385,7 +571,6 @@ function spawnMigrant(strip) {
         if (arrived) return;
         arrived = true;
         el.remove();
-        arriveMigrant();
     };
 
     el.addEventListener("transitionend", arrive, { once: true });

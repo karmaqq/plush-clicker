@@ -22,11 +22,12 @@ import {
     getAutoSell,
     toggleAutoSell,
     getNetRate,
+    getSeasonMultiplier,
     onChange,
 } from "./game-state.js";
 
 const tooltip = createTooltip("resource-tooltip");
-const RAW_TILE_ORDER = ["su", "yiyecek", "odun", "tas", "maden", "bilgi", "inanc", "baharat", "sarap", "ipek"];
+const RAW_TILE_ORDER = ["su", "yiyecek", "odun", "tas", "maden", "bilgi", "inanc", "kultur", "baharat", "sarap", "ipek"];
 
 const PRODUCT_TILE_ORDER = ["ekmek", "kereste", "demir", "kumas", "konyak", "ilac", "celik", "mobilya", "mucevher", "mermer", "heykel"];
 
@@ -48,11 +49,9 @@ export function createCenterPanel() {
     const resourceArea = document.createElement("div");
     resourceArea.className = "resource-area";
 
-    const rawTitle = sectionTitle("Hammaddeler");
     const rawGrid = document.createElement("div");
     rawGrid.className = "resource-grid raw-grid";
 
-    const productTitle = sectionTitle("Ürünler");
     const productGrid = document.createElement("div");
     productGrid.className = "resource-grid product-grid";
 
@@ -68,17 +67,16 @@ export function createCenterPanel() {
         productGrid.appendChild(tileMap[id].element);
     }
 
-    resourceArea.append(rawTitle, rawGrid, productTitle, productGrid);
+    resourceArea.append(rawGrid, productGrid);
 
-    const storageTitle = sectionTitle("Depolama");
+    const storageSection = document.createElement("div");
+    storageSection.className = "storage-section";
     const storageRow = document.createElement("div");
     storageRow.className = "storage-row";
     storageRow.appendChild(createBuildingCard("depo", BUILDINGS_DATA.depo));
     storageRow.appendChild(createBuildingCard("ambar", BUILDINGS_DATA.ambar));
 
-    const storageSection = document.createElement("div");
-    storageSection.className = "storage-section";
-    storageSection.append(storageTitle, storageRow);
+    storageSection.append(storageRow);
 
     function update(snapshot) {
         powerSpan.textContent = formatCount(getPower());
@@ -95,13 +93,6 @@ export function createCenterPanel() {
 
     panel.append(header, resourceArea, storageSection);
     return panel;
-}
-
-function sectionTitle(text) {
-    const el = document.createElement("div");
-    el.className = "resource-group-title";
-    el.textContent = text;
-    return el;
 }
 
 function createResourceTile(id) {
@@ -123,10 +114,10 @@ function createResourceTile(id) {
     name.className = "resource-tile-name";
     name.textContent = meta.name;
 
-    const capLabel = document.createElement("span");
-    capLabel.className = "resource-tile-cap";
+    const production = document.createElement("span");
+    production.className = "resource-bar-production";
 
-    head.append(emoji, name, capLabel);
+    head.append(emoji, name, production);
 
     const bar = document.createElement("div");
     bar.className = "resource-bar-track";
@@ -139,10 +130,10 @@ function createResourceTile(id) {
     const foot = document.createElement("div");
     foot.className = "resource-tile-foot";
 
-    const production = document.createElement("span");
-    production.className = "resource-bar-production";
+    const capLabel = document.createElement("span");
+    capLabel.className = "resource-tile-cap";
 
-    foot.append(production);
+    foot.append(capLabel);
 
     let autoSellBtn = null;
 
@@ -227,7 +218,7 @@ function createResourceTile(id) {
     return { element, update };
 }
 
-const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null };
+const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null };
 
 function buildResourceTooltip(id) {
     const meta = RESOURCES[id];
@@ -250,6 +241,18 @@ function buildResourceTooltip(id) {
     timeEl.hidden = true;
     cap.append("Depo: ", capStrong, " ", timeEl);
     tooltip.element.appendChild(cap);
+
+    const capDivider = document.createElement("div");
+    capDivider.className = "tt-divider";
+    tooltip.element.appendChild(capDivider);
+
+    const seasonRow = document.createElement("div");
+    seasonRow.className = "tt-row tt-season";
+    seasonRow.hidden = true;
+    const seasonEl = document.createElement("strong");
+    seasonEl.className = "season-up";
+    seasonRow.append("Mevsim: ", seasonEl);
+    tooltip.element.appendChild(seasonRow);
 
     const buildingRows = [];
     for (const bid of Object.keys(BUILDINGS_DATA)) {
@@ -280,28 +283,6 @@ function buildResourceTooltip(id) {
     const bonusRows = [];
     for (const bid of Object.keys(BUILDINGS_DATA)) {
         const b = BUILDINGS_DATA[bid];
-        if (b.type === "capacityBonus") {
-            const count = getBuildingCount(bid);
-            if (count <= 0) continue;
-
-            bonusRows.push({
-                b,
-                count,
-                info: "%" + Math.round(count * b.capacityBonusPerLevel * 100),
-            });
-            continue;
-        }
-        if (b.type === "storageBonus") {
-            const count = getBuildingCount(bid);
-            if (count <= 0) continue;
-
-            bonusRows.push({
-                b,
-                count,
-                info: "%" + Math.round(count * b.storageBonusPerLevel * 100),
-            });
-            continue;
-        }
         if (b.type !== "bonus" || b.targetResource !== id) continue;
 
         const count = getBuildingCount(bid);
@@ -332,17 +313,17 @@ function buildResourceTooltip(id) {
     sellRow.hidden = !sellable;
     tooltip.element.appendChild(sellRow);
 
-    const consRow = document.createElement("div");
-    consRow.className = "tt-total";
-    const consStrong = strong("");
-    consRow.append("Tüketim: ", consStrong);
-    tooltip.element.appendChild(consRow);
-
     const totalRow = document.createElement("div");
     totalRow.className = "tt-total";
     const totalStrong = strong("");
     totalRow.append("Üretim: ", totalStrong);
     tooltip.element.appendChild(totalRow);
+
+    const consRow = document.createElement("div");
+    consRow.className = "tt-total";
+    const consStrong = strong("");
+    consRow.append("Tüketim: ", consStrong);
+    tooltip.element.appendChild(consRow);
 
     tooltipLive.id = id;
     tooltipLive.capEl = capStrong;
@@ -351,6 +332,8 @@ function buildResourceTooltip(id) {
     tooltipLive.consEl = consStrong;
     tooltipLive.sellEl = sellStrong;
     tooltipLive.sellRow = sellRow;
+    tooltipLive.seasonRow = seasonRow;
+    tooltipLive.seasonEl = seasonEl;
     refreshResourceTooltip();
 }
 
@@ -368,6 +351,14 @@ function refreshResourceTooltip(snapshot) {
     tooltipLive.consEl.textContent = consumptionValue > 0 ? "−" + formatNumber(consumptionValue) + "/s" : "−";
     tooltipLive.sellRow.hidden = !isSellable(id);
     tooltipLive.sellEl.textContent = formatCount(getSellPrice(id)) + " 🪙";
+
+    const seasonMult = getSeasonMultiplier(id);
+    tooltipLive.seasonRow.hidden = seasonMult === 1;
+    if (seasonMult !== 1) {
+        const pct = (seasonMult - 1) * 100;
+        tooltipLive.seasonEl.textContent = (pct >= 0 ? "+" : "−") + Math.round(Math.abs(pct)) + "%";
+        tooltipLive.seasonEl.className = pct >= 0 ? "season-up" : "season-down";
+    }
 
     const net = snapshot ? snapshot.derived[id].net : getNetRate(id);
     const remaining = capacity - current;

@@ -4,6 +4,63 @@ import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import { canAfford } from "./utils.js";
 
+export const SEASON_DURATION = 45;
+
+export const SEASONS_DATA = {
+    ilkbahar: {
+        name: "İlkbahar",
+        emoji: "🌱",
+        modifiers: { su: 1.15, yiyecek: 1.1 },
+    },
+    yaz: {
+        name: "Yaz",
+        emoji: "☀️",
+        modifiers: { su: 1.25, yiyecek: 1.2, odun: 0.9 },
+    },
+    sonbahar: {
+        name: "Sonbahar",
+        emoji: "🍂",
+        modifiers: { odun: 1.2, maden: 1.15, yiyecek: 0.95 },
+    },
+    kis: {
+        name: "Kış",
+        emoji: "❄️",
+        modifiers: { su: 0.65, yiyecek: 0.65, odun: 1.15 },
+    },
+};
+
+const SEASON_ORDER = Object.keys(SEASONS_DATA);
+
+export const TRADE_INTERVAL = 45;
+
+const TRADE_PRICES = {
+    odun: 1,
+    tas: 1.5,
+    maden: 2,
+    bilgi: 2,
+    inanc: 2,
+    baharat: 3,
+    ekmek: 1,
+    kereste: 2,
+    demir: 3,
+    ilac: 6,
+    kumas: 7,
+    konyak: 12,
+    celik: 15,
+    mermer: 20,
+    mobilya: 30,
+    mucevher: 50,
+    heykel: 60,
+};
+
+const TRADE_AMOUNTS = {
+    1: [25, 40],
+    2: [10, 20],
+    3: [5, 10],
+    4: [2, 6],
+    5: [1, 3],
+};
+
 const state = {
     resources: {},
     buildings: {},
@@ -17,6 +74,20 @@ const state = {
         arrivalTimer: 0,
         deficiency: 0,
         ilacOk: false,
+    },
+    prestige: {
+        paragon: 0,
+        karma: 0,
+        resets: 0,
+    },
+    season: {
+        id: "ilkbahar",
+        timer: SEASON_DURATION,
+    },
+    trade: {
+        timer: TRADE_INTERVAL,
+        current: null,
+        count: 0,
     },
     settings: {
         autoSell: {},
@@ -48,6 +119,7 @@ for (const id of Object.keys(RESOURCES)) {
 
 const listeners = new Set();
 
+const STORAGE_KEY_V9 = "plush-clicker:state-v9";
 const STORAGE_KEY_V8 = "plush-clicker:state-v8";
 const STORAGE_KEY_V7 = "plush-clicker:state-v7";
 const STORAGE_KEY_V6 = "plush-clicker:state-v6";
@@ -57,18 +129,22 @@ const STORAGE_KEY_V3 = "plush-clicker:state-v3";
 
 function loadState() {
     try {
-        const rawV8 = localStorage.getItem(STORAGE_KEY_V8);
-        if (rawV8) {
-            const saved = JSON.parse(rawV8);
+        const rawV9 = localStorage.getItem(STORAGE_KEY_V9);
+        if (rawV9) {
+            const saved = JSON.parse(rawV9);
             loadResources(saved.resources);
             loadBuildings(saved.buildings);
             loadPacks(saved.packs);
             loadIndustry(saved.industry);
             loadPopulation(saved.population);
+            loadPrestige(saved.prestige);
+            loadSeason(saved.season);
+            loadTrade(saved.trade);
             loadSettings(saved.settings);
             return;
         }
 
+        localStorage.removeItem(STORAGE_KEY_V8);
         localStorage.removeItem(STORAGE_KEY_V7);
         localStorage.removeItem(STORAGE_KEY_V6);
         localStorage.removeItem(STORAGE_KEY_V5);
@@ -152,6 +228,41 @@ function loadSettings(saved) {
     }
 }
 
+function loadPrestige(saved) {
+    if (!saved || typeof saved !== "object") return;
+    if (Number.isFinite(saved.paragon)) state.prestige.paragon = Math.max(0, Math.floor(saved.paragon));
+    if (Number.isFinite(saved.karma)) state.prestige.karma = Math.max(0, Math.floor(saved.karma));
+    if (Number.isFinite(saved.resets)) state.prestige.resets = Math.max(0, Math.floor(saved.resets));
+}
+
+function loadSeason(saved) {
+    if (!saved || typeof saved !== "object") return;
+    if (SEASONS_DATA[saved.id]) state.season.id = saved.id;
+    if (Number.isFinite(saved.timer)) state.season.timer = Math.max(0, saved.timer);
+}
+
+function loadTrade(saved) {
+    if (!saved || typeof saved !== "object") return;
+    if (Number.isFinite(saved.timer)) state.trade.timer = Math.max(0, saved.timer);
+    if (saved.current && typeof saved.current === "object") {
+        if (
+            Number.isFinite(saved.current.cost) &&
+            saved.current.get && typeof saved.current.get === "object" &&
+            Number.isFinite(saved.current.get.amount) &&
+            TRADE_PRICES[saved.current.get.resource]
+        ) {
+            state.trade.current = {
+                cost: saved.current.cost,
+                get: {
+                    resource: saved.current.get.resource,
+                    amount: saved.current.get.amount,
+                },
+            };
+        }
+    }
+    if (Number.isFinite(saved.count)) state.trade.count = Math.max(0, Math.floor(saved.count));
+}
+
 loadState();
 
 export function getResource(resource) {
@@ -198,6 +309,12 @@ const UNLOCK_STRATEGIES = {
         progress: (unlock) => (getIndustryBuilt(unlock.id) ? "1/1" : "0/1"),
         isNear: (unlock) => getIndustryBuilt(unlock.id),
         target: (unlock) => INDUSTRY_DATA[unlock.id].name,
+    },
+    all: {
+        isMet: (unlock) => unlock.conditions.every((c) => UNLOCK_STRATEGIES[c.type].isMet(c)),
+        progress: (unlock) => unlock.conditions.map((c) => UNLOCK_STRATEGIES[c.type].progress(c)).join(" + "),
+        isNear: (unlock) => unlock.conditions.some((c) => UNLOCK_STRATEGIES[c.type].isNear(c)),
+        target: (unlock) => unlock.conditions.map((c) => UNLOCK_STRATEGIES[c.type].target(c)).join(" + "),
     },
 };
 
@@ -252,6 +369,19 @@ export function getOutputMultiplier(resource) {
 
     const meta = RESOURCES[resource];
 
+    for (const id of Object.keys(BUILDINGS_DATA)) {
+        const building = BUILDINGS_DATA[id];
+        if (
+            building.type === "productBonus" &&
+            building.productBonusPerLevel &&
+            meta &&
+            meta.tier !== "raw" &&
+            meta.tier !== "currency"
+        ) {
+            sum += getBuildingCount(id) * building.productBonusPerLevel;
+        }
+    }
+
     for (const id of Object.keys(PACKS_DATA)) {
         const pack = PACKS_DATA[id];
         if (pack.productionBonusPerLevel) {
@@ -270,7 +400,11 @@ export function getOutputMultiplier(resource) {
         }
     }
 
-    return 1 + sum;
+    return 1 + sum + getPrestigeProductionBonus();
+}
+
+export function getPrestigeProductionBonus() {
+    return state.prestige.paragon * 0.005;
 }
 
 export function getResourceCapacity(resource) {
@@ -318,7 +452,22 @@ export function getResourceProduction(resource) {
     }
 
     if (base === 0) return 0;
-    return base * getOutputMultiplier(resource);
+    return base * getOutputMultiplier(resource) * getSeasonMultiplier(resource);
+}
+
+export function getSeasonMultiplier(resource) {
+    const season = SEASONS_DATA[state.season.id];
+    if (!season || !season.modifiers) return 1;
+    const value = season.modifiers[resource];
+    return typeof value === "number" ? value : 1;
+}
+
+export function getSeason() {
+    return SEASONS_DATA[state.season.id];
+}
+
+export function getSeasonTimer() {
+    return state.season.timer;
 }
 
 export function getIndustryOutput(resource) {
@@ -345,14 +494,14 @@ export function getNetRate(resource) {
     return getTotalProduction(resource) - getResourceConsumption(resource);
 }
 
-const POP_SU_RATE = 0.001;
-const POP_YIYECEK_RATE = 0.0012;
-const POP_EKMEK_RATE = 0.0005;
-const POP_ILAC_RATE = 0.00015;
-const POP_GOLD_RATE = 0.0002;
-const WORKER_WAGE = 0.0005;
+const POP_SU_RATE = 0.08;
+const POP_YIYECEK_RATE = 0.10;
+const POP_EKMEK_RATE = 0.02;
+const POP_ILAC_RATE = 0.005;
+const POP_GOLD_RATE = 0.004;
+const WORKER_WAGE = 0.01;
 const LUXURY_ORDER = ["sarap", "konyak", "kumas", "mobilya", "mucevher", "heykel"];
-const LUXURY_RATES = { sarap: 0.000002, konyak: 0.0000001, kumas: 0.00000004, mobilya: 0.000004, mucevher: 0.000001, heykel: 0.000001 };
+const LUXURY_RATES = { sarap: 0.0005, konyak: 0.00005, kumas: 0.00002, mobilya: 0.001, mucevher: 0.0003, heykel: 0.0003 };
 const LUXURY_HAPPINESS = { sarap: 5, konyak: 6, kumas: 7, mobilya: 7, mucevher: 8, heykel: 9 };
 
 export function getResourceConsumption(resource) {
@@ -419,6 +568,12 @@ export function getBuildingBonus(id) {
     if (building.type === "storageBonus") {
         return getBuildingCount(id) * (building.storageBonusPerLevel || 0) * 100;
     }
+    if (building.type === "productBonus") {
+        return getBuildingCount(id) * (building.productBonusPerLevel || 0) * 100;
+    }
+    if (building.type === "tradeBonus") {
+        return getBuildingCount(id) * (building.tradeBonusPerLevel || 0) * 100;
+    }
     return 0;
 }
 
@@ -428,6 +583,12 @@ function getCostDiscount() {
         const building = BUILDINGS_DATA[id];
         if (building.type === "costBonus" && building.costDiscountPerLevel) {
             discount += getBuildingCount(id) * building.costDiscountPerLevel;
+        }
+    }
+    for (const id of Object.keys(PACKS_DATA)) {
+        const pack = PACKS_DATA[id];
+        if (pack.costDiscountPerLevel) {
+            discount += getPackCount(id) * pack.costDiscountPerLevel;
         }
     }
     return Math.max(0.5, 1 - discount);
@@ -492,6 +653,78 @@ export function getPackCost(id) {
     }
 
     return cost;
+}
+
+export function getParagon() {
+    return state.prestige.paragon;
+}
+
+export function getKarma() {
+    return state.prestige.karma;
+}
+
+export function getPrestigeResets() {
+    return state.prestige.resets;
+}
+
+export function getTradeInterval() {
+    const count = getBuildingCount("tradePost");
+    return Math.max(12, TRADE_INTERVAL / (1 + count * 0.5));
+}
+
+export function getTradeCurrent() {
+    return state.trade.current;
+}
+
+export function getTradeTimer() {
+    return state.trade.timer;
+}
+
+export function getTradeCount() {
+    return state.trade.count;
+}
+
+function generateTradeOffer() {
+    const resources = Object.keys(TRADE_PRICES);
+    const resource = resources[Math.floor(Math.random() * resources.length)];
+    const meta = RESOURCES[resource];
+    const range = TRADE_AMOUNTS[meta.rarity] || TRADE_AMOUNTS[2];
+    const amount =
+        Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+    const postBonus = 1 + getBuildingCount("tradePost") * 0.5;
+    const boosted = Math.round(amount * postBonus);
+
+    const cost = Math.max(1, Math.round(boosted * TRADE_PRICES[resource] * 0.6));
+
+    return {
+        cost,
+        get: { resource, amount: boosted },
+    };
+}
+
+export function acceptTrade() {
+    const offer = state.trade.current;
+    if (!offer) return false;
+    if (getResource("altin") < offer.cost) return false;
+
+    const capacity = getResourceCapacity(offer.get.resource);
+    if (
+        Number.isFinite(capacity) &&
+        getResource(offer.get.resource) >= capacity
+    ) {
+        return false;
+    }
+
+    state.resources.altin -= offer.cost;
+    state.resources[offer.get.resource] = Number.isFinite(capacity)
+        ? Math.min(capacity, getResource(offer.get.resource) + offer.get.amount)
+        : getResource(offer.get.resource) + offer.get.amount;
+
+    state.trade.current = null;
+    state.trade.timer = getTradeInterval();
+    state.trade.count++;
+    emit();
+    return true;
 }
 
 function pay(cost) {
@@ -648,6 +881,12 @@ export function getMigrationInterval() {
     if (sat >= 50) return 60;
     if (sat >= 30) return 90;
     return 120;
+}
+
+export const ARRIVAL_DURATION = 30;
+
+export function getArrivalDuration() {
+    return ARRIVAL_DURATION;
 }
 
 export function getPopulationMigrants() {
@@ -816,6 +1055,21 @@ export function produce() {
     if (applyPopulationLifecycle()) changed = true;
     if (autoSellSurplus()) changed = true;
 
+    state.season.timer -= 1 / TICKS_PER_SECOND;
+    if (state.season.timer <= 0) {
+        const idx = SEASON_ORDER.indexOf(state.season.id);
+        state.season.id = SEASON_ORDER[(idx + 1) % SEASON_ORDER.length];
+        state.season.timer = SEASON_DURATION;
+        changed = true;
+    }
+
+    state.trade.timer -= 1 / TICKS_PER_SECOND;
+    if (state.trade.timer <= 0) {
+        state.trade.timer = getTradeInterval();
+        state.trade.current = generateTradeOffer();
+        changed = true;
+    }
+
     if (changed) emit(snapshot);
 }
 
@@ -936,6 +1190,14 @@ function computeHappinessBreakdown() {
         items.push({ emoji: "🌿", label: "Rahatlama", delta: buildingDelta, met: true });
     }
 
+    const cultureProd = getTotalProduction("kultur");
+    if (cultureProd > 0) {
+        const cultureDelta = Math.min(8, getBuildingCount("amphitheatre"));
+        if (cultureDelta > 0) {
+            items.push({ emoji: "🏛️", label: "Kültür", delta: cultureDelta, met: true });
+        }
+    }
+
     let totalJobSlots = 0;
     for (const id of Object.keys(INDUSTRY_DATA)) {
         if (state.industry[id].built) totalJobSlots += INDUSTRY_DATA[id].maxWorkers;
@@ -953,6 +1215,7 @@ function computeHappinessBreakdown() {
     let target = 0;
     for (const item of items) target += item.delta;
     target = Math.max(0, Math.min(100, target));
+    target = Math.min(100, target + getKarma() * 0.25);
 
     return { items, target };
 }
@@ -1000,10 +1263,24 @@ function applyPopulationLifecycle() {
         if (state.population.migrationTimer <= 0) {
             state.population.migrants++;
             state.population.migrationTimer = getMigrationInterval();
+            if (state.population.arrivalTimer <= 0) {
+                state.population.arrivalTimer = ARRIVAL_DURATION;
+            }
             changed = true;
         }
     } else {
         state.population.migrationTimer = 0;
+    }
+
+    if (state.population.migrants > 0) {
+        state.population.arrivalTimer -= 1 / TICKS_PER_SECOND;
+        if (state.population.arrivalTimer <= 0) {
+            arriveMigrant();
+            state.population.arrivalTimer = ARRIVAL_DURATION;
+            changed = true;
+        }
+    } else if (state.population.arrivalTimer > 0) {
+        state.population.arrivalTimer = 0;
     }
 
     return changed;
@@ -1055,6 +1332,15 @@ function autoSellSurplus() {
 }
 
 export function resetGame() {
+    const alive = getPopulationAlive();
+    const sat = state.population.satisfaction;
+
+    if (alive > 0) {
+        state.prestige.paragon += Math.floor(alive / 10);
+        state.prestige.karma += Math.floor((alive * sat) / 1000);
+        state.prestige.resets++;
+    }
+
     for (const id of Object.keys(state.resources)) {
         state.resources[id] = 0;
     }
@@ -1079,6 +1365,17 @@ export function resetGame() {
         arrivalTimer: 0,
         deficiency: 0,
         ilacOk: false,
+    };
+
+    state.season = {
+        id: "ilkbahar",
+        timer: SEASON_DURATION,
+    };
+
+    state.trade = {
+        timer: TRADE_INTERVAL,
+        current: null,
+        count: 0,
     };
 
     for (const id of Object.keys(state.settings.autoSell)) {
@@ -1158,13 +1455,16 @@ function scheduleSave() {
 
 function saveState() {
     localStorage.setItem(
-        STORAGE_KEY_V8,
+        STORAGE_KEY_V9,
         JSON.stringify({
             resources: state.resources,
             buildings: state.buildings,
             packs: state.packs,
             industry: state.industry,
             population: state.population,
+            prestige: state.prestige,
+            season: state.season,
+            trade: state.trade,
             settings: state.settings,
         })
     );

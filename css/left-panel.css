@@ -122,11 +122,17 @@
     font-family: var(--font-ui);
     overflow: hidden;
     white-space: nowrap;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     min-width: 0;
     font-size: clamp(0.8rem, 9.5cqw, 1.25rem);
     font-weight: 700;
     color: #8a93a0;
+}
+
+.building-card-emoji {
+    flex: none;
+    font-size: var(--font-prod-size);
+    line-height: 1;
 }
 
 .building-card.affordable .building-name {
@@ -144,7 +150,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
+    gap: 0;
     text-align: center;
     font-family: var(--font-ui);
     overflow: hidden;
@@ -154,6 +160,21 @@
     font-size: var(--font-prod-size);
     font-weight: var(--font-prod-weight);
     color: var(--res, #ffd166);
+}
+
+.building-rate-plus {
+    flex: none;
+}
+
+.building-rate .num-display.rate-producer {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.building-rate-suffix {
+    flex: none;
 }
 
 .building-badge-row {

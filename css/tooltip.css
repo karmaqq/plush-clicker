@@ -66,6 +66,14 @@
     font-weight: 800;
 }
 
+.tt-season strong.season-up {
+    color: #9fd88f;
+}
+
+.tt-season strong.season-down {
+    color: #ff5a5a;
+}
+
 .tt-badge {
     font-size: 0.85em;
 }
@@ -96,6 +104,12 @@
 .tt-cap strong {
     color: #d7dde4;
     font-weight: 800;
+}
+
+.tt-divider {
+    height: 1px;
+    background: #2c3540;
+    margin: 0.5rem 0 0.25rem;
 }
 
 .tooltip-effect {

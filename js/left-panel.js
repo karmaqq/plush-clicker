@@ -126,7 +126,9 @@ export function createBuildingCard(id, data) {
         data.type === "bonus" ||
         data.type === "costBonus" ||
         data.type === "workerBonus" ||
-        data.type === "storageBonus";
+        data.type === "storageBonus" ||
+        data.type === "productBonus" ||
+        data.type === "tradeBonus";
     const resourceId =
         isHousing || isStorage || isCapacityBonus || isBonus
             ? null
@@ -170,8 +172,15 @@ export function createBuildingCard(id, data) {
 
     const name = document.createElement("div");
     name.className = "building-name";
+    const emojiEl = document.createElement("span");
+    emojiEl.className = "building-card-emoji";
+    if (isHousing) emojiEl.textContent = "👥";
+    else if (isStorage) emojiEl.textContent = "📦";
+    else if (isCapacityBonus) emojiEl.textContent = "📦";
+    else if (isBonus) emojiEl.textContent = bonusEmoji(data.type);
+    else emojiEl.textContent = RESOURCES[resourceId].emoji;
     const nameTextEl = buildingNameText("");
-    name.appendChild(nameTextEl);
+    name.append(emojiEl, nameTextEl);
 
     const badgeRow = document.createElement("div");
     badgeRow.className = "building-badge-row";
@@ -182,29 +191,28 @@ export function createBuildingCard(id, data) {
 
     const rate = document.createElement("div");
     rate.className = "building-rate";
-    const rateEmoji = document.createElement("span");
     const rateCounter = createNumberCounter();
 
     if (isHousing) {
-        rateEmoji.textContent = "👥";
-        rate.append(rateEmoji, rateCounter.span);
+        rate.append(rateCounter.span);
     } else if (isStorage) {
-        rateEmoji.textContent = "📦";
         const rateLabel = document.createElement("span");
         rateLabel.className = "num-display";
         rateLabel.textContent = "Kapasite";
-        rate.append(rateEmoji, rateLabel);
+        rate.append(rateLabel);
     } else if (isCapacityBonus) {
-        rateEmoji.textContent = "📦";
-        rate.append(rateEmoji, rateCounter.span);
+        rate.append(rateCounter.span);
     } else if (isBonus) {
-        rateEmoji.textContent = bonusEmoji(data.type);
-        rate.append(rateEmoji, rateCounter.span);
+        rate.append(rateCounter.span);
     } else {
-        rateEmoji.textContent = RESOURCES[resourceId].emoji + " +";
+        const plus = document.createElement("span");
+        plus.className = "building-rate-plus";
+        plus.textContent = "+";
         const rateSuffix = document.createElement("span");
+        rateSuffix.className = "building-rate-suffix";
         rateSuffix.textContent = "/s";
-        rate.append(rateEmoji, rateCounter.span, rateSuffix);
+        rateCounter.span.classList.add("rate-producer");
+        rate.append(plus, rateCounter.span, rateSuffix);
     }
 
     card.append(name, rate, badgeRow, lockOverlay.element);
@@ -293,7 +301,9 @@ export function buildBuildingTooltip(id, data) {
         data.type === "bonus" ||
         data.type === "costBonus" ||
         data.type === "workerBonus" ||
-        data.type === "storageBonus";
+        data.type === "storageBonus" ||
+        data.type === "productBonus" ||
+        data.type === "tradeBonus";
     const isHousing = data.type === "housing";
     const resourceId =
         isHousing || isStorage || isCapacityBonus || isBonus
@@ -558,6 +568,8 @@ function createPackCard(id, data) {
             effectText = "Tüm üretim: +%" + Math.round(count * data.productionBonusPerLevel * 100);
         } else if (data.powerBonusPerLevel) {
             effectText = "Güç üretimi: +%" + Math.round(count * data.powerBonusPerLevel * 100);
+        } else if (data.costDiscountPerLevel) {
+            effectText = "Bina maliyeti: −%" + Math.round(count * data.costDiscountPerLevel * 100);
         } else if (data.productBonusPerLevel) {
             effectText = "Ürün üretimi: +%" + Math.round(count * data.productBonusPerLevel * 100);
         }
@@ -593,6 +605,8 @@ function bonusEmoji(type) {
     if (type === "costBonus") return "🛠️";
     if (type === "workerBonus") return "⚙️";
     if (type === "storageBonus") return "📦";
+    if (type === "productBonus") return "🔨";
+    if (type === "tradeBonus") return "🛒";
     return "";
 }
 
@@ -613,6 +627,18 @@ function getBonusEffectInfo(data) {
         return {
             label: "Kapasite bonusu:",
             value: "%" + Math.round(data.storageBonusPerLevel * 100) + " / seviye",
+        };
+    }
+    if (data.type === "productBonus") {
+        return {
+            label: "İşlenmiş/craft üretimi:",
+            value: "%" + Math.round(data.productBonusPerLevel * 100) + " / seviye",
+        };
+    }
+    if (data.type === "tradeBonus") {
+        return {
+            label: "Tüccar sıklığı ve teklif boyutu:",
+            value: "+%0" + Math.round(data.tradeBonusPerLevel * 100) + " / seviye",
         };
     }
     return {

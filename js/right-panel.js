@@ -1,8 +1,12 @@
-import { canAfford, formatCount, formatNumber, createLockOverlay, triggerShake } from "./utils.js";
+import { canAfford, formatCount, formatNumber, formatDuration, createLockOverlay, triggerShake } from "./utils.js";
+import { createTooltip } from "./tooltip.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import { RESOURCES } from "./resources.js";
+import { BUILDINGS_DATA } from "./buildings.js";
+import { createBuildingCard } from "./left-panel.js";
 import {
     getResource,
+    getNetRate,
     getUnlock,
     getUnlockText,
     getUnlockType,
@@ -16,6 +20,12 @@ import {
     removeWorker,
     getWorkerCount,
     getPopulationAlive,
+    getTradeCurrent,
+    getTradeTimer,
+    getTradeCount,
+    getTradeInterval,
+    acceptTrade,
+    getBuildingCount,
     onChange,
 } from "./game-state.js";
 
@@ -31,17 +41,146 @@ export function createRightPanel() {
     industryTab.className = "tab-btn active";
     industryTab.textContent = "Sanayi";
 
-    tabBar.appendChild(industryTab);
+    const tradeTab = document.createElement("button");
+    tradeTab.type = "button";
+    tradeTab.className = "tab-btn";
+    tradeTab.textContent = "Ticaret";
 
-    const list = document.createElement("div");
-    list.className = "upgrade-list";
+    tabBar.append(industryTab, tradeTab);
+
+    const industryList = document.createElement("div");
+    industryList.className = "upgrade-list";
 
     for (const id of Object.keys(INDUSTRY_DATA)) {
-        list.appendChild(createIndustryCard(id, INDUSTRY_DATA[id]));
+        industryList.appendChild(createIndustryCard(id, INDUSTRY_DATA[id]));
     }
 
-    panel.append(tabBar, list);
+    const tradeSection = createTradeSection();
+
+    panel.append(tabBar, industryList, tradeSection.section);
+
+    let activeTab = "industry";
+
+    function showTab(tab) {
+        activeTab = tab;
+        industryTab.classList.toggle("active", tab === "industry");
+        tradeTab.classList.toggle("active", tab === "trade");
+        industryList.hidden = tab !== "industry";
+        tradeSection.section.hidden = tab !== "trade";
+    }
+
+    industryTab.addEventListener("click", () => showTab("industry"));
+    tradeTab.addEventListener("click", () => showTab("trade"));
+
     return panel;
+}
+
+const industryTooltip = createTooltip("industry-tooltip");
+
+const tooltipLive = { id: null, rows: [] };
+
+function createTradeSection() {
+    const section = document.createElement("div");
+    section.className = "trade-section";
+    section.hidden = true;
+
+    const postCard = createBuildingCard("tradePost", BUILDINGS_DATA.tradePost);
+
+    const offerCard = document.createElement("div");
+    offerCard.className = "trade-offer";
+
+    const offerHead = document.createElement("div");
+    offerHead.className = "trade-offer-head";
+
+    const offerName = document.createElement("div");
+    offerName.className = "trade-offer-name";
+    offerName.textContent = "Ticaret Teklifi";
+
+    const offerTimer = document.createElement("div");
+    offerTimer.className = "trade-offer-timer";
+
+    offerHead.append(offerName, offerTimer);
+
+    const offerBody = document.createElement("div");
+    offerBody.className = "trade-offer-body";
+
+    const offerEmpty = document.createElement("div");
+    offerEmpty.className = "trade-offer-empty";
+    offerEmpty.textContent = "Tüccar yolda…";
+
+    const offerRow = document.createElement("div");
+    offerRow.className = "trade-offer-row";
+    offerRow.hidden = true;
+
+    const getSpan = document.createElement("span");
+    getSpan.className = "trade-offer-get";
+
+    offerRow.append(getSpan);
+
+    const acceptBtn = document.createElement("button");
+    acceptBtn.type = "button";
+    acceptBtn.className = "trade-accept-btn";
+
+    acceptBtn.addEventListener("click", () => {
+        if (!acceptTrade()) {
+            triggerShake(acceptBtn);
+        }
+    });
+
+    offerBody.append(offerEmpty, offerRow, acceptBtn);
+
+    const stats = document.createElement("div");
+    stats.className = "trade-stats";
+
+    const accepted = document.createElement("div");
+    accepted.className = "trade-stat";
+    const interval = document.createElement("div");
+    interval.className = "trade-stat";
+
+    stats.append(accepted, interval);
+
+    offerCard.append(offerHead, offerBody, stats);
+
+    section.append(postCard, offerCard);
+
+    let lastState = null;
+
+    function update() {
+        const current = getTradeCurrent();
+        const timer = getTradeTimer();
+        const count = getTradeCount();
+
+        const hasOffer = !!current;
+
+        offerEmpty.hidden = hasOffer;
+        offerRow.hidden = !hasOffer;
+        acceptBtn.hidden = !hasOffer;
+
+        if (hasOffer) {
+            const meta = RESOURCES[current.get.resource];
+            getSpan.textContent = meta.emoji + " " + formatCount(current.get.amount) + " " + meta.name;
+            const affordable = getResource("altin") >= current.cost;
+            acceptBtn.classList.toggle("disabled", !affordable);
+            acceptBtn.textContent = RESOURCES.altin.emoji + " " + formatCount(current.cost) + " Altın";
+        }
+
+        offerTimer.textContent = hasOffer
+            ? "Sonraki teklif: " + formatDuration(timer) + " sn"
+            : "Yeni teklif: " + formatDuration(timer) + " sn";
+
+        accepted.textContent = "✅ Kabul edilen: " + count;
+        interval.textContent = "Tüccar sıklığı: ~" + Math.round(getTradeInterval()) + " sn";
+
+        const key = (hasOffer ? "1" : "0") + "|" + timer.toFixed(1) + "|" + count;
+        if (key !== lastState) {
+            lastState = key;
+        }
+    }
+
+    onChange(update);
+    update();
+
+    return { section, update };
 }
 
 function createIndustryCard(id, data) {
@@ -148,6 +287,20 @@ function createIndustryCard(id, data) {
 
     card.append(head, desc, flow, warning, buildBtn, controls, lockOverlay.element);
 
+    let tooltipActive = false;
+
+    card.addEventListener("mouseenter", () => {
+        if (!getUnlock(data)) return;
+        tooltipActive = true;
+        buildIndustryTooltip(id);
+        industryTooltip.show(card);
+    });
+
+    card.addEventListener("mouseleave", () => {
+        tooltipActive = false;
+        industryTooltip.hide();
+    });
+
     function update() {
         const unlocked = getUnlock(data);
         card.classList.toggle("locked", !unlocked);
@@ -194,6 +347,8 @@ function createIndustryCard(id, data) {
             controls.hidden = true;
             flow.hidden = true;
             warning.hidden = true;
+
+            if (tooltipActive) refreshIndustryTooltip();
             return;
         }
 
@@ -232,10 +387,120 @@ function createIndustryCard(id, data) {
 
         minusBtn.disabled = workers <= 0;
         plusBtn.disabled = workers >= data.maxWorkers || getWorkerCount() >= getPopulationAlive();
+
+        if (tooltipActive) {
+            tooltipActive = false;
+            industryTooltip.hide();
+        }
     }
 
     onChange(update);
     update();
 
     return card;
+}
+
+function buildIndustryTooltip(id) {
+    const data = INDUSTRY_DATA[id];
+    const cost = getIndustryCost(id);
+
+    resetIndustryTooltipClass(id);
+
+    industryTooltip.element.textContent = "";
+
+    const title = document.createElement("div");
+    title.className = "tooltip-title";
+    title.textContent = data.emoji + " " + data.name;
+    industryTooltip.element.appendChild(title);
+
+    const effect = document.createElement("div");
+    effect.className = "tooltip-effect";
+
+    const effectLine = document.createElement("div");
+    effectLine.className = "tooltip-effect-line";
+
+    const effectLabel = document.createElement("span");
+    effectLabel.className = "effect-label";
+    effectLabel.textContent = "Üretim:";
+
+    const effectValue = document.createElement("span");
+    effectValue.className = "effect-value";
+    effectValue.textContent = Object.entries(data.output)
+        .map(([r, rate]) => RESOURCES[r].emoji + " +" + formatNumber(rate) + "/s · işçi")
+        .join("  ");
+
+    effectLine.append(effectLabel, " ", effectValue);
+    effect.appendChild(effectLine);
+    industryTooltip.element.appendChild(effect);
+
+    const costs = document.createElement("div");
+    costs.className = "tooltip-costs";
+
+    tooltipLive.id = id;
+    tooltipLive.rows = [];
+
+    for (const [resource, amount] of Object.entries(cost)) {
+        const row = document.createElement("div");
+        row.className = "cost-row";
+
+        const label = document.createElement("span");
+        label.className = "cost-label";
+        label.textContent = RESOURCES[resource].name + ":";
+
+        const value = document.createElement("span");
+        value.className = "cost-value";
+
+        const haveEl = document.createElement("span");
+        haveEl.className = "cost-have";
+        const slashEl = document.createElement("span");
+        slashEl.className = "cost-slash";
+        slashEl.textContent = "/";
+        const needEl = document.createElement("span");
+        needEl.className = "cost-need";
+
+        value.append(haveEl, slashEl, needEl);
+
+        const timeEl = document.createElement("span");
+        timeEl.className = "cost-time";
+        timeEl.hidden = true;
+
+        row.append(label, timeEl, value);
+        costs.appendChild(row);
+
+        tooltipLive.rows.push({ resource, amount, value, haveEl, needEl, slashEl, timeEl });
+    }
+
+    industryTooltip.element.appendChild(costs);
+    refreshIndustryTooltip();
+}
+
+function refreshIndustryTooltip() {
+    if (tooltipLive.id == null) return;
+
+    const id = tooltipLive.id;
+    const cost = getIndustryCost(id);
+
+    for (const row of tooltipLive.rows) {
+        row.amount = cost[row.resource] || 0;
+        const have = getResource(row.resource);
+        const enough = have >= row.amount;
+        row.haveEl.textContent = enough ? formatCount(row.amount) : formatCount(have);
+        row.needEl.textContent = enough ? "" : formatCount(row.amount);
+        row.slashEl.hidden = enough;
+        row.value.classList.toggle("cost-missing", !enough);
+
+        const missing = row.amount - have;
+        const net = getNetRate(row.resource);
+        if (!enough && missing > 0 && net > 0) {
+            row.timeEl.textContent = formatDuration(missing / net);
+            row.timeEl.hidden = false;
+        } else {
+            row.timeEl.hidden = true;
+        }
+    }
+}
+
+function resetIndustryTooltipClass(id) {
+    const outId = Object.keys(INDUSTRY_DATA[id].output)[0];
+    industryTooltip.element.className = "tooltip industry-tooltip resource-" + outId;
 }
