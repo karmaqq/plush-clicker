@@ -16,26 +16,6 @@
     min-height: 0;
 }
 
-.building-list::-webkit-scrollbar {
-    width: 12px;
-}
-
-.building-list::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.18);
-    border-radius: 999px;
-}
-
-.building-list::-webkit-scrollbar-thumb {
-    background: #3c4753;
-    border-radius: 999px;
-    min-height: 42px;
-    transition: background 0.15s ease;
-}
-
-.building-list::-webkit-scrollbar-thumb:hover {
-    background: #4a5563;
-}
-
 .building-card {
     padding: 0.5rem 0.625rem;
     border-radius: 0.5rem;
@@ -66,7 +46,6 @@
 }
 
 .building-card.locked .building-name,
-.building-card.locked .building-badge-row,
 .building-card.locked .building-rate {
     visibility: hidden;
 }
@@ -150,6 +129,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     flex: none;
+    padding-right: 3rem;
     font-size: var(--font-prod-size);
     font-weight: var(--font-prod-weight);
     color: var(--res, #ffd166);
@@ -171,12 +151,17 @@
 }
 
 .building-badge-row {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.55rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
     font-family: var(--font-ui);
     flex: none;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .building-badge {

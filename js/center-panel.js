@@ -27,7 +27,7 @@ import {
 } from "./game-state.js";
 
 const tooltip = createTooltip("resource-tooltip");
-const RAW_TILE_ORDER = ["su", "yiyecek", "odun", "tas", "maden", "bilgi", "inanc", "kultur", "baharat", "sarap", "ipek"];
+const RAW_TILE_ORDER = ["su", "yiyecek", "odun", "tas", "maden", "bilgi", "inanc", "ipek", "baharat", "sarap", "kultur"];
 
 const PRODUCT_TILE_ORDER = ["ekmek", "kereste", "demir", "kumas", "konyak", "ilac", "celik", "mobilya", "mucevher", "mermer", "heykel"];
 
@@ -88,7 +88,7 @@ export function createCenterPanel() {
         refreshResourceTooltip(snapshot);
     }
 
-    onChange((state, snapshot) => update(snapshot));
+    onChange((_state, snapshot) => update(snapshot));
     update();
 
     panel.append(header, resourceArea, storageSection);
@@ -218,7 +218,7 @@ function createResourceTile(id) {
     return { element, update };
 }
 
-const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null };
+const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonDivider: null, seasonRow: null, seasonEl: null };
 
 function buildResourceTooltip(id) {
     const meta = RESOURCES[id];
@@ -242,9 +242,10 @@ function buildResourceTooltip(id) {
     cap.append("Depo: ", capStrong, " ", timeEl);
     tooltip.element.appendChild(cap);
 
-    const capDivider = document.createElement("div");
-    capDivider.className = "tt-divider";
-    tooltip.element.appendChild(capDivider);
+    const seasonDivider = document.createElement("div");
+    seasonDivider.className = "tt-divider";
+    seasonDivider.hidden = true;
+    tooltip.element.appendChild(seasonDivider);
 
     const seasonRow = document.createElement("div");
     seasonRow.className = "tt-row tt-season";
@@ -306,6 +307,10 @@ function buildResourceTooltip(id) {
         }
     }
 
+    const divider = document.createElement("div");
+    divider.className = "tt-divider";
+    tooltip.element.appendChild(divider);
+
     const sellRow = document.createElement("div");
     sellRow.className = "tt-total";
     const sellStrong = strong("");
@@ -332,6 +337,7 @@ function buildResourceTooltip(id) {
     tooltipLive.consEl = consStrong;
     tooltipLive.sellEl = sellStrong;
     tooltipLive.sellRow = sellRow;
+    tooltipLive.seasonDivider = seasonDivider;
     tooltipLive.seasonRow = seasonRow;
     tooltipLive.seasonEl = seasonEl;
     refreshResourceTooltip();
@@ -354,6 +360,7 @@ function refreshResourceTooltip(snapshot) {
 
     const seasonMult = getSeasonMultiplier(id);
     tooltipLive.seasonRow.hidden = seasonMult === 1;
+    tooltipLive.seasonDivider.hidden = seasonMult === 1;
     if (seasonMult !== 1) {
         const pct = (seasonMult - 1) * 100;
         tooltipLive.seasonEl.textContent = (pct >= 0 ? "+" : "−") + Math.round(Math.abs(pct)) + "%";

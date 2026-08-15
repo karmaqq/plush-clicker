@@ -1,9 +1,7 @@
-import { canAfford, formatCount, formatNumber, formatDuration, createLockOverlay, triggerShake } from "./utils.js";
-import { createTooltip } from "./tooltip.js";
+import { canAfford, formatCount, formatNumber, formatDuration, createLockOverlay, triggerShake, getBadgeTier } from "./utils.js";
+import { createTooltip, createCostRows, refreshCostRows } from "./tooltip.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA } from "./buildings.js";
-import { createBuildingCard } from "./left-panel.js";
 import {
     getResource,
     getNetRate,
@@ -14,8 +12,13 @@ import {
     getIndustry,
     getIndustryBuilt,
     getIndustryWorkers,
+    getIndustryLevel,
+    getIndustryMaxWorkers,
+    getIndustryLevelMultiplier,
     getIndustryCost,
     buildIndustry,
+    getIndustryUpgradeCost,
+    upgradeIndustry,
     addWorker,
     removeWorker,
     getWorkerCount,
@@ -83,8 +86,6 @@ function createTradeSection() {
     section.className = "trade-section";
     section.hidden = true;
 
-    const postCard = createBuildingCard("tradePost", BUILDINGS_DATA.tradePost);
-
     const offerCard = document.createElement("div");
     offerCard.className = "trade-offer";
 
@@ -140,7 +141,7 @@ function createTradeSection() {
 
     offerCard.append(offerHead, offerBody, stats);
 
-    section.append(postCard, offerCard);
+    section.append(offerCard);
 
     function update() {
         const current = getTradeCurrent();
@@ -190,11 +191,11 @@ function createIndustryCard(id, data) {
     name.className = "upgrade-name";
     name.textContent = data.emoji + " " + data.name;
 
-    const workersLabel = document.createElement("div");
-    workersLabel.className = "industry-workers";
-    workersLabel.textContent = "👷 0/" + data.maxWorkers;
+    const levelLabel = document.createElement("span");
+    levelLabel.className = "badge building-badge";
+    levelLabel.textContent = "0";
 
-    head.append(name, workersLabel);
+    head.append(name);
 
     const desc = document.createElement("div");
     desc.className = "upgrade-desc";
@@ -250,6 +251,35 @@ function createIndustryCard(id, data) {
         }
     });
 
+    const buildRow = document.createElement("div");
+    buildRow.className = "industry-build-row";
+
+    const upgradeBtn = document.createElement("button");
+    upgradeBtn.type = "button";
+    upgradeBtn.className = "industry-build-btn";
+    upgradeBtn.hidden = true;
+
+    const upgradeCostSpans = {};
+    for (const resource of Object.keys(data.baseCost)) {
+        const span = document.createElement("span");
+        span.className = "industry-cost";
+        upgradeBtn.appendChild(span);
+        upgradeCostSpans[resource] = span;
+    }
+
+    const maxText = document.createElement("span");
+    maxText.className = "industry-build-text";
+    maxText.hidden = true;
+    upgradeBtn.appendChild(maxText);
+
+    upgradeBtn.addEventListener("click", () => {
+        if (!upgradeIndustry(id)) {
+            triggerShake(upgradeBtn);
+        }
+    });
+
+    buildRow.append(buildBtn, upgradeBtn, levelLabel);
+
     const controls = document.createElement("div");
     controls.className = "industry-controls";
 
@@ -260,7 +290,7 @@ function createIndustryCard(id, data) {
 
     const workerCount = document.createElement("span");
     workerCount.className = "worker-count";
-    workerCount.textContent = "0";
+    workerCount.textContent = "0/" + getIndustryMaxWorkers(id);
 
     const plusBtn = document.createElement("button");
     plusBtn.type = "button";
@@ -277,7 +307,8 @@ function createIndustryCard(id, data) {
 
     controls.append(minusBtn, workerCount, plusBtn);
 
-    card.append(head, desc, flow, warning, buildBtn, controls, lockOverlay.element);
+    head.append(controls);
+    card.append(head, desc, flow, warning, buildRow, lockOverlay.element);
 
     let tooltipActive = false;
 
@@ -333,8 +364,10 @@ function createIndustryCard(id, data) {
                 span.classList.toggle("cost-missing", !enough);
             }
 
-            workersLabel.textContent = "👷 0/" + data.maxWorkers;
+            levelLabel.textContent = "0";
+            levelLabel.className = "badge building-badge badge-tier-0 badge-empty";
             buildBtn.hidden = false;
+            upgradeBtn.hidden = true;
             buildBtn.classList.toggle("disabled", !canAfford(cost, getResource));
             controls.hidden = true;
             flow.hidden = true;
@@ -344,16 +377,45 @@ function createIndustryCard(id, data) {
             return;
         }
 
+        const level = getIndustryLevel(id);
+        const maxWorkers = getIndustryMaxWorkers(id);
+        const levelMult = getIndustryLevelMultiplier(id);
+
         buildBtn.hidden = true;
+        upgradeBtn.hidden = false;
+
+        const upgradeCost = getIndustryUpgradeCost(id);
+        if (upgradeCost === null) {
+            upgradeBtn.hidden = false;
+            upgradeBtn.disabled = true;
+            for (const span of Object.values(upgradeCostSpans)) {
+                span.textContent = "";
+            }
+            maxText.textContent = data.name + " En Yüksek Seviyede";
+            maxText.hidden = false;
+        } else {
+            upgradeBtn.hidden = false;
+            upgradeBtn.disabled = false;
+            maxText.hidden = true;
+            for (const [resource, span] of Object.entries(upgradeCostSpans)) {
+                const amount = upgradeCost[resource];
+                const enough = getResource(resource) >= amount;
+                span.textContent = RESOURCES[resource].emoji + " " + formatCount(amount);
+                span.classList.toggle("cost-ok", enough);
+                span.classList.toggle("cost-missing", !enough);
+            }
+        }
+
         controls.hidden = false;
         flow.hidden = false;
 
-        workersLabel.textContent = "👷 " + workers + "/" + data.maxWorkers;
-        workerCount.textContent = String(workers);
+        levelLabel.textContent = String(level);
+        levelLabel.className = "badge building-badge badge-tier-" + getBadgeTier(level);
+        workerCount.textContent = workers + "/" + maxWorkers;
 
         const inputParts = [];
         for (const [resource, rate] of Object.entries(data.input)) {
-            const amount = workers * rate;
+            const amount = workers * rate * levelMult;
             inputParts.push(RESOURCES[resource].emoji + " -" + formatNumber(amount) + "/s");
         }
         inputValue.textContent = inputParts.join("  ");
@@ -361,7 +423,7 @@ function createIndustryCard(id, data) {
 
         const outputParts = [];
         for (const [resource, rate] of Object.entries(data.output)) {
-            const amount = workers * rate;
+            const amount = workers * rate * levelMult;
             outputParts.push(RESOURCES[resource].emoji + " +" + formatNumber(amount) + "/s");
         }
         outputValue.textContent = outputParts.join("  ");
@@ -378,11 +440,10 @@ function createIndustryCard(id, data) {
         }
 
         minusBtn.disabled = workers <= 0;
-        plusBtn.disabled = workers >= data.maxWorkers || getWorkerCount() >= getPopulationAlive();
+        plusBtn.disabled = workers >= maxWorkers || getWorkerCount() >= getPopulationAlive();
 
         if (tooltipActive) {
-            tooltipActive = false;
-            industryTooltip.hide();
+            refreshIndustryTooltip();
         }
     }
 
@@ -425,42 +486,15 @@ function buildIndustryTooltip(id) {
     effect.appendChild(effectLine);
     industryTooltip.element.appendChild(effect);
 
+    const costDivider = document.createElement("div");
+    costDivider.className = "tt-divider";
+    industryTooltip.element.appendChild(costDivider);
+
     const costs = document.createElement("div");
     costs.className = "tooltip-costs";
 
     tooltipLive.id = id;
-    tooltipLive.rows = [];
-
-    for (const [resource, amount] of Object.entries(cost)) {
-        const row = document.createElement("div");
-        row.className = "cost-row";
-
-        const label = document.createElement("span");
-        label.className = "cost-label";
-        label.textContent = RESOURCES[resource].name + ":";
-
-        const value = document.createElement("span");
-        value.className = "cost-value";
-
-        const haveEl = document.createElement("span");
-        haveEl.className = "cost-have";
-        const slashEl = document.createElement("span");
-        slashEl.className = "cost-slash";
-        slashEl.textContent = "/";
-        const needEl = document.createElement("span");
-        needEl.className = "cost-need";
-
-        value.append(haveEl, slashEl, needEl);
-
-        const timeEl = document.createElement("span");
-        timeEl.className = "cost-time";
-        timeEl.hidden = true;
-
-        row.append(label, timeEl, value);
-        costs.appendChild(row);
-
-        tooltipLive.rows.push({ resource, amount, value, haveEl, needEl, slashEl, timeEl });
-    }
+    tooltipLive.rows = createCostRows(costs, cost);
 
     industryTooltip.element.appendChild(costs);
     refreshIndustryTooltip();
@@ -472,24 +506,7 @@ function refreshIndustryTooltip() {
     const id = tooltipLive.id;
     const cost = getIndustryCost(id);
 
-    for (const row of tooltipLive.rows) {
-        row.amount = cost[row.resource] || 0;
-        const have = getResource(row.resource);
-        const enough = have >= row.amount;
-        row.haveEl.textContent = enough ? formatCount(row.amount) : formatCount(have);
-        row.needEl.textContent = enough ? "" : formatCount(row.amount);
-        row.slashEl.hidden = enough;
-        row.value.classList.toggle("cost-missing", !enough);
-
-        const missing = row.amount - have;
-        const net = getNetRate(row.resource);
-        if (!enough && missing > 0 && net > 0) {
-            row.timeEl.textContent = formatDuration(missing / net);
-            row.timeEl.hidden = false;
-        } else {
-            row.timeEl.hidden = true;
-        }
-    }
+    refreshCostRows(tooltipLive.rows, cost, getResource, getNetRate);
 }
 
 function resetIndustryTooltipClass(id) {

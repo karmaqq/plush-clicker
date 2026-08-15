@@ -1,3 +1,6 @@
+import { RESOURCES } from "./resources.js";
+import { formatCount, formatDuration } from "./utils.js";
+
 export function createTooltip(extraClass) {
     const element = document.createElement("div");
     element.className = "tooltip" + (extraClass ? " " + extraClass : "");
@@ -13,6 +16,67 @@ export function createTooltip(extraClass) {
             element.classList.remove("visible");
         },
     };
+}
+
+export function createCostRows(container, cost) {
+    const rows = [];
+    const costs = document.createElement("div");
+    costs.className = "tooltip-costs";
+
+    for (const [resource, amount] of Object.entries(cost)) {
+        const row = document.createElement("div");
+        row.className = "cost-row";
+
+        const label = document.createElement("span");
+        label.className = "cost-label";
+        label.textContent = RESOURCES[resource].name + ":";
+
+        const value = document.createElement("span");
+        value.className = "cost-value";
+
+        const haveEl = document.createElement("span");
+        haveEl.className = "cost-have";
+        const slashEl = document.createElement("span");
+        slashEl.className = "cost-slash";
+        slashEl.textContent = "/";
+        const needEl = document.createElement("span");
+        needEl.className = "cost-need";
+
+        value.append(haveEl, slashEl, needEl);
+
+        const timeEl = document.createElement("span");
+        timeEl.className = "cost-time";
+        timeEl.hidden = true;
+
+        row.append(label, timeEl, value);
+        costs.appendChild(row);
+
+        rows.push({ resource, amount, value, haveEl, needEl, slashEl, timeEl });
+    }
+
+    container.appendChild(costs);
+    return rows;
+}
+
+export function refreshCostRows(rows, cost, getResource, getNetRate) {
+    for (const row of rows) {
+        row.amount = cost[row.resource] || 0;
+        const have = getResource(row.resource);
+        const enough = have >= row.amount;
+        row.haveEl.textContent = enough ? formatCount(row.amount) : formatCount(have);
+        row.needEl.textContent = enough ? "" : formatCount(row.amount);
+        row.slashEl.hidden = enough;
+        row.value.classList.toggle("cost-missing", !enough);
+
+        const missing = row.amount - have;
+        const net = getNetRate(row.resource);
+        if (!enough && missing > 0 && net > 0) {
+            row.timeEl.textContent = formatDuration(missing / net);
+            row.timeEl.hidden = false;
+        } else {
+            row.timeEl.hidden = true;
+        }
+    }
 }
 
 function positionTooltip(tooltip, anchor) {

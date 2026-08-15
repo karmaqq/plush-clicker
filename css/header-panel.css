@@ -61,13 +61,13 @@
     color: #8895a3;
 }
 
-.pop-tooltip {
+.pop-tooltip,
+.happiness-tooltip,
+.season-tooltip,
+.prestige-tooltip {
     position: absolute;
     top: calc(100% + 0.375rem);
-    left: 0;
-    display: none;
     z-index: 999;
-    min-width: 10rem;
     padding: 0.625rem 0.875rem;
     background: linear-gradient(145deg, #1f2630, #171d24);
     border: 1px solid #4a5563;
@@ -75,31 +75,47 @@
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
 }
 
+.pop-tooltip {
+    left: 0;
+    display: none;
+    min-width: 10rem;
+}
+
 .pop-block:hover .pop-tooltip,
 .pop-block:focus-within .pop-tooltip {
     display: block;
 }
 
-.pop-tooltip-row {
+.happiness-tooltip {
+    right: 0;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.25rem;
-    padding: 0.125rem 0;
-    white-space: nowrap;
-    font-family: var(--font-ui);
-    font-size: 0.8rem;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 15rem;
+    max-width: 20rem;
 }
 
-.tt-label {
-    color: #8895a3;
+.season-tooltip {
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 12rem;
 }
 
-.tt-value {
-    font-weight: 700;
+.prestige-tooltip {
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 13rem;
 }
 
-.housing-chip {
+.housing-chip,
+.happiness-chip,
+.season-chip,
+.prestige-chip {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -112,8 +128,11 @@
     border: 1px solid #3a4450;
     border-radius: 0.5rem;
     padding: 0.22rem 0.55rem;
-    cursor: pointer;
     white-space: nowrap;
+}
+
+.housing-chip {
+    cursor: pointer;
     transition:
         background 0.12s ease,
         border-color 0.12s ease,
@@ -166,52 +185,21 @@
     background: #45282e;
 }
 
-.happiness-chip {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    flex: none;
-    font-family: var(--font-ui);
-    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
-    font-weight: 700;
-    color: #d7dde4;
-    background: #2b333d;
-    border: 1px solid #3a4450;
-    border-radius: 0.5rem;
-    padding: 0.22rem 0.55rem;
-    white-space: nowrap;
-}
-
 .happiness-chip.warn {
     color: #ff8a8a;
     border-color: #5a2f2f;
 }
 
-.happiness-tooltip {
-    position: absolute;
-    top: calc(100% + 0.375rem);
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    z-index: 999;
-    min-width: 15rem;
-    max-width: 20rem;
-    padding: 0.625rem 0.875rem;
-    background: linear-gradient(145deg, #1f2630, #171d24);
-    border: 1px solid #4a5563;
-    border-radius: 0.625rem;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
-}
-
-.happiness-title {
+.happiness-title,
+.season-tooltip-title,
+.prestige-tooltip-title {
     font-family: var(--font-ui);
     font-size: 0.85rem;
     font-weight: 700;
     color: #ffffff;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid #2e3742;
+    text-align: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #3a4553;
 }
 
 .happiness-sec {
@@ -238,15 +226,40 @@
     color: #ff8a8a;
 }
 
-.happiness-row {
+.pop-tooltip-row,
+.happiness-row,
+.season-row,
+.prestige-tooltip-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
     padding: 0.125rem 0;
     white-space: nowrap;
     font-family: var(--font-ui);
+}
+
+.pop-tooltip-row {
+    gap: 1.25rem;
+    font-size: 0.8rem;
+}
+
+.happiness-row {
+    gap: 1rem;
     font-size: 0.78rem;
+}
+
+.season-row,
+.prestige-tooltip-row {
+    gap: 1.25rem;
+    font-size: 0.78rem;
+}
+
+.tt-label {
+    color: #8895a3;
+}
+
+.tt-value {
+    font-weight: 700;
 }
 
 .happiness-row-label {
@@ -263,90 +276,20 @@
     color: #ff8a8a;
 }
 
-.happiness-info {
+.happiness-info,
+.prestige-info {
     font-family: var(--font-ui);
     font-size: 0.72rem;
     font-weight: 600;
     color: #8895a3;
-    padding-top: 0.25rem;
-    border-top: 1px solid #2e3742;
+    margin-top: 0.375rem;
     line-height: 1.35;
-}
-
-.season-chip {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    flex: none;
-    font-family: var(--font-ui);
-    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
-    font-weight: 700;
-    color: #d7dde4;
-    background: #2b333d;
-    border: 1px solid #3a4450;
-    border-radius: 0.5rem;
-    padding: 0.22rem 0.55rem;
-    white-space: nowrap;
-}
-
-.season-tooltip {
-    position: absolute;
-    top: calc(100% + 0.375rem);
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    z-index: 999;
-    min-width: 12rem;
-    padding: 0.625rem 0.875rem;
-    background: linear-gradient(145deg, #1f2630, #171d24);
-    border: 1px solid #4a5563;
-    border-radius: 0.625rem;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
-}
-
-.season-tooltip-title {
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #ffffff;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid #2e3742;
 }
 
 .season-tooltip-list {
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
-}
-
-.season-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.25rem;
-    padding: 0.125rem 0;
-    white-space: nowrap;
-    font-family: var(--font-ui);
-    font-size: 0.78rem;
-}
-
-.prestige-chip {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    flex: none;
-    font-family: var(--font-ui);
-    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
-    font-weight: 700;
-    color: #d7dde4;
-    background: #2b333d;
-    border: 1px solid #3a4450;
-    border-radius: 0.5rem;
-    padding: 0.22rem 0.55rem;
-    white-space: nowrap;
 }
 
 .prestige-chip.empty .prestige-pg,
@@ -360,50 +303,4 @@
 
 .prestige-karma {
     color: #7fb2e0;
-}
-
-.prestige-tooltip {
-    position: absolute;
-    top: calc(100% + 0.375rem);
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    z-index: 999;
-    min-width: 13rem;
-    padding: 0.625rem 0.875rem;
-    background: linear-gradient(145deg, #1f2630, #171d24);
-    border: 1px solid #4a5563;
-    border-radius: 0.625rem;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
-}
-
-.prestige-tooltip-title {
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #ffffff;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid #2e3742;
-}
-
-.prestige-tooltip-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.25rem;
-    padding: 0.125rem 0;
-    white-space: nowrap;
-    font-family: var(--font-ui);
-    font-size: 0.78rem;
-}
-
-.prestige-info {
-    font-family: var(--font-ui);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #8895a3;
-    padding-top: 0.25rem;
-    border-top: 1px solid #2e3742;
-    line-height: 1.35;
 }

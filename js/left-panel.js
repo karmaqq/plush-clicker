@@ -3,13 +3,12 @@ import {
     canAfford,
     formatCount,
     formatNumber,
-    formatDuration,
     createNumberCounter,
     createLockOverlay,
     triggerShake,
     resetResourceClass,
 } from "./utils.js";
-import { createTooltip } from "./tooltip.js";
+import { createTooltip, createCostRows, refreshCostRows } from "./tooltip.js";
 import { BUILDINGS_DATA } from "./buildings.js";
 import { RESOURCES } from "./resources.js";
 import { PACKS_DATA } from "./packs.js";
@@ -122,13 +121,7 @@ export function createBuildingCard(id, data) {
     const isHousing = data.type === "housing";
     const isStorage = data.type === "storage";
     const isCapacityBonus = data.type === "capacityBonus";
-    const isBonus =
-        data.type === "bonus" ||
-        data.type === "costBonus" ||
-        data.type === "workerBonus" ||
-        data.type === "storageBonus" ||
-        data.type === "productBonus" ||
-        data.type === "tradeBonus";
+    const isBonus = data.type === "bonus";
     const resourceId =
         isHousing || isStorage || isCapacityBonus || isBonus
             ? null
@@ -177,9 +170,9 @@ export function createBuildingCard(id, data) {
     if (isHousing) emojiEl.textContent = "👥";
     else if (isStorage) emojiEl.textContent = "📦";
     else if (isCapacityBonus) emojiEl.textContent = "📦";
-    else if (isBonus) emojiEl.textContent = bonusEmoji(data.type);
+    else if (isBonus) emojiEl.textContent = bonusEmoji(data);
     else emojiEl.textContent = RESOURCES[resourceId].emoji;
-    const nameTextEl = buildingNameText("");
+    const nameTextEl = buildingNameText();
     name.append(emojiEl, nameTextEl);
 
     const badgeRow = document.createElement("div");
@@ -237,9 +230,10 @@ export function createBuildingCard(id, data) {
             lockOverlay.lockDesc.classList.toggle("lock-req-building", unlockType === "building");
             lockOverlay.lockDesc.classList.toggle("lock-req-pack", unlockType === "pack");
             nameTextEl.textContent = "";
-            badgeEl.textContent = "";
             rate.hidden = true;
             lastOwned = null;
+            badgeEl.textContent = "0";
+            badgeEl.className = "badge building-badge badge-tier-0 badge-empty";
             return;
         }
 
@@ -297,13 +291,7 @@ export function buildBuildingTooltip(id, data) {
     const cost = getBuildingCost(id);
     const isStorage = data.type === "storage";
     const isCapacityBonus = data.type === "capacityBonus";
-    const isBonus =
-        data.type === "bonus" ||
-        data.type === "costBonus" ||
-        data.type === "workerBonus" ||
-        data.type === "storageBonus" ||
-        data.type === "productBonus" ||
-        data.type === "tradeBonus";
+    const isBonus = data.type === "bonus";
     const isHousing = data.type === "housing";
     const resourceId =
         isHousing || isStorage || isCapacityBonus || isBonus
@@ -411,42 +399,15 @@ export function buildBuildingTooltip(id, data) {
 
     tooltip.element.appendChild(effect);
 
+    const costDivider = document.createElement("div");
+    costDivider.className = "tt-divider";
+    tooltip.element.appendChild(costDivider);
+
     const costs = document.createElement("div");
     costs.className = "tooltip-costs";
 
     tooltipLive.id = id;
-    tooltipLive.rows = [];
-
-    for (const [resource, amount] of Object.entries(cost)) {
-        const row = document.createElement("div");
-        row.className = "cost-row";
-
-        const label = document.createElement("span");
-        label.className = "cost-label";
-        label.textContent = RESOURCES[resource].name + ":";
-
-        const value = document.createElement("span");
-        value.className = "cost-value";
-
-        const haveEl = document.createElement("span");
-        haveEl.className = "cost-have";
-        const slashEl = document.createElement("span");
-        slashEl.className = "cost-slash";
-        slashEl.textContent = "/";
-        const needEl = document.createElement("span");
-        needEl.className = "cost-need";
-
-        value.append(haveEl, slashEl, needEl);
-
-        const timeEl = document.createElement("span");
-        timeEl.className = "cost-time";
-        timeEl.hidden = true;
-
-        row.append(label, timeEl, value);
-        costs.appendChild(row);
-
-        tooltipLive.rows.push({ resource, amount, value, haveEl, needEl, slashEl, timeEl });
-    }
+    tooltipLive.rows = createCostRows(costs, cost);
 
     tooltip.element.appendChild(costs);
     refreshBuildingTooltip();
@@ -468,28 +429,11 @@ export function refreshBuildingTooltip() {
         );
     }
 
-    for (const row of tooltipLive.rows) {
-        row.amount = cost[row.resource] || 0;
-        const have = getResource(row.resource);
-        const enough = have >= row.amount;
-        row.haveEl.textContent = enough ? formatCount(row.amount) : formatCount(have);
-        row.needEl.textContent = enough ? "" : formatCount(row.amount);
-        row.slashEl.hidden = enough;
-        row.value.classList.toggle("cost-missing", !enough);
-
-        const missing = row.amount - have;
-        const net = getNetRate(row.resource);
-        if (!enough && missing > 0 && net > 0) {
-            row.timeEl.textContent = formatDuration(missing / net);
-            row.timeEl.hidden = false;
-        } else {
-            row.timeEl.hidden = true;
-        }
-    }
+    refreshCostRows(tooltipLive.rows, cost, getResource, getNetRate);
 }
 
 function createPackCard(id, data) {
-    const resourceId = data.targetResource || "power";
+    const resourceId = Object.keys(data.baseCost)[0];
 
     const card = document.createElement("div");
     card.className = "upgrade-card resource-" + resourceId;
@@ -572,6 +516,12 @@ function createPackCard(id, data) {
             effectText = "Bina maliyeti: −%" + Math.round(count * data.costDiscountPerLevel * 100);
         } else if (data.productBonusPerLevel) {
             effectText = "Ürün üretimi: +%" + Math.round(count * data.productBonusPerLevel * 100);
+        } else if (data.workerBonusPerLevel) {
+            effectText = "İşçi üretimi: +%" + Math.round(count * data.workerBonusPerLevel * 100);
+        } else if (data.storageBonusPerLevel) {
+            effectText = "Kapasite: +%" + Math.round(count * data.storageBonusPerLevel * 100);
+        } else if (data.tradeBonusPerLevel) {
+            effectText = "Ticaret: +%" + Math.round(count * data.tradeBonusPerLevel * 100);
         }
         effect.textContent = effectText;
 
@@ -594,55 +544,20 @@ function createPackCard(id, data) {
     return card;
 }
 
-function buildingNameText(name) {
+function buildingNameText() {
     const span = document.createElement("span");
     span.className = "building-name-text";
-    span.textContent = name;
     return span;
 }
 
-function bonusEmoji(type) {
-    if (type === "costBonus") return "🛠️";
-    if (type === "workerBonus") return "⚙️";
-    if (type === "storageBonus") return "📦";
-    if (type === "productBonus") return "🔨";
-    if (type === "tradeBonus") return "🛒";
-    return "";
+function bonusEmoji(data) {
+    const target = RESOURCES[data.targetResource];
+    return target ? target.emoji : "";
 }
 
 function getBonusEffectInfo(data) {
-    if (data.type === "costBonus") {
-        return {
-            label: "Bina maliyeti indirimi:",
-            value: "%" + Math.round(data.costDiscountPerLevel * 100) + " / seviye",
-        };
-    }
-    if (data.type === "workerBonus") {
-        return {
-            label: "İşçi verimliliği:",
-            value: "%" + Math.round(data.workerBonusPerLevel * 100) + " / seviye",
-        };
-    }
-    if (data.type === "storageBonus") {
-        return {
-            label: "Kapasite bonusu:",
-            value: "%" + Math.round(data.storageBonusPerLevel * 100) + " / seviye",
-        };
-    }
-    if (data.type === "productBonus") {
-        return {
-            label: "İşlenmiş/craft üretimi:",
-            value: "%" + Math.round(data.productBonusPerLevel * 100) + " / seviye",
-        };
-    }
-    if (data.type === "tradeBonus") {
-        return {
-            label: "Tüccar sıklığı ve teklif boyutu:",
-            value: "+%0" + Math.round(data.tradeBonusPerLevel * 100) + " / seviye",
-        };
-    }
     return {
         label: "Üretim bonusu:",
-        value: "%" + Math.round(data.bonusPerLevel * 100),
+        value: "%" + Math.round(data.bonusPerLevel * 100) + " / seviye",
     };
 }
