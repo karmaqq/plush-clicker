@@ -72,14 +72,9 @@ const state = {
     migrants: 0,
     satisfaction: 50,
     migrationTimer: 0,
-    arrivalTimer: 0,
+    migrantQueue: [],
     deficiency: 0,
     ilacOk: false,
-  },
-  prestige: {
-    paragon: 0,
-    karma: 0,
-    resets: 0,
   },
   season: {
     id: "ilkbahar",
@@ -149,7 +144,6 @@ function loadState() {
       loadNumericMap(state.packs, saved.packs, true);
       loadIndustry(saved.industry);
       loadPopulation(saved.population);
-      loadPrestige(saved.prestige);
       loadSeason(saved.season);
       loadTrade(saved.trade);
       loadSettings(saved.settings);
@@ -206,8 +200,20 @@ function loadPopulation(saved) {
   if (!saved || typeof saved !== "object") return;
   if (Number.isFinite(saved.current))
     state.population.current = Math.max(0, saved.current);
-  if (Number.isFinite(saved.migrants))
-    state.population.migrants = Math.max(0, Math.floor(saved.migrants));
+  if (Array.isArray(saved.migrantQueue)) {
+    state.population.migrantQueue = saved.migrantQueue
+      .filter((m) => m && Number.isFinite(m.remaining))
+      .map((m) => ({ remaining: Math.max(0, m.remaining) }));
+  } else if (Number.isFinite(saved.migrants) && saved.migrants > 0) {
+    const remaining = Number.isFinite(saved.arrivalTimer)
+      ? Math.max(0, saved.arrivalTimer)
+      : ARRIVAL_DURATION;
+    state.population.migrantQueue = Array.from(
+      { length: Math.floor(saved.migrants) },
+      () => ({ remaining }),
+    );
+  }
+  state.population.migrants = state.population.migrantQueue.length;
   if (Number.isFinite(saved.satisfaction)) {
     state.population.satisfaction = Math.min(
       100,
@@ -216,8 +222,6 @@ function loadPopulation(saved) {
   }
   if (Number.isFinite(saved.migrationTimer))
     state.population.migrationTimer = saved.migrationTimer;
-  if (Number.isFinite(saved.arrivalTimer))
-    state.population.arrivalTimer = saved.arrivalTimer;
 }
 
 function loadSettings(saved) {
@@ -229,16 +233,6 @@ function loadSettings(saved) {
       }
     }
   }
-}
-
-function loadPrestige(saved) {
-  if (!saved || typeof saved !== "object") return;
-  if (Number.isFinite(saved.paragon))
-    state.prestige.paragon = Math.max(0, Math.floor(saved.paragon));
-  if (Number.isFinite(saved.karma))
-    state.prestige.karma = Math.max(0, Math.floor(saved.karma));
-  if (Number.isFinite(saved.resets))
-    state.prestige.resets = Math.max(0, Math.floor(saved.resets));
 }
 
 function loadSeason(saved) {
@@ -408,11 +402,7 @@ export function getOutputMultiplier(resource) {
     }
   }
 
-  return 1 + sum + getPrestigeProductionBonus();
-}
-
-export function getPrestigeProductionBonus() {
-  return state.prestige.paragon * 0.005;
+  return 1 + sum;
 }
 
 export function getResourceCapacity(resource) {
@@ -668,18 +658,6 @@ export function getPackCost(id) {
   }
 
   return cost;
-}
-
-export function getParagon() {
-  return state.prestige.paragon;
-}
-
-export function getKarma() {
-  return state.prestige.karma;
-}
-
-export function getPrestigeResets() {
-  return state.prestige.resets;
 }
 
 export function getTradeInterval() {
@@ -945,15 +923,8 @@ export function getPopulationMigrants() {
   return state.population.migrants;
 }
 
-function arriveMigrant() {
-  if (state.population.migrants <= 0) return;
-
-  const capacity = getPopulationCapacity();
-  state.population.migrants--;
-  if (state.population.current + state.population.migrants <= capacity) {
-    state.population.current++;
-  }
-  emit();
+export function getMigrantQueue() {
+  return state.population.migrantQueue;
 }
 
 function getInfoProduction() {
@@ -1298,7 +1269,6 @@ function computeHappinessBreakdown() {
   let target = 0;
   for (const item of items) target += item.delta;
   target = Math.max(0, Math.min(100, target));
-  target = Math.min(100, target + getKarma() * 0.25);
 
   return { items, target };
 }
@@ -1339,35 +1309,34 @@ function applyPopulationLifecycle() {
     }
   }
 
+  const queue = state.population.migrantQueue;
   const capacity = getPopulationCapacity();
   const hasFoodProduction =
     getTotalProduction("su") > 0 || getTotalProduction("yiyecek") > 0;
-  if (
-    state.population.current + state.population.migrants < capacity &&
-    hasFoodProduction
-  ) {
+  if (state.population.current + queue.length < capacity && hasFoodProduction) {
     state.population.migrationTimer -= 1 / TICKS_PER_SECOND;
     if (state.population.migrationTimer <= 0) {
-      state.population.migrants++;
+      queue.push({ remaining: ARRIVAL_DURATION });
+      state.population.migrants = queue.length;
       state.population.migrationTimer = getMigrationInterval();
-      if (state.population.arrivalTimer <= 0) {
-        state.population.arrivalTimer = ARRIVAL_DURATION;
-      }
       changed = true;
     }
   } else {
     state.population.migrationTimer = 0;
   }
 
-  if (state.population.migrants > 0) {
-    state.population.arrivalTimer -= 1 / TICKS_PER_SECOND;
-    if (state.population.arrivalTimer <= 0) {
-      arriveMigrant();
-      state.population.arrivalTimer = ARRIVAL_DURATION;
+  if (queue.length > 0) {
+    for (const migrant of queue) {
+      migrant.remaining -= 1 / TICKS_PER_SECOND;
+    }
+    while (queue.length > 0 && queue[0].remaining <= 0) {
+      queue.shift();
+      state.population.migrants = queue.length;
+      if (state.population.current + queue.length <= capacity) {
+        state.population.current++;
+      }
       changed = true;
     }
-  } else if (state.population.arrivalTimer > 0) {
-    state.population.arrivalTimer = 0;
   }
 
   return changed;
@@ -1419,15 +1388,6 @@ function autoSellSurplus() {
 }
 
 export function resetGame() {
-  const alive = getPopulationAlive();
-  const sat = state.population.satisfaction;
-
-  if (alive > 0) {
-    state.prestige.paragon += Math.floor(alive / 10);
-    state.prestige.karma += Math.floor((alive * sat) / 1000);
-    state.prestige.resets++;
-  }
-
   for (const id of Object.keys(state.resources)) {
     state.resources[id] = 0;
   }
@@ -1449,7 +1409,7 @@ export function resetGame() {
     migrants: 0,
     satisfaction: 50,
     migrationTimer: 0,
-    arrivalTimer: 0,
+    migrantQueue: [],
     deficiency: 0,
     ilacOk: false,
   };
@@ -1544,7 +1504,6 @@ function saveState() {
       packs: state.packs,
       industry: state.industry,
       population: state.population,
-      prestige: state.prestige,
       season: state.season,
       trade: state.trade,
       settings: state.settings,

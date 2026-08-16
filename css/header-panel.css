@@ -63,8 +63,7 @@
 
 .pop-tooltip,
 .happiness-tooltip,
-.season-tooltip,
-.prestige-tooltip {
+.season-tooltip {
     position: absolute;
     top: calc(100% + 0.375rem);
     z-index: 999;
@@ -103,18 +102,9 @@
     min-width: 12rem;
 }
 
-.prestige-tooltip {
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    min-width: 13rem;
-}
-
 .housing-chip,
 .happiness-chip,
-.season-chip,
-.prestige-chip {
+.season-chip {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -191,8 +181,7 @@
 }
 
 .happiness-title,
-.season-tooltip-title,
-.prestige-tooltip-title {
+.season-tooltip-title {
     font-family: var(--font-ui);
     font-size: 0.85rem;
     font-weight: 700;
@@ -228,8 +217,7 @@
 
 .pop-tooltip-row,
 .happiness-row,
-.season-row,
-.prestige-tooltip-row {
+.season-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -248,8 +236,7 @@
     font-size: 0.78rem;
 }
 
-.season-row,
-.prestige-tooltip-row {
+.season-row {
     gap: 1.25rem;
     font-size: 0.78rem;
 }
@@ -276,8 +263,7 @@
     color: #ff8a8a;
 }
 
-.happiness-info,
-.prestige-info {
+.happiness-info {
     font-family: var(--font-ui);
     font-size: 0.72rem;
     font-weight: 600;
@@ -290,17 +276,4 @@
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
-}
-
-.prestige-chip.empty .prestige-pg,
-.prestige-chip.empty .prestige-karma {
-    opacity: 0.4;
-}
-
-.prestige-pg {
-    color: #e8b46a;
-}
-
-.prestige-karma {
-    color: #7fb2e0;
 }

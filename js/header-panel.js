@@ -10,6 +10,7 @@ import {
     getPopulationCurrent,
     getPopulationCapacity,
     getPopulationMigrants,
+    getMigrantQueue,
     getPopulationSatisfaction,
     getPopulationDeficiency,
     getHappinessBreakdown,
@@ -20,10 +21,6 @@ import {
     getArrivalDuration,
     getSeason,
     getSeasonTimer,
-    getParagon,
-    getKarma,
-    getPrestigeResets,
-    getPrestigeProductionBonus,
 } from "./game-state.js";
 import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingTooltip } from "./left-panel.js";
 
@@ -31,8 +28,7 @@ export function createHeaderPanel() {
     const panel = document.createElement("section");
     panel.className = "panel header-panel";
 
-    const strip = document.createElement("div");
-    strip.className = "migration-strip";
+    const strip = createMigrationStrip();
 
     const popBlock = createPopBlock();
 
@@ -41,7 +37,6 @@ export function createHeaderPanel() {
 
     const happinessChip = createHappinessChip();
     const seasonChip = createSeasonChip();
-    const prestigeChip = createPrestigeChip();
     const goldStat = createStat("🪙");
 
     const resetBtn = document.createElement("button");
@@ -61,12 +56,11 @@ export function createHeaderPanel() {
         createHousingChip("ev"),
         happinessChip.el,
         seasonChip.el,
-        prestigeChip.el,
         goldStat.el,
         resetBtn
     );
 
-    panel.append(strip, right);
+    panel.append(strip.el, right);
 
     function update() {
         const alive = Math.floor(getPopulationCurrent());
@@ -78,25 +72,9 @@ export function createHeaderPanel() {
 
         happinessChip.update();
         seasonChip.update();
-        prestigeChip.update();
 
         goldStat.value.textContent = formatCount(getAltin());
-
-        if (capacity === 0) {
-            strip.querySelectorAll(".migrant").forEach((el) => el.remove());
-        }
     }
-
-    setInterval(() => {
-        const migrants = getPopulationMigrants();
-        const onStrip = strip.querySelectorAll(".migrant").length;
-
-        if (migrants > onStrip) {
-            spawnMigrant(strip);
-        } else if (migrants < onStrip) {
-            strip.querySelectorAll(".migrant").forEach((el) => el.remove());
-        }
-    }, 2500);
 
     onChange(update);
     update();
@@ -286,10 +264,10 @@ function createSeasonChip() {
         while (list.firstChild) list.removeChild(list.firstChild);
 
         const rows = [
-            ["🌾 Yiyecek", season.modifiers.yiyecek],
             ["💧 Su", season.modifiers.su],
+            ["🌾 Yiyecek", season.modifiers.yiyecek],
             ["🪵 Odun", season.modifiers.odun],
-            ["💎 Mineral", season.modifiers.maden],
+            ["💎 Maden", season.modifiers.maden],
         ];
 
         for (const [label, value] of rows) {
@@ -313,107 +291,6 @@ function createSeasonChip() {
     function update() {
         const season = getSeason();
         icon.textContent = season.emoji;
-
-        if (active) refresh();
-    }
-
-    onChange(update);
-    update();
-
-    return { el, update };
-}
-
-function createPrestigeChip() {
-    const el = document.createElement("div");
-    el.className = "prestige-chip";
-    el.tabIndex = 0;
-
-    const paragon = document.createElement("span");
-    paragon.className = "prestige-pg";
-    const karma = document.createElement("span");
-    karma.className = "prestige-karma";
-
-    el.append(paragon, karma);
-
-    const tooltip = document.createElement("div");
-    tooltip.className = "prestige-tooltip";
-    tooltip.hidden = true;
-
-    const title = document.createElement("div");
-    title.className = "prestige-tooltip-title";
-    title.textContent = "⛩️ Prestij";
-
-    const rows = {};
-
-    const rowDefs = [
-        ["Paragon", "pg", "#e8b46a"],
-        ["Karma", "karma", "#7fb2e0"],
-        ["Sıfırlama", "resets", "#8895a3"],
-    ];
-    for (const [label, key, color] of rowDefs) {
-        const row = document.createElement("div");
-        row.className = "prestige-tooltip-row";
-        const labelEl = document.createElement("span");
-        labelEl.className = "tt-label";
-        labelEl.textContent = label;
-        const valueEl = document.createElement("span");
-        valueEl.className = "tt-value";
-        valueEl.style.color = color;
-        row.append(labelEl, valueEl);
-        rows[key] = valueEl;
-        tooltip.appendChild(row);
-    }
-
-    const info = document.createElement("div");
-    info.className = "prestige-info";
-    tooltip.appendChild(info);
-
-    el.appendChild(tooltip);
-
-    let active = false;
-
-    el.addEventListener("mouseenter", () => {
-        active = true;
-        refresh();
-    });
-    el.addEventListener("mouseleave", () => {
-        active = false;
-        tooltip.hidden = true;
-    });
-    el.addEventListener("focus", () => {
-        active = true;
-        refresh();
-    });
-    el.addEventListener("blur", () => {
-        active = false;
-        tooltip.hidden = true;
-    });
-
-    function refresh() {
-        const pg = getParagon();
-        const km = getKarma();
-
-        rows.pg.textContent = String(pg);
-        rows.karma.textContent = String(km);
-        rows.resets.textContent = String(getPrestigeResets());
-
-        info.textContent =
-            "⛩️ Paragon: +%" +
-            (getPrestigeProductionBonus() * 100).toFixed(1) +
-            " üretim  ·  🌟 Karma: +%" +
-            (km * 0.25).toFixed(1) +
-            " mutluluk";
-
-        tooltip.hidden = false;
-    }
-
-    function update() {
-        const pg = getParagon();
-        const km = getKarma();
-
-        el.classList.toggle("empty", pg === 0 && km === 0);
-        paragon.textContent = "⛩️ " + formatCount(pg);
-        karma.textContent = "🌟 " + formatCount(km);
 
         if (active) refresh();
     }
@@ -547,7 +424,34 @@ function fillHappinessList(sec, items) {
     sec.section.hidden = items.length === 0;
 }
 
-function spawnMigrant(strip) {
+function createMigrationStrip() {
+    const el = document.createElement("div");
+    el.className = "migration-strip";
+
+    function sync() {
+        const queue = getMigrantQueue();
+        const els = el.querySelectorAll(".migrant");
+        const diff = queue.length - els.length;
+
+        if (diff > 0) {
+            for (let i = els.length; i < queue.length; i++) {
+                spawnMigrant(el, queue[i].remaining);
+            }
+        } else if (diff < 0) {
+            const removeCount = -diff;
+            for (let i = 0; i < removeCount; i++) {
+                els[i].remove();
+            }
+        }
+    }
+
+    onChange(sync);
+    sync();
+
+    return { el, sync };
+}
+
+function spawnMigrant(strip, remaining) {
     const el = document.createElement("span");
     el.className = "migrant";
     el.textContent = "🚶";
@@ -559,20 +463,17 @@ function spawnMigrant(strip) {
     const dist = Math.max(strip.clientWidth - startX, 1);
     const flipped = " scaleX(-1)";
 
+    const duration = Math.max(
+        0.1,
+        Number.isFinite(remaining) ? remaining : getArrivalDuration(),
+    );
+
     el.style.transition = "none";
     el.style.transform = "translateY(-50%)" + flipped;
     void el.offsetWidth;
 
-    el.style.transition = "transform 30s linear";
+    el.style.transition = "transform " + duration + "s linear";
     el.style.transform = "translate(" + dist + "px, -50%)" + flipped;
 
-    let arrived = false;
-    const arrive = () => {
-        if (arrived) return;
-        arrived = true;
-        el.remove();
-    };
-
-    el.addEventListener("transitionend", arrive, { once: true });
-    setTimeout(arrive, 31000);
+    setTimeout(() => el.remove(), (duration + 0.5) * 1000);
 }
