@@ -1,3 +1,7 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                        SOL PANEL STİLLERİ                                 */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
 .left-panel {
     align-items: stretch;
 }
@@ -19,7 +23,7 @@
 .building-card {
     padding: 0.5rem 0.625rem;
     border-radius: 0.5rem;
-    border: 1px solid #3a4553;
+    border: 1.5px solid #3a4553;
     background: linear-gradient(145deg, #2a323d, #1d232b);
     display: flex;
     align-items: center;
@@ -129,7 +133,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     flex: none;
-    padding-right: 3rem;
+    padding-right: 3.5rem;
     font-size: var(--font-prod-size);
     font-weight: var(--font-prod-weight);
     color: var(--res, #ffd166);
@@ -182,4 +186,16 @@
     50% {
         opacity: 0.35;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                     KONUT KARTI STİLLERİ                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.building-card.building-housing {
+    border-color: #4a6a4a;
+    background: linear-gradient(145deg, #25362b, #16241a);
+}
+
+.left-panel .upgrade-list {
+    width: 100%;
 }

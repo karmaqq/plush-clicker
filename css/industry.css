@@ -1,9 +1,11 @@
-/* Sanayi kartı stilleri (sağ panel) */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                         SANAYİ STİLLERİ                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
 .industry-card {
     padding: 0.625rem;
     border-radius: 0.5rem;
-    border: 1px solid #3a4553;
+    border: 1.5px solid #3a4553;
     background: linear-gradient(145deg, #2a323d, #1d232b);
     display: flex;
     flex-direction: column;
@@ -27,21 +29,10 @@
 
 .industry-card.locked .lock-overlay {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    text-align: center;
-    padding: 0.375rem 0.5rem;
 }
 
 .industry-card.locked .lock-icon {
     font-size: clamp(1.4rem, 2.8vw, 1.9rem);
-}
-
-.industry-card.locked .lock-info {
-    flex: none;
-    min-width: 0;
 }
 
 .industry-card.locked .lock-name {
@@ -87,7 +78,8 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.78rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.85rem, 1.6vw, 1rem);
 }
 
 .industry-flow-label {
@@ -98,6 +90,7 @@
 .industry-flow-value {
     font-weight: 700;
     font-family: var(--font-ui);
+    font-variant-numeric: tabular-nums;
 }
 
 .input-value {
@@ -137,7 +130,7 @@
     line-height: 1.4;
     color: #d7dde4;
     background: #2b333d;
-    border: 1px solid #3a4553;
+    border: 1.5px solid #3a4553;
     border-radius: 0.5rem;
     padding: 0.15rem 0.5rem;
     cursor: pointer;
@@ -178,7 +171,7 @@
     line-height: 1;
     color: #d7dde4;
     background: #2b333d;
-    border: 1px solid #3a4553;
+    border: 1.5px solid #3a4553;
     border-radius: 0.5rem;
     cursor: pointer;
     transition: background 0.12s ease;

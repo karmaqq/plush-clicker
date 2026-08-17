@@ -1,8 +1,13 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      MERKEZ PANEL STİLLERİ                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
 .center-panel {
     position: relative;
     text-align: center;
     display: flex;
     flex-direction: column;
+    gap: 0.5rem;
     overflow: hidden;
 }
 
@@ -11,9 +16,8 @@
     justify-content: center;
     align-items: center;
     flex: none;
-    padding: 0.25rem 0 0.375rem;
+    padding: 0 0 0.5rem;
     border-bottom: 1px solid #2e3742;
-    margin-bottom: 0.5rem;
 }
 
 .power-value {
@@ -59,10 +63,16 @@
 
 .resource-grid.product-grid {
     grid-template-areas: none;
+    border-top: 1.5px solid #2e3742;
+    padding-top: 1rem;
+}
+
+.resource-grid:not(.product-grid) {
+    padding-bottom: 1rem;
 }
 
 .resource-grid + .resource-grid {
-    margin-top: 1rem;
+    margin-top: 0;
 }
 
 .resource-tile {
@@ -75,7 +85,7 @@
     overflow: hidden;
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
-    border: 1px solid #3a4553;
+    border: 2px solid #3a4553;
     background: linear-gradient(145deg, #2a323d, #1d232b);
     text-align: left;
 }
@@ -169,7 +179,7 @@
     font-weight: 700;
     color: #d7dde4;
     background: #2b333d;
-    border: 1px solid #3a4553;
+    border: 1.5px solid #3a4553;
     border-radius: 0.375rem;
     padding: 0.2rem 0.45rem;
     cursor: pointer;
@@ -189,4 +199,53 @@
     color: #9fd88f;
     border-color: #2f5a36;
     background: #1e2f24;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       TEKLİ SATIŞ BUTONU                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.sell-one-btn {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ffd166;
+    background: #2b333d;
+    border: 1px solid #5a4a2e;
+    border-radius: 0.375rem;
+    padding: 0.2rem 0.45rem;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+    position: absolute;
+    right: 2.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.sell-one-btn:hover {
+    background: #3a3a2a;
+    border-color: #ffd166;
+}
+
+.sell-one-btn.sold-flash {
+    background: #3a5a2a;
+    border-color: #9fd88f;
+    color: #9fd88f;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       NEGATİF ÜRETİM UYARISI                               */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes pulse-red {
+    0%, 100% { border-color: rgba(255, 75, 75, 0.15); }
+    50% { border-color: rgba(255, 75, 75, 0.5); }
+}
+
+.resource-tile.net-negative {
+    animation: pulse-red 2.6s ease-in-out infinite;
+}
+
+.resource-tile.net-negative .resource-bar-production {
+    color: #ff5a5a;
 }

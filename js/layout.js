@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          DÜZEN OLUŞTURUCU                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Uygulama İskeleti Oluşturucu ─────────────────── */
 export function createLayout({ header, left, center, right }) {
     const shell = document.createElement("div");
     shell.className = "app-shell";

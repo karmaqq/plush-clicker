@@ -1,6 +1,11 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          ARAÇ İPUCU                                        */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
 import { RESOURCES } from "./resources.js";
 import { formatCount, formatDuration } from "./utils.js";
 
+/* ─────────────────── Tooltip Oluşturucu ─────────────────── */
 export function createTooltip(extraClass) {
     const element = document.createElement("div");
     element.className = "tooltip" + (extraClass ? " " + extraClass : "");
@@ -18,6 +23,7 @@ export function createTooltip(extraClass) {
     };
 }
 
+/* ─────────────────── Maliyet Satırları Oluşturucu ─────────────────── */
 export function createCostRows(container, cost) {
     const rows = [];
     const costs = document.createElement("div");
@@ -58,6 +64,7 @@ export function createCostRows(container, cost) {
     return rows;
 }
 
+/* ─────────────────── Maliyet Satırları Güncelleyici ─────────────────── */
 export function refreshCostRows(rows, cost, getResource, getNetRate) {
     for (const row of rows) {
         row.amount = cost[row.resource] || 0;

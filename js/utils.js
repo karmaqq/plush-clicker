@@ -1,11 +1,17 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          YARDIMCI FONKSİYONLAR                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
 import { RESOURCES } from "./resources.js";
 
+/* ─────────────────── Kalın Metin Oluşturucu ─────────────────── */
 export function strong(text) {
     const s = document.createElement("strong");
     s.textContent = text;
     return s;
 }
 
+/* ─────────────────── Rozet Oluşturucu ─────────────────── */
 export function badge(value) {
     const s = document.createElement("span");
     s.className = "badge tt-badge badge-tier-" + getBadgeTier(value);
@@ -13,6 +19,7 @@ export function badge(value) {
     return s;
 }
 
+/* ─────────────────── Kaynak Sınıfı Sıfırlayıcı ─────────────────── */
 export function resetResourceClass(tooltipElement, id) {
     for (const r of Object.keys(RESOURCES)) {
         tooltipElement.classList.remove("resource-" + r);
@@ -20,6 +27,7 @@ export function resetResourceClass(tooltipElement, id) {
     tooltipElement.classList.add("resource-" + id);
 }
 
+/* ─────────────────── Rozet Kategorisi Hesaplayıcı ─────────────────── */
 export function getBadgeTier(value) {
     if (value >= 200) return 5;
     if (value >= 100) return 4;
@@ -29,10 +37,12 @@ export function getBadgeTier(value) {
     return 0;
 }
 
+/* ─────────────────── Bütçe Kontrolü ─────────────────── */
 export function canAfford(cost, getResource) {
     return Object.entries(cost).every(([resource, amount]) => getResource(resource) >= amount);
 }
 
+/* ─────────────────── Sayı Biçimleyici ─────────────────── */
 export function formatNumber(value) {
     return value.toLocaleString("tr-TR", {
         minimumFractionDigits: 2,
@@ -40,10 +50,12 @@ export function formatNumber(value) {
     });
 }
 
+/* ─────────────────── Tam Sayı Biçimleyici ─────────────────── */
 export function formatCount(value) {
     return Math.floor(value).toLocaleString("tr-TR");
 }
 
+/* ─────────────────── Süre Biçimleyici ─────────────────── */
 export function formatDuration(seconds) {
     if (!Number.isFinite(seconds) || seconds < 1) return "0s";
     const s = Math.floor(seconds);
@@ -63,6 +75,7 @@ export function formatDuration(seconds) {
     return rem > 0 ? d + "g" + rem + "h" : d + "g";
 }
 
+/* ─────────────────── Sayı Sayaç Bileşeni ─────────────────── */
 export function createNumberCounter() {
     const span = document.createElement("span");
     span.className = "num-display";
@@ -91,6 +104,7 @@ export function createNumberCounter() {
     return { span, update };
 }
 
+/* ─────────────────── Sarsılma Tetikleyici ─────────────────── */
 export function triggerShake(el) {
     el.classList.remove("shake");
     void el.offsetWidth;
@@ -98,6 +112,7 @@ export function triggerShake(el) {
     el.addEventListener("animationend", () => el.classList.remove("shake"), { once: true });
 }
 
+/* ─────────────────── Kilit Örtüsü Oluşturucu ─────────────────── */
 export function createLockOverlay() {
     const element = document.createElement("div");
     element.className = "lock-overlay";
