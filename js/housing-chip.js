@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import { formatCount, triggerShake, canAfford } from "./utils.js";
-import { BUILDINGS_DATA } from "./buildings.js";
+import { HOUSING_DATA } from "./buildings.js";
 import {
   getResource,
   getBuildingCount,
@@ -21,7 +21,7 @@ import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingToolti
 /* ─────────────────── Konut Çipi Bileşeni ─────────────────── */
 
 export function createHousingChip(id) {
-  const data = BUILDINGS_DATA[id];
+  const data = HOUSING_DATA[id];
 
   const el = document.createElement("button");
   el.type = "button";

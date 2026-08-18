@@ -5,7 +5,6 @@
 import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL, INDUSTRY_MAX_LEVEL, TRADE_PRICES, ARRIVAL_DURATION, STORAGE_KEY } from "./config.js";
 import { state, freshIndustryEntry, listeners } from "./state.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
 

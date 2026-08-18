@@ -5,12 +5,10 @@
 import { triggerShake } from "./utils.js";
 import { BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
-import { createBuildingCard, tooltip as buildingTooltip, buildBuildingTooltip, refreshBuildingTooltip } from "./building-card.js";
+import { createBuildingCard } from "./building-card.js";
 import { createPackCard } from "./pack-card.js";
 import { hasInfoProduction as hasInfoProd } from "./production.js";
 import { onChange } from "./state.js";
-
-export { buildingTooltip, buildBuildingTooltip, refreshBuildingTooltip };
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                       SOL PANEL OLUŞTURUCU                                */
@@ -41,8 +39,6 @@ export function createLeftPanel() {
   buildingGrid.className = "building-list";
 
   for (const [id, data] of Object.entries(BUILDINGS_DATA)) {
-    if (data.type === "housing") continue;
-    if (id === "depo" || id === "ambar") continue;
     buildingGrid.appendChild(createBuildingCard(id, data));
   }
 

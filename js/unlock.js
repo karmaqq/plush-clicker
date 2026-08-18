@@ -5,7 +5,7 @@
 import { state, getResource, getBuildingCount, getPackCount } from "./state.js";
 import { INDUSTRY_MAX_LEVEL } from "./config.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA } from "./buildings.js";
+import { ALL_BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import { canAfford } from "./utils.js";
@@ -23,7 +23,7 @@ export const UNLOCK_STRATEGIES = {
     progress: (unlock) =>
       Math.min(getBuildingCount(unlock.id), unlock.count) + "/" + unlock.count,
     isNear: (unlock) => getBuildingCount(unlock.id) > 0,
-    target: (unlock) => BUILDINGS_DATA[unlock.id].name,
+    target: (unlock) => ALL_BUILDINGS_DATA[unlock.id].name,
   },
   pack: {
     isMet: (unlock) => getPackCount(unlock.id) >= unlock.level,
@@ -144,7 +144,7 @@ export function fillUnlockDesc(lockDesc, data) {
 /* ─────────────────── Bina Maliyeti Hesaplayıcı ─────────────────── */
 
 export function getBuildingCost(id) {
-  const building = BUILDINGS_DATA[id];
+  const building = ALL_BUILDINGS_DATA[id];
   const multiplier = Math.pow(building.costMultiplier, getBuildingCount(id));
   const cost = {};
 
@@ -182,7 +182,7 @@ function pay(cost) {
 /* ─────────────────── Bina Satın Alma İşlemcisi ─────────────────── */
 
 export function buyBuilding(id) {
-  const building = BUILDINGS_DATA[id];
+  const building = ALL_BUILDINGS_DATA[id];
   if (!getUnlock(building)) return false;
 
   const cost = getBuildingCost(id);

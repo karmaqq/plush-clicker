@@ -2,6 +2,8 @@
 /*                          BİNA VERİLERİ                                     */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ─────────────────── Üretim & Bonus Binaları ─────────────────── */
+
 export const BUILDINGS_DATA = {
     fountain: {
         name: "Güç Ocağı",
@@ -20,21 +22,6 @@ export const BUILDINGS_DATA = {
         targetResource: "power",
         bonusPerLevel: 0.02,
         unlock: { type: "building", id: "fountain", count: 5 },
-    },
-    depo: {
-        name: "Depo",
-        type: "storage",
-        baseCost: { power: 90, su: 20 },
-        costMultiplier: 1.85,
-        unlock: { type: "building", id: "farm", count: 3 },
-    },
-    ambar: {
-        name: "Ambar",
-        type: "capacityBonus",
-        baseCost: { power: 210, su: 55, yiyecek: 30, odun: 15 },
-        costMultiplier: 1.20,
-        capacityBonusPerLevel: 0.05,
-        unlock: { type: "building", id: "farm", count: 6 },
     },
     well: {
         name: "Kuyu",
@@ -227,6 +214,24 @@ export const BUILDINGS_DATA = {
         outputResource: "kultur",
         unlock: { type: "building", id: "silkWorkshop", count: 3 },
     },
+    amphitheatre: {
+        name: "Amfitiyatro",
+        type: "bonus",
+        baseCost: { power: 50000, ipek: 5, tas: 100 },
+        costMultiplier: 1.20,
+        targetResource: "kultur",
+        bonusPerLevel: 0.02,
+        unlock: { type: "building", id: "theatre", count: 1 },
+    },
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      ÖZEL BİNA VERİLERİ                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Nüfus Binaları ─────────────────── */
+
+export const HOUSING_DATA = {
     baraka: {
         name: "Baraka",
         type: "housing",
@@ -249,13 +254,32 @@ export const BUILDINGS_DATA = {
             ],
         },
     },
-    amphitheatre: {
-        name: "Amfitiyatro",
-        type: "bonus",
-        baseCost: { power: 50000, ipek: 5, tas: 100 },
-        costMultiplier: 1.20,
-        targetResource: "kultur",
-        bonusPerLevel: 0.02,
-        unlock: { type: "building", id: "theatre", count: 1 },
+};
+
+/* ─────────────────── Kapasite Binaları ─────────────────── */
+
+export const STORAGE_DATA = {
+    depo: {
+        name: "Depo",
+        type: "storage",
+        baseCost: { power: 90, su: 20 },
+        costMultiplier: 1.85,
+        unlock: { type: "building", id: "farm", count: 3 },
     },
+    ambar: {
+        name: "Ambar",
+        type: "capacityBonus",
+        baseCost: { power: 210, su: 55, yiyecek: 30, odun: 15 },
+        costMultiplier: 1.20,
+        capacityBonusPerLevel: 0.05,
+        unlock: { type: "building", id: "farm", count: 6 },
+    },
+};
+
+/* ─────────────────── Tüm Binalar (Dahili Kullanım) ─────────────────── */
+
+export const ALL_BUILDINGS_DATA = {
+    ...BUILDINGS_DATA,
+    ...HOUSING_DATA,
+    ...STORAGE_DATA,
 };

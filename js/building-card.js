@@ -13,7 +13,7 @@ import {
   resetResourceClass,
 } from "./utils.js";
 import { createTooltip, createCostRows, refreshCostRows } from "./tooltip.js";
-import { BUILDINGS_DATA } from "./buildings.js";
+import { BUILDINGS_DATA, ALL_BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { RESOURCES } from "./resources.js";
 import {
@@ -410,7 +410,7 @@ export function refreshBuildingTooltip() {
   if (tooltipLive.id == null) return;
 
   const id = tooltipLive.id;
-  const data = BUILDINGS_DATA[id];
+  const data = ALL_BUILDINGS_DATA[id];
   const cost = getBuildingCost(id);
 
   if (tooltipLive.effectValue) {

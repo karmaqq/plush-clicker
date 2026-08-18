@@ -14,7 +14,7 @@ import {
 } from "./config.js";
 import { state, getResource, getBuildingCount, getPackCount, getPopulationAlive } from "./state.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA } from "./buildings.js";
+import { BUILDINGS_DATA, STORAGE_DATA, ALL_BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
 
@@ -101,7 +101,7 @@ export function getResourceCapacity(resource) {
 
   const depoCount = getBuildingCount("depo");
   const ambarCount = getBuildingCount("ambar");
-  const ambarData = BUILDINGS_DATA.ambar || {};
+  const ambarData = STORAGE_DATA.ambar || {};
 
   const flat =
     depoCount * (meta.storagePerDepo || 0) +
@@ -124,7 +124,7 @@ export function getResourceCapacity(resource) {
 /* ─────────────────── Kapasite Bonusu Hesaplayıcı ─────────────────── */
 
 export function getCapacityBonus(id) {
-  const building = BUILDINGS_DATA[id];
+  const building = ALL_BUILDINGS_DATA[id];
   if (!building || building.type !== "capacityBonus") return 0;
 
   return getBuildingCount(id) * (building.capacityBonusPerLevel || 0) * 100;

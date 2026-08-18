@@ -16,7 +16,7 @@ import {
 } from "./config.js";
 import { state, getResource, getBuildingCount, getPopulationAlive } from "./state.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA } from "./buildings.js";
+import { BUILDINGS_DATA, HOUSING_DATA } from "./buildings.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import {
   getTotalProduction,
@@ -44,8 +44,8 @@ export function getPopulationCurrent() {
 export function getPopulationCapacity() {
   let capacity = 0;
 
-  for (const id of Object.keys(BUILDINGS_DATA)) {
-    const building = BUILDINGS_DATA[id];
+  for (const id of Object.keys(HOUSING_DATA)) {
+    const building = HOUSING_DATA[id];
     if (building.type === "housing") {
       capacity += getBuildingCount(id) * building.housingCapacity;
     }
@@ -158,9 +158,9 @@ function computeHappinessBreakdown() {
     met: wagesMet,
   });
 
-  const evCap = getBuildingCount("ev") * BUILDINGS_DATA.ev.housingCapacity;
+  const evCap = getBuildingCount("ev") * HOUSING_DATA.ev.housingCapacity;
   const barakaCap =
-    getBuildingCount("baraka") * BUILDINGS_DATA.baraka.housingCapacity;
+    getBuildingCount("baraka") * HOUSING_DATA.baraka.housingCapacity;
   const totalCap = evCap + barakaCap;
   const evRatio = totalCap > 0 ? evCap / totalCap : 0;
   const housingDelta = Math.round(evRatio * 8);

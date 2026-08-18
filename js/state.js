@@ -4,7 +4,7 @@
 
 import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL } from "./config.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA } from "./buildings.js";
+import { ALL_BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
 
@@ -42,7 +42,7 @@ for (const id of Object.keys(RESOURCES)) {
 }
 state.resources.power = 40;
 
-for (const id of Object.keys(BUILDINGS_DATA)) {
+for (const id of Object.keys(ALL_BUILDINGS_DATA)) {
   state.buildings[id] = 0;
 }
 

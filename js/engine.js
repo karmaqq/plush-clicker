@@ -19,7 +19,6 @@ import {
 } from "./state.js";
 import { scheduleSave } from "./persistence.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA } from "./buildings.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import {
   getTotalProduction,

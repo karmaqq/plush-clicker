@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import { formatCount } from "./utils.js";
-import { BUILDINGS_DATA } from "./buildings.js";
+import { STORAGE_DATA } from "./buildings.js";
 import { createBuildingCard } from "./building-card.js";
 import { createResourceTile } from "./resource-tile.js";
 import {
@@ -62,8 +62,8 @@ export function createCenterPanel() {
   storageSection.className = "storage-section";
   const storageRow = document.createElement("div");
   storageRow.className = "storage-row";
-  storageRow.appendChild(createBuildingCard("depo", BUILDINGS_DATA.depo));
-  storageRow.appendChild(createBuildingCard("ambar", BUILDINGS_DATA.ambar));
+  storageRow.appendChild(createBuildingCard("depo", STORAGE_DATA.depo));
+  storageRow.appendChild(createBuildingCard("ambar", STORAGE_DATA.ambar));
 
   storageSection.append(storageRow);
 
