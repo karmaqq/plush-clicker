@@ -112,6 +112,28 @@ export function triggerShake(el) {
     el.addEventListener("animationend", () => el.classList.remove("shake"), { once: true });
 }
 
+/* ─────────────────── Animasyonlu Sayı Sayaç ─────────────────── */
+export function animateCounter(from, to, duration, onUpdate) {
+    return new Promise((resolve) => {
+        if (from === to) { onUpdate(to); resolve(); return; }
+        const start = performance.now();
+        function tick(now) {
+            const elapsed = now - start;
+            const t = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const current = from + (to - from) * eased;
+            onUpdate(current);
+            if (t < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                onUpdate(to);
+                resolve();
+            }
+        }
+        requestAnimationFrame(tick);
+    });
+}
+
 /* ─────────────────── Kilit Örtüsü Oluşturucu ─────────────────── */
 export function createLockOverlay() {
     const element = document.createElement("div");

@@ -9,8 +9,7 @@ import {
   POP_YIYECEK_RATE,
   POP_EKMEK_RATE,
   POP_ILAC_RATE,
-  POP_GOLD_RATE,
-  LUXURY_RATES,
+  POP_KULTUR_RATE,
 } from "./config.js";
 import { state, getResource, getBuildingCount, getPackCount, getPopulationAlive } from "./state.js";
 import { RESOURCES } from "./resources.js";
@@ -50,8 +49,8 @@ export function getOutputMultiplier(resource) {
     }
     if (
       meta &&
-      meta.tier !== "raw" &&
-      meta.tier !== "currency" &&
+      meta.tier !== 0 &&
+      meta.tier !== -1 &&
       pack.productBonusPerLevel
     ) {
       sum += getPackCount(id) * pack.productBonusPerLevel;
@@ -250,10 +249,6 @@ export function getNetRate(resource) {
 export function getResourceConsumption(resource) {
   let total = 0;
 
-  if (resource === "power") {
-    total += getPowerMaintenance();
-  }
-
   for (const id of Object.keys(INDUSTRY_DATA)) {
     const industry = INDUSTRY_DATA[id];
     const entry = state.industry[id];
@@ -272,12 +267,7 @@ export function getResourceConsumption(resource) {
     if (resource === "yiyecek") total += pop * POP_YIYECEK_RATE;
     if (resource === "ekmek") total += pop * POP_EKMEK_RATE;
     if (resource === "ilac") total += pop * POP_ILAC_RATE;
-    if (resource === "sarap") total += pop * LUXURY_RATES.sarap;
-    if (resource === "konyak") total += pop * LUXURY_RATES.konyak;
-    if (resource === "kumas") total += pop * LUXURY_RATES.kumas;
-    if (resource === "mobilya") total += pop * LUXURY_RATES.mobilya;
-    if (resource === "mucevher") total += pop * LUXURY_RATES.mucevher;
-    if (resource === "heykel") total += pop * LUXURY_RATES.heykel;
+    if (resource === "kultur") total += pop * POP_KULTUR_RATE;
   }
 
   return total;
@@ -290,31 +280,7 @@ export function getResourceConsumption(resource) {
 /* ─────────────────── Net Güç Üretimi Hesaplayıcı ─────────────────── */
 
 export function getPowerProduction() {
-  return Math.max(0, getResourceProduction("power") - getPowerMaintenance());
-}
-
-/* ─────────────────── Güç Bakım Maliyeti Hesaplayıcı ─────────────────── */
-
-export function getPowerMaintenance() {
-  let maintenance = 0;
-
-  for (const id of Object.keys(BUILDINGS_DATA)) {
-    const building = BUILDINGS_DATA[id];
-    if (building.type === "producer") {
-      maintenance += getBuildingCount(id) * building.production * 0.05;
-    }
-  }
-
-  for (const id of Object.keys(INDUSTRY_DATA)) {
-    const entry = state.industry[id];
-    if (!entry.built || entry.workers <= 0) continue;
-    const industry = INDUSTRY_DATA[id];
-    for (const rate of Object.values(industry.output)) {
-      maintenance += entry.workers * rate * 0.05;
-    }
-  }
-
-  return maintenance;
+  return Math.max(0, getResourceProduction("power"));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */

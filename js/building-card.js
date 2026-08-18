@@ -17,6 +17,7 @@ import { BUILDINGS_DATA, ALL_BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { RESOURCES } from "./resources.js";
 import {
+  state,
   getBuildingCount,
   getBuildingCost,
   getBuildingProduction,
@@ -33,6 +34,10 @@ import {
   getUnlockType,
   isNearUnlock,
   buyBuilding,
+  getBuildingName,
+  getResourceName,
+  getResourceEmoji,
+  getPackName,
   onChange,
 } from "./game-state.js";
 
@@ -100,7 +105,7 @@ export function createBuildingCard(id, data) {
   else if (isStorage) emojiEl.textContent = "📦";
   else if (isCapacityBonus) emojiEl.textContent = "📦";
   else if (isBonus) emojiEl.textContent = bonusEmoji(data);
-  else emojiEl.textContent = RESOURCES[resourceId].emoji;
+  else emojiEl.textContent = getResourceEmoji(resourceId);
   const nameTextEl = buildingNameText();
   name.append(emojiEl, nameTextEl);
 
@@ -140,6 +145,7 @@ export function createBuildingCard(id, data) {
   card.append(name, rate, badgeRow, lockOverlay.element);
 
   let lastOwned = null;
+  let lastEra = null;
   let cost = null;
 
   function update() {
@@ -147,13 +153,20 @@ export function createBuildingCard(id, data) {
     const unlocked = getUnlock(data);
     card.classList.toggle("locked", !unlocked && !ownedAny);
 
+    const currentEra = state.era.current;
+    const eraChanged = currentEra !== lastEra;
+    if (eraChanged) {
+      lastEra = currentEra;
+      card.classList.remove("demolished");
+    }
+
     if (!unlocked && !ownedAny) {
       if (!isNearUnlock(data)) {
         if (!card.hidden) card.hidden = true;
         return;
       }
       card.hidden = false;
-      lockOverlay.lockName.textContent = data.name;
+      lockOverlay.lockName.textContent = getBuildingName(id);
       const unlockType = getUnlockType(data);
       fillUnlockDesc(lockOverlay.lockDesc, data);
       lockOverlay.lockDesc.classList.toggle("lock-req-building", unlockType === "building");
@@ -171,10 +184,10 @@ export function createBuildingCard(id, data) {
 
     const owned = getBuildingCount(id);
 
-    if (owned !== lastOwned) {
+    if (owned !== lastOwned || eraChanged) {
       lastOwned = owned;
       cost = getBuildingCost(id);
-      nameTextEl.textContent = data.name;
+      nameTextEl.textContent = getBuildingName(id);
       badgeEl.textContent = String(owned);
       badgeEl.className =
         "badge building-badge badge-tier-" +
@@ -208,10 +221,22 @@ export function createBuildingCard(id, data) {
     }
   }
 
-  onChange(update);
+    onChange(update);
   update();
 
-  return card;
+  function demolish() {
+    return new Promise((resolve) => {
+      if (card.classList.contains("demolished")) { resolve(); return; }
+      card.classList.add("demolishing");
+      card.addEventListener("animationend", () => {
+        card.classList.remove("demolishing");
+        card.classList.add("demolished");
+        resolve();
+      }, { once: true });
+    });
+  }
+
+  return { element: card, demolish };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -238,7 +263,7 @@ export function buildBuildingTooltip(id, data) {
 
   const title = document.createElement("div");
   title.className = "tooltip-title";
-  title.textContent = data.name;
+  title.textContent = getBuildingName(id);
   tooltip.element.appendChild(title);
 
   const effect = document.createElement("div");
@@ -278,7 +303,7 @@ export function buildBuildingTooltip(id, data) {
       if (getTotalProduction(rid) <= 0) continue;
       const item = document.createElement("span");
       item.className = "storage-cap-item";
-      item.textContent = RESOURCES[rid].emoji + " +" + per;
+      item.textContent = getResourceEmoji(rid) + " +" + per;
       capGrid.appendChild(item);
     }
 
@@ -302,15 +327,13 @@ export function buildBuildingTooltip(id, data) {
       if (getTotalProduction(rid) <= 0) continue;
       const item = document.createElement("span");
       item.className = "storage-cap-item";
-      item.textContent = RESOURCES[rid].emoji + " +" + per;
+      item.textContent = getResourceEmoji(rid) + " +" + per;
       capGrid.appendChild(item);
     }
 
     effect.appendChild(capGrid);
   } else if (isBonus) {
-    const bonusTarget = RESOURCES[data.targetResource];
-
-    effectLabel.textContent = bonusTarget.name + " Bonusu:";
+    effectLabel.textContent = getResourceName(data.targetResource) + " Bonusu:";
 
     const prodValue = document.createElement("span");
     prodValue.className = "effect-value";
@@ -338,7 +361,7 @@ export function buildBuildingTooltip(id, data) {
     const seasonMult = getSeasonMultiplier(data.outputResource);
     const outputMult = getOutputMultiplier(data.outputResource);
 
-    effectLabel.textContent = output.name + " Üretimi:";
+    effectLabel.textContent = getResourceName(data.outputResource) + " Üretimi:";
 
     const prodValue = document.createElement("span");
     prodValue.className = "effect-value";
@@ -451,8 +474,7 @@ function buildingNameText() {
 }
 
 function bonusEmoji(data) {
-  const target = RESOURCES[data.targetResource];
-  return target ? target.emoji : "";
+  return getResourceEmoji(data.targetResource);
 }
 
 /* ─────────────────── Bonus Kaynak Listesi ─────────────────── */
@@ -466,7 +488,7 @@ function getBonusSources(resourceId) {
     const count = getBuildingCount(bid);
     if (count <= 0) continue;
     sources.push({
-      name: b.name,
+      name: getBuildingName(bid),
       value: Math.round(count * b.bonusPerLevel * 100),
     });
   }
@@ -481,7 +503,7 @@ function getBonusSources(resourceId) {
     if (p.productBonusPerLevel) bonusPerLevel += p.productBonusPerLevel;
     if (bonusPerLevel <= 0) continue;
     sources.push({
-      name: p.name,
+      name: getPackName(pid),
       value: Math.round(count * bonusPerLevel * 100),
     });
   }

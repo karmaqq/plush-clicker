@@ -9,6 +9,7 @@ import {
   strong,
   badge,
   resetResourceClass,
+  animateCounter,
 } from "./utils.js";
 import { createTooltip } from "./tooltip.js";
 import { RESOURCES } from "./resources.js";
@@ -27,6 +28,9 @@ import {
   getNetRate,
   getSeasonMultiplier,
   getPower,
+  getResourceName,
+  getResourceEmoji,
+  getBuildingName,
   onChange,
 } from "./game-state.js";
 
@@ -53,11 +57,11 @@ export function createResourceTile(id) {
 
   const emoji = document.createElement("span");
   emoji.className = "resource-tile-emoji";
-  emoji.textContent = meta.emoji;
+  emoji.textContent = getResourceEmoji(id);
 
   const name = document.createElement("span");
   name.className = "resource-tile-name";
-  name.textContent = meta.name;
+  name.textContent = getResourceName(id);
 
   const production = document.createElement("span");
   production.className = "resource-bar-production";
@@ -132,6 +136,9 @@ export function createResourceTile(id) {
     const consumptionValue = snapshot ? snapshot.derived[id].consumption : getResourceConsumption(id);
     const net = productionValue - consumptionValue;
 
+    emoji.textContent = getResourceEmoji(id);
+    name.textContent = getResourceName(id);
+
     const active = productionValue > 0 || current > 0;
 
     if (element.hidden === active) {
@@ -182,7 +189,27 @@ export function createResourceTile(id) {
     }
   }
 
-  return { element, update };
+  function drain(duration) {
+    return new Promise((resolve) => {
+      const fromVal = getResource(id);
+      if (fromVal <= 0) { capLabel.textContent = "0"; fill.style.width = "0%"; element.classList.add("drain-done"); resolve(); return; }
+      element.classList.add("draining");
+      animateCounter(fromVal, 0, duration || 800, (v) => {
+        capLabel.textContent = formatCount(v);
+        const capacity = getResourceCapacity(id);
+        const pct = capacity > 0 ? Math.min((v / capacity) * 100, 100) : 0;
+        fill.style.width = pct + "%";
+      }).then(() => {
+        element.classList.remove("draining");
+        element.classList.add("drain-done");
+        resolve();
+      });
+    });
+  }
+
+  element.__tileObj = { element, update, drain };
+
+  return { element, update, drain };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -199,7 +226,7 @@ function buildResourceTooltip(id) {
 
   const title = document.createElement("div");
   title.className = "tt-title";
-  title.append(meta.emoji + " ", meta.name);
+  title.append(getResourceEmoji(id) + " ", getResourceName(id));
   tooltip.element.appendChild(title);
 
   const cap = document.createElement("div");
@@ -232,6 +259,7 @@ function buildResourceTooltip(id) {
     if (count <= 0) continue;
 
     buildingRows.push({
+      bid,
       b,
       count,
       total: count * b.production,
@@ -243,7 +271,7 @@ function buildResourceTooltip(id) {
       const row = document.createElement("div");
       row.className = "tt-row";
 
-      row.append(badge(r.count), r.b.name + ":", strong("+" + formatNumber(r.total) + "/s"));
+      row.append(badge(r.count), getBuildingName(r.bid) + ":", strong("+" + formatNumber(r.total) + "/s"));
 
       tooltip.element.appendChild(row);
     }
@@ -258,6 +286,7 @@ function buildResourceTooltip(id) {
     if (count <= 0) continue;
 
     bonusRows.push({
+      bid,
       b,
       count,
       info: "%" + Math.round(count * b.bonusPerLevel * 100),
@@ -269,14 +298,20 @@ function buildResourceTooltip(id) {
       const row = document.createElement("div");
       row.className = "tt-row";
 
-      row.append(badge(r.count), r.b.name + " ", strong(r.info));
+      row.append(badge(r.count), getBuildingName(r.bid) + " ", strong(r.info));
 
       tooltip.element.appendChild(row);
     }
   }
 
+  const hasBuildingRows = buildingRows.length > 0 || bonusRows.length > 0;
+  const seasonMult = getSeasonMultiplier(id);
+  const hasSeasonRow = seasonMult !== 1;
+  capDivider.hidden = !hasBuildingRows && !hasSeasonRow;
+
   const divider = document.createElement("div");
   divider.className = "tt-divider";
+  divider.hidden = !hasBuildingRows;
   tooltip.element.appendChild(divider);
 
   const sellRow = document.createElement("div");

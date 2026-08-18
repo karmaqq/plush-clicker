@@ -2,11 +2,13 @@
 /*                           DURUM YÖNETİMİ                                  */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL } from "./config.js";
+import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL_MIN, TRADE_INTERVAL_MAX } from "./config.js";
 import { RESOURCES } from "./resources.js";
 import { ALL_BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
+
+const initialTradeInterval = Math.random() * (TRADE_INTERVAL_MAX - TRADE_INTERVAL_MIN) + TRADE_INTERVAL_MIN;
 
 export const state = {
   resources: {},
@@ -28,9 +30,14 @@ export const state = {
     timer: SEASON_DURATION,
   },
   trade: {
-    timer: TRADE_INTERVAL,
+    timer: initialTradeInterval,
+    interval: initialTradeInterval,
     current: null,
     count: 0,
+  },
+  era: {
+    current: 1,
+    transitioning: false,
   },
   settings: {
     autoSell: {},
@@ -68,7 +75,7 @@ for (const id of Object.keys(INDUSTRY_DATA)) {
 
 for (const id of Object.keys(RESOURCES)) {
   const meta = RESOURCES[id];
-  if (meta.tier !== "raw" && meta.tier !== "currency") {
+  if (meta.tier > 0 && meta.tier <= 3) {
     state.settings.autoSell[id] = false;
   }
 }
@@ -119,6 +126,18 @@ export function getSeason() {
 
 export function getSeasonTimer() {
   return state.season.timer;
+}
+
+/* ─────────────────── Çağ Getter'ı ─────────────────── */
+
+export function getEra() {
+  return state.era.current;
+}
+
+/* ─────────────────── Çağ Geçiş Durumu Getter'ı ─────────────────── */
+
+export function isEraTransitioning() {
+  return state.era.transitioning;
 }
 
 /* ─────────────────── Canlı Nüfus Hesaplayıcı ─────────────────── */

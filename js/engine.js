@@ -7,7 +7,6 @@ import {
   SEASON_ORDER,
   TICKS_PER_SECOND,
   TICK_MS,
-  WORKER_WAGE_SEASONAL,
 } from "./config.js";
 
 export { TICK_MS };
@@ -89,6 +88,17 @@ function emit(snapshot) {
 export { emit };
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          SANAYI ÜRÜN LİSTESİ                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+const INDUSTRY_PRODUCTS = new Set();
+for (const id of Object.keys(INDUSTRY_DATA)) {
+  for (const outRes of Object.keys(INDUSTRY_DATA[id].output)) {
+    INDUSTRY_PRODUCTS.add(outRes);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          ANA OYUN DÖNGÜSÜ                                   */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -108,7 +118,7 @@ export function produce() {
   /* 2) Ham kaynak üretimi */
   for (const resource of Object.keys(RESOURCES)) {
     if (resource === "power" || resource === "altin") continue;
-    if (RESOURCES[resource].tier !== "raw") continue;
+    if (INDUSTRY_PRODUCTS.has(resource)) continue;
 
     const production = snapshot.derived[resource].production / TICKS_PER_SECOND;
     if (production > 0) {
@@ -204,23 +214,14 @@ export function produce() {
     const idx = SEASON_ORDER.indexOf(state.season.id);
     state.season.id = SEASON_ORDER[(idx + 1) % SEASON_ORDER.length];
     state.season.timer = SEASON_DURATION;
-
-    /* Mevsimlik maaş ödemesi */
-    const totalWage = getWorkerCount() * WORKER_WAGE_SEASONAL;
-    if (totalWage > 0 && getResource("altin") >= totalWage) {
-      state.resources.altin -= totalWage;
-      state.population.wagesPaid = true;
-    } else {
-      state.population.wagesPaid = totalWage === 0;
-    }
-
     changed = true;
   }
 
   /* 6) Ticaret zamanlayıcısı */
   state.trade.timer -= 1 / TICKS_PER_SECOND;
   if (state.trade.timer <= 0) {
-    state.trade.timer = getTradeInterval();
+    state.trade.interval = getTradeInterval();
+    state.trade.timer = state.trade.interval;
     state.trade.current = generateTradeOffer();
     changed = true;
   }

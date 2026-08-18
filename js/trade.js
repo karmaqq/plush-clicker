@@ -3,9 +3,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import {
-  TRADE_INTERVAL,
+  TRADE_INTERVAL_MIN,
+  TRADE_INTERVAL_MAX,
   TRADE_PRICES,
-  TRADE_AMOUNTS,
 } from "./config.js";
 import { state, getResource, getPackCount } from "./state.js";
 import { RESOURCES } from "./resources.js";
@@ -19,7 +19,9 @@ import { getResourceCapacity } from "./production.js";
 /* ─────────────────── Ticaret Aralığı Hesaplayıcı ─────────────────── */
 
 export function getTradeInterval() {
-  return Math.max(12, TRADE_INTERVAL / (1 + getTradeBonusTotal()));
+  const bonus = getTradeBonusTotal();
+  const base = Math.random() * (TRADE_INTERVAL_MAX - TRADE_INTERVAL_MIN) + TRADE_INTERVAL_MIN;
+  return Math.max(120, base / (1 + bonus));
 }
 
 function getTradeBonusTotal() {
@@ -56,21 +58,26 @@ export function getTradeCount() {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 function generateTradeOffer() {
-  const resources = Object.keys(TRADE_PRICES);
-  const resource = resources[Math.floor(Math.random() * resources.length)];
-  const meta = RESOURCES[resource];
-  const range = TRADE_AMOUNTS[meta.rarity] || TRADE_AMOUNTS[2];
-  const amount =
-    Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
-  const postBonus = 1 + getTradeBonusTotal();
-  const boosted = Math.round(amount * postBonus);
+  const resourceIds = Object.keys(TRADE_PRICES);
+  const offerCount = Math.floor(Math.random() * 3) + 1;
+  const offers = [];
 
-  const cost = Math.max(1, Math.round(boosted * TRADE_PRICES[resource] * 0.6));
+  for (let i = 0; i < offerCount; i++) {
+    const resourceId = resourceIds[Math.floor(Math.random() * resourceIds.length)];
+    const priceData = TRADE_PRICES[resourceId];
+    const amount = Math.floor(Math.random() * 20) + 1;
+    const cost = Math.floor(
+      Math.random() * (priceData.buy[1] - priceData.buy[0] + 1) + priceData.buy[0]
+    ) * amount;
 
-  return {
-    cost,
-    get: { resource, amount: boosted },
-  };
+    offers.push({
+      resource: resourceId,
+      amount,
+      cost: Math.max(1, cost),
+    });
+  }
+
+  return { offers };
 }
 
 export { generateTradeOffer };
@@ -81,26 +88,34 @@ export { generateTradeOffer };
 
 /* ─────────────────── Teklif Kabul İşlemcisi ─────────────────── */
 
-export function acceptTrade() {
+export function acceptTrade(offerIndex) {
   const offer = state.trade.current;
-  if (!offer) return false;
-  if (getResource("altin") < offer.cost) return false;
+  if (!offer || !offer.offers) return false;
 
-  const capacity = getResourceCapacity(offer.get.resource);
+  const selected = offer.offers[offerIndex];
+  if (!selected) return false;
+  if (getResource("altin") < selected.cost) return false;
+
+  const capacity = getResourceCapacity(selected.resource);
   if (
     Number.isFinite(capacity) &&
-    getResource(offer.get.resource) >= capacity
+    getResource(selected.resource) >= capacity
   ) {
     return false;
   }
 
-  state.resources.altin -= offer.cost;
-  state.resources[offer.get.resource] = Number.isFinite(capacity)
-    ? Math.min(capacity, getResource(offer.get.resource) + offer.get.amount)
-    : getResource(offer.get.resource) + offer.get.amount;
+  state.resources.altin -= selected.cost;
+  state.resources[selected.resource] = Number.isFinite(capacity)
+    ? Math.min(capacity, getResource(selected.resource) + selected.amount)
+    : getResource(selected.resource) + selected.amount;
 
-  state.trade.current = null;
-  state.trade.timer = getTradeInterval();
+  offer.offers.splice(offerIndex, 1);
+  if (offer.offers.length === 0) {
+    state.trade.current = null;
+    state.trade.interval = getTradeInterval();
+    state.trade.timer = state.trade.interval;
+  }
+
   state.trade.count++;
 
   return true;

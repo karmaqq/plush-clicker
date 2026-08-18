@@ -8,11 +8,13 @@ import { createBuildingCard } from "./building-card.js";
 import { createResourceTile } from "./resource-tile.js";
 import {
   getPower,
+  getResourceName,
+  getResourceEmoji,
   onChange,
 } from "./game-state.js";
 
-const RAW_TILE_ORDER = ["su", "yiyecek", "odun", "tas", "maden", "bilgi", "inanc", "ipek", "baharat", "sarap", "kultur"];
-const PRODUCT_TILE_ORDER = ["ekmek", "kereste", "demir", "kumas", "konyak", "ilac", "celik", "mobilya", "mucevher", "mermer", "heykel"];
+const RAW_TILE_ORDER = ["su", "yiyecek", "bilgi", "tas", "maden", "kultur", "inanc", "ipek", "altin"];
+const PRODUCT_TILE_ORDER = ["ekmek", "demir", "celik", "mermer", "kumas", "ilac", "mobilya", "heykel", "mucevher"];
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                      MERKEZ PANEL OLUŞTURUCU                              */
@@ -29,9 +31,11 @@ export function createCenterPanel() {
 
   const powerValue = document.createElement("span");
   powerValue.className = "power-value";
+  const powerIcon = document.createElement("span");
+  powerIcon.className = "power-icon";
   const powerSpan = document.createElement("span");
   powerSpan.className = "num-display";
-  powerValue.append("🏆 ", powerSpan);
+  powerValue.append(powerIcon, " ", powerSpan);
 
   header.append(powerValue);
 
@@ -62,12 +66,13 @@ export function createCenterPanel() {
   storageSection.className = "storage-section";
   const storageRow = document.createElement("div");
   storageRow.className = "storage-row";
-  storageRow.appendChild(createBuildingCard("depo", STORAGE_DATA.depo));
-  storageRow.appendChild(createBuildingCard("ambar", STORAGE_DATA.ambar));
+  storageRow.appendChild(createBuildingCard("depo", STORAGE_DATA.depo).element);
+  storageRow.appendChild(createBuildingCard("ambar", STORAGE_DATA.ambar).element);
 
   storageSection.append(storageRow);
 
   function update(snapshot) {
+    powerIcon.textContent = getResourceEmoji("power");
     powerSpan.textContent = formatCount(getPower());
 
     for (const id of Object.keys(tileMap)) {

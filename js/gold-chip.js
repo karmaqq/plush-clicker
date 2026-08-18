@@ -11,11 +11,11 @@ import {
   isSellable,
   getSellPrice,
   getTotalProduction,
+  getGoldLabel,
   onChange,
 } from "./game-state.js";
 import { RESOURCES } from "./resources.js";
 import { formatCount, formatNumber } from "./utils.js";
-import { WORKER_WAGE_SEASONAL } from "./config.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                       ALTIN ÇİP OLUŞTURUCU                                */
@@ -43,7 +43,6 @@ export function createGoldChip() {
   const title = document.createElement("div");
   title.className = "gold-tooltip-title";
 
-  const wageRow = createGoldRow("İşçi maaşları");
   const industryRow = createGoldRow("Sanayi üretimi");
   const sellRow = createGoldRow("Otomatik satış");
 
@@ -52,7 +51,7 @@ export function createGoldChip() {
 
   const netRow = createGoldRow("Net");
 
-  tooltip.append(title, wageRow.row, industryRow.row, sellRow.row, divider, netRow.row);
+  tooltip.append(title, industryRow.row, sellRow.row, divider, netRow.row);
   el.appendChild(tooltip);
 
   let active = false;
@@ -76,12 +75,8 @@ export function createGoldChip() {
 
   function refresh() {
     const gold = getAltin();
-    title.textContent = "🪙 Altın " + formatCount(gold);
-
-    const workerCount = getWorkerCount();
-    const seasonalWage = workerCount * WORKER_WAGE_SEASONAL;
-    wageRow.value.textContent = "-" + formatNumber(seasonalWage);
-    wageRow.value.style.color = "#ff8a8a";
+    const goldLabel = getGoldLabel();
+    title.textContent = "🪙 " + goldLabel + " " + formatCount(gold);
 
     const industryGold = getIndustryOutput("altin");
     if (industryGold > 0) {
@@ -110,6 +105,8 @@ export function createGoldChip() {
     } else {
       sellRow.row.hidden = true;
     }
+
+    divider.hidden = industryRow.row.hidden && sellRow.row.hidden;
 
     netRow.value.textContent = (netRate >= 0 ? "+" : "") + formatNumber(netRate) + "/s";
     netRow.value.style.color = netRate >= 0 ? "#7ee2a8" : "#ff8a8a";

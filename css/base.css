@@ -16,9 +16,6 @@
     --c-yiyecek: #ffd68a;
     --c-yiyecek-bright: #ffe4b0;
     --c-yiyecek-dark: #b07d2c;
-    --c-odun: #b07a4f;
-    --c-odun-bright: #cd9b70;
-    --c-odun-dark: #7d4e2c;
     --c-maden: #9aa7b5;
     --c-maden-bright: #bcc7d1;
     --c-maden-dark: #6f7c8c;
@@ -31,12 +28,6 @@
     --c-kultur: #ce9d6c;
     --c-kultur-bright: #f5d0a0;
     --c-kultur-dark: #a87840;
-    --c-baharat: #ff8f6e;
-    --c-baharat-bright: #ff9a7a;
-    --c-baharat-dark: #b8472f;
-    --c-sarap: #e86a80;
-    --c-sarap-bright: #ff8a9a;
-    --c-sarap-dark: #a83f55;
     --c-ipek: #f0b6d0;
     --c-ipek-bright: #ffd9e8;
     --c-ipek-dark: #b06f93;
@@ -52,18 +43,12 @@
     --c-ekmek: #e8b46a;
     --c-ekmek-bright: #f2c98a;
     --c-ekmek-dark: #a86e2f;
-    --c-kereste: #c8966a;
-    --c-kereste-bright: #dcae86;
-    --c-kereste-dark: #8a5f3a;
     --c-demir: #b0b8c0;
     --c-demir-bright: #c8d0d8;
     --c-demir-dark: #6e7884;
     --c-kumas: #dca8cc;
     --c-kumas-bright: #ecc8e0;
     --c-kumas-dark: #90567a;
-    --c-konyak: #d9a35e;
-    --c-konyak-bright: #e8bd82;
-    --c-konyak-dark: #96622f;
     --c-ilac: #7ee2a8;
     --c-ilac-bright: #a8f0c4;
     --c-ilac-dark: #3f9d6b;
@@ -102,13 +87,6 @@
     color: var(--c-yiyecek);
 }
 
-.resource-odun {
-    --res: var(--c-odun);
-    --res-bright: var(--c-odun-bright);
-    --res-dark: var(--c-odun-dark);
-    color: var(--c-odun);
-}
-
 .resource-maden {
     --res: var(--c-maden);
     --res-bright: var(--c-maden-bright);
@@ -135,20 +113,6 @@
     --res-bright: var(--c-kultur-bright);
     --res-dark: var(--c-kultur-dark);
     color: var(--c-kultur);
-}
-
-.resource-baharat {
-    --res: var(--c-baharat);
-    --res-bright: var(--c-baharat-bright);
-    --res-dark: var(--c-baharat-dark);
-    color: var(--c-baharat);
-}
-
-.resource-sarap {
-    --res: var(--c-sarap);
-    --res-bright: var(--c-sarap-bright);
-    --res-dark: var(--c-sarap-dark);
-    color: var(--c-sarap);
 }
 
 .resource-ipek {
@@ -186,13 +150,6 @@
     color: var(--c-ekmek);
 }
 
-.resource-kereste {
-    --res: var(--c-kereste);
-    --res-bright: var(--c-kereste-bright);
-    --res-dark: var(--c-kereste-dark);
-    color: var(--c-kereste);
-}
-
 .resource-demir {
     --res: var(--c-demir);
     --res-bright: var(--c-demir-bright);
@@ -205,13 +162,6 @@
     --res-bright: var(--c-kumas-bright);
     --res-dark: var(--c-kumas-dark);
     color: var(--c-kumas);
-}
-
-.resource-konyak {
-    --res: var(--c-konyak);
-    --res-bright: var(--c-konyak-bright);
-    --res-dark: var(--c-konyak-dark);
-    color: var(--c-konyak);
 }
 
 .resource-ilac {
@@ -277,6 +227,19 @@ body {
     flex-direction: column;
     padding: 0.625rem;
     background: linear-gradient(135deg, #0d1117, #161b22);
+    transition: background 1.8s ease, border-color 1.8s ease, box-shadow 1.8s ease;
+}
+
+body.era-theme-tech {
+    background: linear-gradient(135deg, #0a1a14, #0d2218);
+    border-color: rgba(16, 185, 129, 0.15);
+    box-shadow: inset 0 0 60px rgba(16, 185, 129, 0.04);
+}
+
+body.era-theme-space {
+    background: linear-gradient(135deg, #0e0a20, #150e30);
+    border-color: rgba(139, 92, 246, 0.15);
+    box-shadow: inset 0 0 60px rgba(139, 92, 246, 0.04);
 }
 
 .num-display {
@@ -473,4 +436,97 @@ body {
         scrollbar-width: auto;
         scrollbar-color: rgba(91, 108, 126, 0.55) transparent;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    ÇAĞ GEÇİŞ BİLDİRİM BANTI                               */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.era-toast {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.55rem 1rem;
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #ffffff;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.92), rgba(139, 92, 246, 0.92));
+    transform: translateY(-100%);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+
+.era-toast-visible {
+    transform: translateY(0);
+}
+
+.era-toast-icon {
+    font-size: 1.1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    BİNA SÖKÜM ANİMASYON STİLLERİ                          */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.building-card.demolishing {
+    animation: building-demolish 0.4s ease forwards;
+    pointer-events: none;
+}
+
+.building-card.demolished {
+    display: none !important;
+}
+
+@keyframes building-demolish {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    40% {
+        opacity: 0.7;
+        transform: scale(0.95);
+        filter: brightness(1.4);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-8px);
+        filter: brightness(0.4);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    KAYNAK DRAIN ANİMASYON STİLLERİ                         */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.resource-tile.draining {
+    position: relative;
+}
+
+.resource-tile.draining::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255, 90, 90, 0.08), transparent);
+    animation: drain-pulse 0.6s ease-in-out 2;
+    pointer-events: none;
+}
+
+@keyframes drain-pulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+.resource-tile.drain-done {
+    opacity: 0.35;
+    transition: opacity 0.4s ease;
 }

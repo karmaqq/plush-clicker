@@ -16,6 +16,8 @@ import { createHappinessChip } from "./happiness-chip.js";
 import { createSeasonChip } from "./season-chip.js";
 import { createMigrationStrip } from "./migration-strip.js";
 import { createGoldChip } from "./gold-chip.js";
+import { createEraChip } from "./era-chip.js";
+import { triggerEraTransition } from "./era-transition.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                      HEADER PANEL OLUŞTURUCU                              */
@@ -29,18 +31,27 @@ export function createHeaderPanel() {
 
   const strip = createMigrationStrip();
 
+  const center = document.createElement("div");
+  center.className = "header-center";
+
   const popBlock = createPopBlock();
+  const happinessChip = createHappinessChip();
+
+  center.append(popBlock.el, happinessChip.el);
 
   const right = document.createElement("div");
   right.className = "header-right";
 
-  const happinessChip = createHappinessChip();
   const seasonChip = createSeasonChip();
   const goldChip = createGoldChip();
 
+  const eraChip = createEraChip(() => {
+    triggerEraTransition();
+  });
+
   const resetBtn = document.createElement("button");
   resetBtn.className = "reset-btn";
-  resetBtn.textContent = "↺";
+  resetBtn.textContent = "Sıfırla";
   resetBtn.title = "Tüm ilerlemeyi sıfırla";
 
   resetBtn.addEventListener("click", () => {
@@ -50,16 +61,15 @@ export function createHeaderPanel() {
   });
 
   right.append(
-    popBlock.el,
     createHousingChip("baraka"),
     createHousingChip("ev"),
-    happinessChip.el,
     seasonChip.el,
     goldChip.el,
+    eraChip.el,
     resetBtn
   );
 
-  panel.append(strip.el, right);
+  panel.append(strip.el, center, right);
 
   function update() {
     const alive = Math.floor(getPopulationCurrent());
@@ -72,6 +82,7 @@ export function createHeaderPanel() {
     happinessChip.update();
     seasonChip.update();
     goldChip.update();
+    eraChip.update();
   }
 
   onChange(update);

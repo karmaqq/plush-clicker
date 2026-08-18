@@ -2,8 +2,8 @@
 /*                          ARAÇ İPUCU                                        */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { RESOURCES } from "./resources.js";
 import { formatCount, formatDuration } from "./utils.js";
+import { getResourceName, getResourceEmoji } from "./game-state.js";
 
 /* ─────────────────── Tooltip Oluşturucu ─────────────────── */
 export function createTooltip(extraClass) {
@@ -35,7 +35,7 @@ export function createCostRows(container, cost) {
 
         const label = document.createElement("span");
         label.className = "cost-label";
-        label.textContent = RESOURCES[resource].name + ":";
+        label.textContent = getResourceName(resource) + ":";
 
         const value = document.createElement("span");
         value.className = "cost-value";

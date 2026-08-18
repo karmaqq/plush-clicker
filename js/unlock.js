@@ -4,7 +4,6 @@
 
 import { state, getResource, getBuildingCount, getPackCount } from "./state.js";
 import { INDUSTRY_MAX_LEVEL } from "./config.js";
-import { RESOURCES } from "./resources.js";
 import { ALL_BUILDINGS_DATA } from "./buildings.js";
 import { PACKS_DATA } from "./packs.js";
 import { INDUSTRY_DATA } from "./industry.js";
@@ -12,6 +11,7 @@ import { canAfford } from "./utils.js";
 import { getCostDiscount, getIndustryLevel, getIndustryMaxWorkers, getIndustryBuilt, getWorkerCount } from "./production.js";
 import { getPopulationAlive } from "./population.js";
 import { emit } from "./engine.js";
+import { getResourceName, getBuildingName, getPackName } from "./era.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                       KİLİT STRATEJİLERİ                                  */
@@ -23,21 +23,21 @@ export const UNLOCK_STRATEGIES = {
     progress: (unlock) =>
       Math.min(getBuildingCount(unlock.id), unlock.count) + "/" + unlock.count,
     isNear: (unlock) => getBuildingCount(unlock.id) > 0,
-    target: (unlock) => ALL_BUILDINGS_DATA[unlock.id].name,
+    target: (unlock) => getBuildingName(unlock.id),
   },
   pack: {
     isMet: (unlock) => getPackCount(unlock.id) >= unlock.level,
     progress: (unlock) =>
       Math.min(getPackCount(unlock.id), unlock.level) + "/" + unlock.level,
     isNear: (unlock) => getPackCount(unlock.id) > 0,
-    target: (unlock) => PACKS_DATA[unlock.id].name,
+    target: (unlock) => getPackName(unlock.id),
   },
   resource: {
     isMet: (unlock) => getResource(unlock.id) >= unlock.amount,
     progress: (unlock) =>
       Math.min(getResource(unlock.id), unlock.amount) + "/" + unlock.amount,
     isNear: () => false,
-    target: (unlock) => RESOURCES[unlock.id].name,
+    target: (unlock) => getResourceName(unlock.id),
   },
   industry: {
     isMet: (unlock) => getIndustryBuilt(unlock.id),
@@ -274,6 +274,18 @@ export function upgradeIndustry(id) {
   return true;
 }
 
+/* ─────────────────── İşçi Maliyeti Hesaplayıcı ─────────────────── */
+
+const WORKER_BASE_COST = 10;
+
+export function getWorkerCost(id) {
+  const entry = state.industry[id];
+  if (!entry) return null;
+  const currentWorkers = entry.workers;
+  const multiplier = Math.pow(currentWorkers + 1, 1.5);
+  return { power: Math.floor(WORKER_BASE_COST * multiplier) };
+}
+
 /* ─────────────────── İşçi Ekleme İşlemcisi ─────────────────── */
 
 export function addWorker(id) {
@@ -282,6 +294,10 @@ export function addWorker(id) {
   if (entry.workers >= getIndustryMaxWorkers(id)) return false;
   if (getWorkerCount() >= getPopulationAlive()) return false;
 
+  const cost = getWorkerCost(id);
+  if (!canAfford(cost, getResource)) return false;
+
+  pay(cost);
   entry.workers++;
   emit();
   return true;

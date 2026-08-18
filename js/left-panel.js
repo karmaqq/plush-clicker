@@ -39,7 +39,7 @@ export function createLeftPanel() {
   buildingGrid.className = "building-list";
 
   for (const [id, data] of Object.entries(BUILDINGS_DATA)) {
-    buildingGrid.appendChild(createBuildingCard(id, data));
+    buildingGrid.appendChild(createBuildingCard(id, data).element);
   }
 
   const packList = document.createElement("div");

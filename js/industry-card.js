@@ -12,7 +12,6 @@ import {
 } from "./utils.js";
 import { createTooltip, createCostRows, refreshCostRows } from "./tooltip.js";
 import { INDUSTRY_DATA } from "./industry.js";
-import { RESOURCES } from "./resources.js";
 import {
   getResource,
   getNetRate,
@@ -32,8 +31,10 @@ import {
   upgradeIndustry,
   addWorker,
   removeWorker,
+  getWorkerCost,
   getWorkerCount,
   getPopulationAlive,
+  getResourceEmoji,
   onChange,
 } from "./game-state.js";
 
@@ -184,7 +185,6 @@ export function createIndustryCard(id, data) {
   let tooltipActive = false;
 
   card.addEventListener("mouseenter", () => {
-    if (!getUnlock(data)) return;
     tooltipActive = true;
     buildIndustryTooltip(id);
     industryTooltip.show(card);
@@ -230,7 +230,7 @@ export function createIndustryCard(id, data) {
       for (const [resource, span] of Object.entries(costSpans)) {
         const amount = cost[resource];
         const enough = getResource(resource) >= amount;
-        span.textContent = RESOURCES[resource].emoji + " " + formatCount(amount);
+        span.textContent = getResourceEmoji(resource) + " " + formatCount(amount);
         span.classList.toggle("cost-ok", enough);
         span.classList.toggle("cost-missing", !enough);
       }
@@ -271,7 +271,7 @@ export function createIndustryCard(id, data) {
       for (const [resource, span] of Object.entries(upgradeCostSpans)) {
         const amount = upgradeCost[resource];
         const enough = getResource(resource) >= amount;
-        span.textContent = RESOURCES[resource].emoji + " " + formatCount(amount);
+        span.textContent = getResourceEmoji(resource) + " " + formatCount(amount);
         span.classList.toggle("cost-ok", enough);
         span.classList.toggle("cost-missing", !enough);
       }
@@ -287,7 +287,7 @@ export function createIndustryCard(id, data) {
     const inputParts = [];
     for (const [resource, rate] of Object.entries(data.input)) {
       const amount = workers * rate * levelMult;
-      inputParts.push(RESOURCES[resource].emoji + " -" + formatNumber(amount) + "/s");
+      inputParts.push(getResourceEmoji(resource) + " -" + formatNumber(amount) + "/s");
     }
     inputValue.textContent = inputParts.join("  ");
     inputValue.classList.toggle("idle", workers === 0);
@@ -295,7 +295,7 @@ export function createIndustryCard(id, data) {
     const outputParts = [];
     for (const [resource, rate] of Object.entries(data.output)) {
       const amount = workers * rate * levelMult;
-      outputParts.push(RESOURCES[resource].emoji + " +" + formatNumber(amount) + "/s");
+      outputParts.push(getResourceEmoji(resource) + " +" + formatNumber(amount) + "/s");
     }
     outputValue.textContent = outputParts.join("  ");
     outputValue.classList.toggle("idle", workers === 0);
@@ -312,6 +312,15 @@ export function createIndustryCard(id, data) {
 
     minusBtn.disabled = workers <= 0;
     plusBtn.disabled = workers >= maxWorkers || getWorkerCount() >= getPopulationAlive();
+
+    const workerCost = getWorkerCost(id);
+    if (workerCost) {
+      const costParts = [];
+      for (const [resource, amount] of Object.entries(workerCost)) {
+        costParts.push(getResourceEmoji(resource) + " " + formatCount(amount));
+      }
+      plusBtn.title = "İşçi ekle (" + costParts.join(", ") + ")";
+    }
 
     if (tooltipActive) {
       refreshIndustryTooltip();
@@ -354,7 +363,7 @@ function buildIndustryTooltip(id) {
   const effectValue = document.createElement("span");
   effectValue.className = "effect-value";
   effectValue.textContent = Object.entries(data.output)
-    .map(([r, rate]) => RESOURCES[r].emoji + " +" + formatNumber(rate) + "/s · işçi")
+    .map(([r, rate]) => getResourceEmoji(r) + " +" + formatNumber(rate) + "/s · işçi")
     .join("  ");
 
   effectLine.append(effectLabel, " ", effectValue);

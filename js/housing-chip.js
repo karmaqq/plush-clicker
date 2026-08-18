@@ -5,11 +5,13 @@
 import { formatCount, triggerShake, canAfford } from "./utils.js";
 import { HOUSING_DATA } from "./buildings.js";
 import {
+  state,
   getResource,
   getBuildingCount,
   getBuildingCost,
   getUnlock,
   buyBuilding,
+  getBuildingName,
   onChange,
 } from "./game-state.js";
 import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingTooltip } from "./building-card.js";
@@ -33,7 +35,7 @@ export function createHousingChip(id) {
 
   const name = document.createElement("span");
   name.className = "housing-chip-name";
-  name.textContent = data.name;
+  name.textContent = getBuildingName(id);
 
   const cap = document.createElement("span");
   cap.className = "housing-chip-cap";
@@ -60,9 +62,17 @@ export function createHousingChip(id) {
     buildingTooltip.hide();
   });
 
+  let lastEra = state.era.current;
+
   function update() {
     const owned = getBuildingCount(id);
     const unlocked = getUnlock(data);
+
+    const currentEra = state.era.current;
+    if (currentEra !== lastEra) {
+      lastEra = currentEra;
+      name.textContent = getBuildingName(id);
+    }
 
     el.classList.toggle("locked", !unlocked && owned === 0);
 

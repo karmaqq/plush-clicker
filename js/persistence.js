@@ -2,7 +2,7 @@
 /*                         KALICILIK YÖNETİMİ                                */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL, INDUSTRY_MAX_LEVEL, TRADE_PRICES, ARRIVAL_DURATION, STORAGE_KEY } from "./config.js";
+import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL_MIN, TRADE_INTERVAL_MAX, INDUSTRY_MAX_LEVEL, ARRIVAL_DURATION, STORAGE_KEY, DEV_START_ERA } from "./config.js";
 import { state, freshIndustryEntry, listeners } from "./state.js";
 import { RESOURCES } from "./resources.js";
 import { PACKS_DATA } from "./packs.js";
@@ -87,27 +87,50 @@ function loadSeason(saved) {
     state.season.timer = Math.max(0, saved.timer);
 }
 
+function loadEra(saved) {
+  if (DEV_START_ERA !== null && Number.isFinite(DEV_START_ERA) && DEV_START_ERA >= 1 && DEV_START_ERA <= 3) {
+    state.era.current = DEV_START_ERA;
+    return;
+  }
+  if (!saved || typeof saved !== "object") return;
+  if (Number.isFinite(saved.current) && saved.current >= 1 && saved.current <= 3) {
+    state.era.current = saved.current;
+  }
+  if (typeof saved.transitioning === "boolean") {
+    state.era.transitioning = saved.transitioning;
+  }
+}
+
 function loadTrade(saved) {
   if (!saved || typeof saved !== "object") return;
   if (Number.isFinite(saved.timer))
     state.trade.timer = Math.max(0, saved.timer);
+
+  if (Number.isFinite(saved.interval))
+    state.trade.interval = Math.max(0, saved.interval);
+
   if (saved.current && typeof saved.current === "object") {
-    if (
+    if (Array.isArray(saved.current.offers)) {
+      state.trade.current = {
+        offers: saved.current.offers.filter(
+          (o) => o && typeof o.resource === "string" && Number.isFinite(o.amount) && Number.isFinite(o.cost)
+        ),
+      };
+    } else if (
       Number.isFinite(saved.current.cost) &&
       saved.current.get &&
-      typeof saved.current.get === "object" &&
-      Number.isFinite(saved.current.get.amount) &&
-      TRADE_PRICES[saved.current.get.resource]
+      typeof saved.current.get === "object"
     ) {
       state.trade.current = {
-        cost: saved.current.cost,
-        get: {
+        offers: [{
           resource: saved.current.get.resource,
           amount: saved.current.get.amount,
-        },
+          cost: saved.current.cost,
+        }],
       };
     }
   }
+
   if (Number.isFinite(saved.count))
     state.trade.count = Math.max(0, Math.floor(saved.count));
 }
@@ -120,15 +143,20 @@ function loadTrade(saved) {
 
 export function loadState() {
   try {
-    const rawV9 = localStorage.getItem(STORAGE_KEY);
-    if (rawV9) {
-      const saved = JSON.parse(rawV9);
+    if (DEV_START_ERA === null) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
       loadNumericMap(state.resources, saved.resources);
       loadNumericMap(state.buildings, saved.buildings, true);
       loadNumericMap(state.packs, saved.packs, true);
       loadIndustry(saved.industry);
       loadPopulation(saved.population);
       loadSeason(saved.season);
+      loadEra(saved.era);
       loadTrade(saved.trade);
       loadSettings(saved.settings);
       return;
@@ -161,6 +189,7 @@ export function saveState() {
       industry: state.industry,
       population: state.population,
       season: state.season,
+      era: state.era,
       trade: state.trade,
       settings: state.settings,
     }),
@@ -212,6 +241,7 @@ export function resetGame() {
     migrantQueue: [],
     deficiency: 0,
     ilacOk: false,
+    wagesPaid: true,
   };
 
   state.season = {
@@ -219,8 +249,14 @@ export function resetGame() {
     timer: SEASON_DURATION,
   };
 
+  state.era = {
+    current: (DEV_START_ERA !== null && Number.isFinite(DEV_START_ERA) && DEV_START_ERA >= 1 && DEV_START_ERA <= 3) ? DEV_START_ERA : 1,
+    transitioning: false,
+  };
+
   state.trade = {
-    timer: TRADE_INTERVAL,
+    timer: Math.random() * (TRADE_INTERVAL_MAX - TRADE_INTERVAL_MIN) + TRADE_INTERVAL_MIN,
+    interval: 0,
     current: null,
     count: 0,
   };
@@ -252,6 +288,7 @@ function emitReset() {
 
 export function clearLegacyStorage() {
   const legacyKeys = [
+    "plush-clicker:state-v9",
     "plush-clicker:state-v8",
     "plush-clicker:state-v7",
     "plush-clicker:state-v6",

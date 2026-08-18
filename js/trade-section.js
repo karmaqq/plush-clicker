@@ -3,13 +3,15 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import { formatCount, formatDuration, triggerShake } from "./utils.js";
-import { RESOURCES } from "./resources.js";
 import {
+  state,
   getResource,
   getTradeCurrent,
   getTradeTimer,
   getTradeCount,
-  getTradeInterval,
+  getResourceName,
+  getResourceEmoji,
+  getGoldLabel,
   acceptTrade,
   onChange,
 } from "./game-state.js";
@@ -47,26 +49,10 @@ export function createTradeSection() {
   offerEmpty.className = "trade-offer-empty";
   offerEmpty.textContent = "Tüccar yolda…";
 
-  const offerRow = document.createElement("div");
-  offerRow.className = "trade-offer-row";
-  offerRow.hidden = true;
+  const offersContainer = document.createElement("div");
+  offersContainer.className = "trade-offers-container";
 
-  const getSpan = document.createElement("span");
-  getSpan.className = "trade-offer-get";
-
-  offerRow.append(getSpan);
-
-  const acceptBtn = document.createElement("button");
-  acceptBtn.type = "button";
-  acceptBtn.className = "trade-accept-btn";
-
-  acceptBtn.addEventListener("click", () => {
-    if (!acceptTrade()) {
-      triggerShake(acceptBtn);
-    }
-  });
-
-  offerBody.append(offerEmpty, offerRow, acceptBtn);
+  offerBody.append(offerEmpty, offersContainer);
 
   const stats = document.createElement("div");
   stats.className = "trade-stats";
@@ -87,26 +73,51 @@ export function createTradeSection() {
     const timer = getTradeTimer();
     const count = getTradeCount();
 
-    const hasOffer = !!current;
+    const hasOffer = !!current && current.offers && current.offers.length > 0;
 
     offerEmpty.hidden = hasOffer;
-    offerRow.hidden = !hasOffer;
-    acceptBtn.hidden = !hasOffer;
+
+    while (offersContainer.firstChild) {
+      offersContainer.removeChild(offersContainer.firstChild);
+    }
 
     if (hasOffer) {
-      const meta = RESOURCES[current.get.resource];
-      getSpan.textContent = meta.emoji + " " + formatCount(current.get.amount) + " " + meta.name;
-      const affordable = getResource("altin") >= current.cost;
-      acceptBtn.classList.toggle("disabled", !affordable);
-      acceptBtn.textContent = RESOURCES.altin.emoji + " " + formatCount(current.cost) + " Altın";
+      for (let i = 0; i < current.offers.length; i++) {
+        const offer = current.offers[i];
+
+        const row = document.createElement("div");
+        row.className = "trade-offer-row";
+
+        const getSpan = document.createElement("span");
+        getSpan.className = "trade-offer-get";
+        getSpan.textContent = getResourceEmoji(offer.resource) + " " + formatCount(offer.amount) + " " + getResourceName(offer.resource);
+
+        const acceptBtn = document.createElement("button");
+        acceptBtn.type = "button";
+        acceptBtn.className = "trade-accept-btn";
+
+        const affordable = getResource("altin") >= offer.cost;
+        acceptBtn.classList.toggle("disabled", !affordable);
+        acceptBtn.textContent = getResourceEmoji("altin") + " " + formatCount(offer.cost) + " " + getGoldLabel();
+
+        const idx = i;
+        acceptBtn.addEventListener("click", () => {
+          if (!acceptTrade(idx)) {
+            triggerShake(acceptBtn);
+          }
+        });
+
+        row.append(getSpan, acceptBtn);
+        offersContainer.appendChild(row);
+      }
     }
 
     offerTimer.textContent = hasOffer
-      ? "Sonraki teklif: " + formatDuration(timer) + " sn"
+      ? ""
       : "Yeni teklif: " + formatDuration(timer) + " sn";
 
     accepted.textContent = "✅ Kabul edilen: " + count;
-    interval.textContent = "Tüccar sıklığı: ~" + Math.round(getTradeInterval()) + " sn";
+    interval.textContent = "Tüccar sıklığı: ~" + Math.round(state.trade.interval) + " sn";
   }
 
   onChange(update);

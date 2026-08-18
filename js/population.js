@@ -7,10 +7,7 @@ import {
   POP_YIYECEK_RATE,
   POP_EKMEK_RATE,
   POP_ILAC_RATE,
-  POP_GOLD_RATE,
-  LUXURY_ORDER,
-  LUXURY_RATES,
-  LUXURY_HAPPINESS,
+  POP_KULTUR_RATE,
   TICKS_PER_SECOND,
   ARRIVAL_DURATION,
 } from "./config.js";
@@ -105,16 +102,22 @@ function computeHappinessBreakdown() {
     met: suMet,
   });
 
-  const ekmekNeed = (alive * POP_EKMEK_RATE) / ticks;
   const foodNeed = (alive * POP_YIYECEK_RATE) / ticks;
-  const foodMet =
-    getResource("ekmek") >= ekmekNeed &&
-    getResource("yiyecek") >= Math.max(0, foodNeed - ekmekNeed * 2.5);
+  const foodMet = getResource("yiyecek") >= foodNeed;
   items.push({
-    emoji: "🍞",
-    label: "Ekmek & Yiyecek",
+    emoji: "🌾",
+    label: "Yiyecek",
     delta: foodMet ? 10 : -15,
     met: foodMet,
+  });
+
+  const ekmekNeed = (alive * POP_EKMEK_RATE) / ticks;
+  const ekmekMet = getResource("ekmek") >= ekmekNeed;
+  items.push({
+    emoji: "🍞",
+    label: "Ekmek",
+    delta: ekmekMet ? 5 : -8,
+    met: ekmekMet,
   });
 
   const ilacNeed = (alive * POP_ILAC_RATE) / ticks;
@@ -126,28 +129,13 @@ function computeHappinessBreakdown() {
     met: ilacMet,
   });
 
-  for (const luxury of LUXURY_ORDER) {
-    if (getTotalProduction(luxury) <= 0) continue;
-    const need = (alive * LUXURY_RATES[luxury]) / ticks;
-    const met = getResource(luxury) >= need;
-    const value = LUXURY_HAPPINESS[luxury];
-    const delta = met ? value : -value;
-    items.push({
-      emoji: RESOURCES[luxury].emoji,
-      label: RESOURCES[luxury].name,
-      delta,
-      met,
-    });
-  }
-
-  const goldNeed = (alive * POP_GOLD_RATE) / ticks;
-  const goldMet = getResource("altin") >= goldNeed;
+  const kulturNeed = (alive * POP_KULTUR_RATE) / ticks;
+  const kulturMet = getResource("kultur") >= kulturNeed;
   items.push({
-    emoji: "🥂",
-    label: "Altın Kutlama",
-    delta: goldMet ? 8 : 0,
-    met: goldMet,
-    optional: true,
+    emoji: "🎭",
+    label: "Kültür",
+    delta: kulturMet ? 3 : -5,
+    met: kulturMet,
   });
 
   const wagesMet = state.population.wagesPaid;
@@ -271,17 +259,15 @@ export function consumePopulation() {
   state.resources.su -= suUsed;
   if (suUsed > 0) changed = true;
 
+  const foodNeed = (alive * POP_YIYECEK_RATE) / TICKS_PER_SECOND;
+  const foodUsed = Math.min(getResource("yiyecek"), foodNeed);
+  state.resources.yiyecek -= foodUsed;
+  if (foodUsed > 0) changed = true;
+
   const ekmekNeed = (alive * POP_EKMEK_RATE) / TICKS_PER_SECOND;
   const ekmekUsed = Math.min(getResource("ekmek"), ekmekNeed);
   state.resources.ekmek -= ekmekUsed;
   if (ekmekUsed > 0) changed = true;
-
-  const foodNeed = (alive * POP_YIYECEK_RATE) / TICKS_PER_SECOND;
-  const coveredByEkmek = ekmekUsed * 2.5;
-  const foodRemain = Math.max(0, foodNeed - coveredByEkmek);
-  const foodUsed = Math.min(getResource("yiyecek"), foodRemain);
-  state.resources.yiyecek -= foodUsed;
-  if (foodUsed > 0) changed = true;
 
   const ilacNeed = (alive * POP_ILAC_RATE) / TICKS_PER_SECOND;
   const ilacUsed = Math.min(getResource("ilac"), ilacNeed);
@@ -289,17 +275,10 @@ export function consumePopulation() {
   if (ilacUsed > 0) changed = true;
   state.population.ilacOk = ilacUsed >= ilacNeed * 0.99;
 
-  const goldNeed = (alive * POP_GOLD_RATE) / TICKS_PER_SECOND;
-  const goldUsed = Math.min(getResource("altin"), goldNeed);
-  state.resources.altin -= goldUsed;
-  if (goldUsed > 0) changed = true;
-
-  for (const luxury of LUXURY_ORDER) {
-    const need = (alive * LUXURY_RATES[luxury]) / TICKS_PER_SECOND;
-    const used = Math.min(getResource(luxury), need);
-    state.resources[luxury] -= used;
-    if (used > 0) changed = true;
-  }
+  const kulturNeed = (alive * POP_KULTUR_RATE) / TICKS_PER_SECOND;
+  const kulturUsed = Math.min(getResource("kultur"), kulturNeed);
+  state.resources.kultur -= kulturUsed;
+  if (kulturUsed > 0) changed = true;
 
   const sat = state.population.satisfaction;
   const newSat = sat + (happiness.target - sat) * 0.05;
@@ -309,8 +288,7 @@ export function consumePopulation() {
   }
 
   const suDeficitRatio = suNeed > 0 ? suDeficit(suNeed, suUsed) : 0;
-  const foodDeficitRatio =
-    foodNeed > 0 ? foodDeficit(foodNeed, coveredByEkmek, foodUsed) : 0;
+  const foodDeficitRatio = foodNeed > 0 ? foodDeficit(foodNeed, foodUsed) : 0;
   state.population.deficiency = Math.max(suDeficitRatio, foodDeficitRatio);
 
   return changed;
@@ -320,8 +298,8 @@ function suDeficit(need, used) {
   return Math.max(0, need - used) / need;
 }
 
-function foodDeficit(need, coveredByEkmek, foodUsed) {
-  return Math.max(0, Math.max(0, need - coveredByEkmek) - foodUsed) / need;
+function foodDeficit(need, used) {
+  return Math.max(0, need - used) / need;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -437,4 +415,3 @@ export function autoSellSurplus() {
 
   return changed;
 }
-

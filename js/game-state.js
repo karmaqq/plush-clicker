@@ -2,7 +2,7 @@
 /*                      ANA BİDON DOSYASI (ESKİ IMPORT'LAR İÇİN)             */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-export { state, getResource, getPower, getAltin, getBuildingCount, getPackCount, getSeason, getSeasonTimer, onChange, listeners } from "./state.js";
+export { state, getResource, getPower, getAltin, getBuildingCount, getPackCount, getSeason, getSeasonTimer, getEra, isEraTransitioning, onChange, listeners } from "./state.js";
 export { loadState, saveState, scheduleSave, resetGame, clearLegacyStorage } from "./persistence.js";
 export {
   getOutputMultiplier,
@@ -23,7 +23,6 @@ export {
   getNetRate,
   getResourceConsumption,
   getPowerProduction,
-  getPowerMaintenance,
   getBuildingProduction,
   getBuildingBonus,
   getInfoProduction,
@@ -70,8 +69,24 @@ export {
   buildIndustry,
   getIndustryUpgradeCost,
   upgradeIndustry,
+  getWorkerCost,
   addWorker,
   removeWorker,
 } from "./unlock.js";
+export {
+  getEraName,
+  getResourceName,
+  getResourceEmoji,
+  getBuildingName,
+  getPackName,
+  getGoldLabel,
+  getPowerLabel,
+  canAdvanceEra,
+  advanceEra,
+  ERA_DATA,
+  RESOURCE_NAMES,
+  PACK_NAMES,
+  TRANSITION_DATA,
+} from "./era.js";
 export { produce, emit } from "./engine.js";
 export { TICK_MS } from "./config.js";

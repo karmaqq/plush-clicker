@@ -153,11 +153,11 @@ Yiyecek tüketimi: 100 × 0.030 × 90 = 2700 yiyecek → -1080 AÇIK!
 
 | ID | İsim | Çıktı | Hız | Maliyet | costMultiplier | Kilit |
 |----|------|-------|-----|---------|----------------|-------|
-| quarry | Taş Ocağı | tas | 0.100/sn | { power: 200, yiyecek: 30 } | 1.17 | farm ×5 |
+| quarry | Taş Ocağı | tas | 0.100/sn | { power: 200, yiyecek: 30 } | 1.17 | academy ×1 |
 | stoneAtelier | Taş Atölyesi | tas bonus | +2%/lvl | { power: 600, tas: 15 } | 1.17 | quarry ×1 |
 | mine | Maden | maden | 0.080/sn | { power: 300, yiyecek: 40, tas: 10 } | 1.17 | quarry ×3 |
 | minerCamp | Madenci Kampı | maden bonus | +2%/lvl | { power: 1200, tas: 20, maden: 15 } | 1.17 | mine ×3 |
-| academy | Akademi | bilgi | 0.100/sn | { power: 500, maden: 30, tas: 25 } | 1.17 | mine ×3 |
+| academy | Akademi | bilgi | 0.150/sn | { power: 500, yiyecek: 80, su: 40 } | 1.17 | farm ×5 |
 | library | Kütüphane | bilgi bonus | +2%/lvl | { power: 2500, bilgi: 40, tas: 20 } | 1.20 | academy ×3 |
 
 #### Tier 3 — Kültür, İnanç, İpek
@@ -182,7 +182,7 @@ Yiyecek tüketimi: 100 × 0.030 × 90 = 2700 yiyecek → -1080 AÇIK!
 | celikFirini | Çelik Fırını | maden + demir → çelik | 4 | { power: 51000, tas: 638, yiyecek: 340 } | blacksmith + metalIsleme(Lv1) |
 | mermerAtolyesi | Mermer Atölyesi | tas → mermer | 3 | { power: 68000, tas: 850, yiyecek: 255 } | temple ×5 |
 | kumasAtolyesi | Kumaş Atölyesi | ipek → kumaş | 3 | { power: 25500, su: 128, yiyecek: 68 } | silkWorkshop ×3 |
-| sifaOcagi | Şifa Ocağı | inanc + bilgi → ilaç | 3 | { power: 6800, bilgi: 425, inanc: 128 } | temple ×1 |
+| sifaOcagi | Şifa Ocağı | inanc + bilgi → ilaç | 3 | { power: 6800, bilgi: 180, inanc: 128 } | temple ×1 |
 | mobilyaAtolyesi | Mobilya Atölyesi | tas + çelik → mobilya | 3 | { power: 85000, yiyecek: 340, maden: 425 } | celikFirini |
 | heykelAtolyesi | Heykel Atölyesi | mermer + çelik → heykel | 3 | { power: 127500, tas: 21, yiyecek: 10 } | mermerAtolyesi |
 | mucevherAtolyesi | Mücevher Atölyesi | kumaş + çelik + mermer → mücevher | 3 | { power: 102000, su: 213, yiyecek: 13 } | kumasAtolyesi |
@@ -321,8 +321,17 @@ START
   ├──→ farm ×3 ──→ 📦 Depo (depo)
   ├──→ farm ×5 ──→ 🏭 Değirmen (mill)
   │             ──→ 🍞 Fırın (firin)
-  │             ──→ ⛏️ Taş Ocağı (quarry)
+  │             ──→ 📖 Akademi (academy)
   ├──→ farm ×6 ──→ 🏚️ Ambar (ambar)
+  │
+  ▼
+📖 Akademi (academy)
+  │
+  ├──→ academy ×1 ──→ ⛏️ Taş Ocağı (quarry)
+  ├──→ academy ×3 ──→ 📚 Kütüphane (library)
+  │                ──→ 🧑‍🏭 İşçi Bilimi (isciBilimi)
+  ├──→ academy ×5 ──→ 🎭 Tiyatro (theatre)
+  │                ──→ 🕯️ Tapınak (temple)
   │
   ▼
 ⛏️ Taş Ocağı (quarry)
@@ -334,16 +343,7 @@ START
 💎 Maden (mine)
   │
   ├──→ mine ×3 ──→ ⛺ Madenci Kampı (minerCamp)
-  │             ──→ 📖 Akademi (academy)
   │             ──→ ⚒️ Demirci (blacksmith)
-  │
-  ▼
-📖 Akademi (academy)
-  │
-  ├──→ academy ×3 ──→ 📚 Kütüphane (library)
-  │                ──→ 🧑‍🏭 İşçi Bilimi (isciBilimi)
-  ├──→ academy ×5 ──→ 🎭 Tiyatro (theatre)
-  │                ──→ 🕯️ Tapınak (temple)
   │
   ▼
 🎭 Tiyatro (theatre)                🕯️ Tapınak (temple)
@@ -388,27 +388,27 @@ END (Tüm binalar açık)
 | 6 | Tarla | well ×5 | ~5 dk |
 | 7 | Depo | farm ×3 | ~8 dk |
 | 8 | Değirmen | farm ×5 | ~10 dk |
-| 9 | Fırın | farm ×5 | ~10 dk |
-| 10 | Ambar | farm ×6 | ~12 dk |
-| 11 | Taş Ocağı | farm ×5 | ~10 dk |
-| 12 | Taş Atölyesi | quarry ×1 | ~12 dk |
-| 13 | Maden | quarry ×3 | ~15 dk |
-| 14 | Madenci Kampı | mine ×3 | ~20 dk |
-| 15 | Akademi | mine ×3 | ~20 dk |
-| 16 | Kütüphane | academy ×3 | ~25 dk |
-| 17 | Demirci | mine ×3 | ~20 dk |
-| 18 | İşçi Bilimi | academy ×3 | ~25 dk |
+| 9 | Ambar | farm ×6 | ~12 dk |
+| 10 | Akademi | farm ×5 | ~10 dk |
+| 11 | Kütüphane | academy ×3 | ~20 dk |
+| 12 | Taş Ocağı | academy ×1 | ~12 dk |
+| 13 | Taş Atölyesi | quarry ×1 | ~14 dk |
+| 14 | Maden | quarry ×3 | ~18 dk |
+| 15 | Madenci Kampı | mine ×3 | ~22 dk |
+| 16 | Demirci | mine ×3 | ~22 dk |
+| 17 | İşçi Bilimi | academy ×3 | ~20 dk |
+| 18 | Fırın | farm ×5 | ~10 dk |
 | 19 | Ev | baraka ×7 + blacksmith | ~30 dk |
-| 20 | Tiyatro | academy ×5 | ~30 dk |
-| 21 | Tapınak | academy ×5 | ~30 dk |
-| 22 | Amfitiyatro | theatre ×1 | ~32 dk |
-| 23 | Şifa Ocağı | temple ×1 | ~32 dk |
-| 24 | Sunak | temple ×5 | ~40 dk |
-| 25 | İpek Atölyesi | theatre ×3 | ~35 dk |
-| 26 | Dokuma Tezgahı | silkWorkshop ×1 | ~37 dk |
-| 27 | Maliyet Bilimi | silkWorkshop ×1 | ~37 dk |
-| 28 | Kumaş Atölyesi | silkWorkshop ×3 | ~42 dk |
-| 29 | Mermer Atölyesi | temple ×5 | ~40 dk |
+| 20 | Tiyatro | academy ×5 | ~25 dk |
+| 21 | Tapınak | academy ×5 | ~25 dk |
+| 22 | Amfitiyatro | theatre ×1 | ~27 dk |
+| 23 | Şifa Ocağı | temple ×1 | ~27 dk |
+| 24 | Sunak | temple ×5 | ~35 dk |
+| 25 | İpek Atölyesi | theatre ×3 | ~30 dk |
+| 26 | Dokuma Tezgahı | silkWorkshop ×1 | ~32 dk |
+| 27 | Maliyet Bilimi | silkWorkshop ×1 | ~32 dk |
+| 28 | Kumaş Atölyesi | silkWorkshop ×3 | ~37 dk |
+| 29 | Mermer Atölyesi | temple ×5 | ~35 dk |
 | 30 | Çelik Fırını | blacksmith + metalIsleme | ~45 dk |
 | 31 | Mobilya Atölyesi | celikFirini | ~48 dk |
 | 32 | Mücevher Atölyesi | kumasAtolyesi | ~50 dk |
@@ -457,8 +457,8 @@ Tüm paketler **Bilgi** ile satın alınır.
 | autoClick | Zanaat | İşlenmiş/craft üretim +%/lvl | { bilgi: 160 } | 1.20 | critClick(Lv1) |
 | powerPatronage | İktidar | Güç üretimi +%/lvl | { bilgi: 380 } | 1.20 | autoClick(Lv1) |
 | metalIsleme | Metal İşleme | İşlenmiş/craft üretim +%/lvl | { bilgi: 850 } | 1.20 | powerPatronage(Lv1) |
-| eritme | Eritme | Tüm bina maliyeti -%/lvl | { bilgi: 1900 } | 1.20 | metalIsleme(Lv1) |
-| yazi | Yazı | Tüm üretim +%/lvl | { bilgi: 4200 } | 1.20 | metalIsleme(Lv1) |
+| eritme | Eritme | Tüm bina maliyeti -%/lvl | { bilgi: 1200 } | 1.20 | metalIsleme(Lv1) |
+| yazi | Yazı | Tüm üretim +%/lvl | { bilgi: 2800 } | 1.20 | metalIsleme(Lv1) |
 | isciBilimi | İşçi Bilimi | Sanayi işçisi üretimi +%/lvl | { bilgi: 240 } | 1.20 | academy ×3 |
 | depoBilimi | Depo Bilimi | Depo kapasitesi +%/lvl | { bilgi: 500 } | 1.20 | academy ×3 |
 | maliyetBilimi | Maliyet Bilimi | Bina maliyeti -%/lvl | { bilgi: 800 } | 1.20 | silkWorkshop ×1 |

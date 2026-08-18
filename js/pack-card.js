@@ -7,7 +7,7 @@ import {
   createLockOverlay,
   triggerShake,
 } from "./utils.js";
-import { RESOURCES } from "./resources.js";
+import { state } from "./state.js";
 import { PACKS_DATA } from "./packs.js";
 import { createTooltip, createCostRows, refreshCostRows } from "./tooltip.js";
 import {
@@ -20,6 +20,8 @@ import {
   getUnlockType,
   isNearUnlock,
   buyPack,
+  getPackName,
+  getResourceEmoji,
   onChange,
 } from "./game-state.js";
 
@@ -42,7 +44,7 @@ export function createPackCard(id, data) {
 
   const name = document.createElement("div");
   name.className = "upgrade-name";
-  name.textContent = data.emoji + " " + data.name;
+  name.textContent = data.emoji + " " + getPackName(id);
 
   const level = document.createElement("div");
   level.className = "upgrade-level";
@@ -95,6 +97,8 @@ export function createPackCard(id, data) {
 
   const ttLive = { id: null, rows: [], effectEl: null, totalEl: null };
 
+  let lastEra = null;
+
   function buildPackTooltip(packId, packData) {
     const packCost = getPackCost(packId);
     const count = getPackCount(packId);
@@ -103,7 +107,7 @@ export function createPackCard(id, data) {
 
     const title = document.createElement("div");
     title.className = "tooltip-title";
-    title.textContent = packData.emoji + " " + packData.name;
+    title.textContent = packData.emoji + " " + getPackName(packId);
     tooltip.element.appendChild(title);
 
     const effectDiv = document.createElement("div");
@@ -166,13 +170,19 @@ export function createPackCard(id, data) {
     const unlocked = getUnlock(data);
     card.classList.toggle("locked", !unlocked);
 
+    const currentEra = state.era.current;
+    if (currentEra !== lastEra) {
+      lastEra = currentEra;
+      name.textContent = data.emoji + " " + getPackName(id);
+    }
+
     if (!unlocked) {
       if (!isNearUnlock(data)) {
         if (!card.hidden) card.hidden = true;
         return;
       }
       card.hidden = false;
-      lockOverlay.lockName.textContent = data.name;
+      lockOverlay.lockName.textContent = getPackName(id);
       fillUnlockDesc(lockOverlay.lockDesc, data);
       lockOverlay.lockDesc.classList.toggle("lock-req-building", getUnlockType(data) === "building");
       lockOverlay.lockDesc.classList.toggle("lock-req-pack", getUnlockType(data) === "pack");
@@ -207,7 +217,7 @@ export function createPackCard(id, data) {
     for (const [resource, amount] of Object.entries(cost)) {
       const span = costSpans[resource];
       const ok = getResource(resource) >= amount;
-      span.textContent = RESOURCES[resource].emoji + " " + formatCount(amount);
+      span.textContent = getResourceEmoji(resource) + " " + formatCount(amount);
       span.classList.toggle("cost-ok", ok);
       span.classList.toggle("cost-missing", !ok);
       if (!ok) affordable = false;

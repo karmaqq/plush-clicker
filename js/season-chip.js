@@ -67,8 +67,9 @@ export function createSeasonChip() {
     const rows = [
       ["💧 Su", season.modifiers.su],
       ["🌾 Yiyecek", season.modifiers.yiyecek],
-      ["🪵 Odun", season.modifiers.odun],
-      ["💎 Maden", season.modifiers.maden],
+      ["🪨 Taş", season.modifiers.tas],
+      ["🧵 İpek", season.modifiers.ipek],
+      ["🎭 Kültür", season.modifiers.kultur],
     ];
 
     for (const [label, value] of rows) {
@@ -84,6 +85,14 @@ export function createSeasonChip() {
       valueEl.style.color = value > 1 ? "#7ee2a8" : "#ff9a5a";
       row.append(labelEl, valueEl);
       list.appendChild(row);
+    }
+
+    if (!list.firstChild) {
+      const empty = document.createElement("div");
+      empty.className = "season-row";
+      empty.textContent = "Değişim yok";
+      empty.style.color = "#667";
+      list.appendChild(empty);
     }
 
     tooltip.hidden = false;
