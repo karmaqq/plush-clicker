@@ -307,7 +307,7 @@ function buildResourceTooltip(id) {
   const hasBuildingRows = buildingRows.length > 0 || bonusRows.length > 0;
   const seasonMult = getSeasonMultiplier(id);
   const hasSeasonRow = seasonMult !== 1;
-  capDivider.hidden = !hasBuildingRows && !hasSeasonRow;
+  capDivider.hidden = false;
 
   const divider = document.createElement("div");
   divider.className = "tt-divider";

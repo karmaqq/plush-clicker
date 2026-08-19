@@ -7,6 +7,7 @@ import {
   SEASON_ORDER,
   TICKS_PER_SECOND,
   TICK_MS,
+  OFFLINE_MAX_SECONDS,
 } from "./config.js";
 
 export { TICK_MS };
@@ -17,6 +18,7 @@ import {
   listeners,
 } from "./state.js";
 import { scheduleSave } from "./persistence.js";
+import { checkEraAdvance } from "./era-check.js";
 import { RESOURCES } from "./resources.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import {
@@ -103,7 +105,7 @@ for (const id of Object.keys(INDUSTRY_DATA)) {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────── Üretim İşlemcisi ─────────────────── */
-export function produce() {
+export function produce(silent) {
   let changed = false;
 
   const snapshot = computeDerivedState();
@@ -226,5 +228,28 @@ export function produce() {
     changed = true;
   }
 
-  if (changed) emit(snapshot);
+  if (changed && !silent) {
+    emit(snapshot);
+    checkEraAdvance();
+  }
+}
+
+/* ─────────────────── Offline İşlemci ─────────────────── */
+export function processOfflineProgress() {
+  const lastActive = state.lastActive || Date.now();
+  const now = Date.now();
+  const elapsedMs = now - lastActive;
+  const elapsedSeconds = Math.min(Math.floor(elapsedMs / 1000), OFFLINE_MAX_SECONDS);
+
+  if (elapsedSeconds <= 0) return;
+
+  const offlineTicks = elapsedSeconds * TICKS_PER_SECOND;
+
+  for (let i = 0; i < offlineTicks; i++) {
+    produce(true);
+  }
+
+  state.lastActive = Date.now();
+  emit();
+  checkEraAdvance();
 }

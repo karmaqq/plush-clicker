@@ -42,6 +42,7 @@ export const state = {
   settings: {
     autoSell: {},
   },
+  lastActive: Date.now(),
 };
 
 for (const id of Object.keys(RESOURCES)) {

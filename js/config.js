@@ -30,8 +30,8 @@ export const SEASONS_DATA = {
 
 export const SEASON_ORDER = Object.keys(SEASONS_DATA);
 
-export const TRADE_INTERVAL_MIN = 300;
-export const TRADE_INTERVAL_MAX = 600;
+export const TRADE_INTERVAL_MIN = 180;
+export const TRADE_INTERVAL_MAX = 420;
 
 export const TRADE_PRICES = {
   su: { buy: [2, 4], sell: [1, 2] },
@@ -50,13 +50,12 @@ export const POP_EKMEK_RATE = 0.010;
 export const POP_ILAC_RATE = 0.005;
 export const POP_KULTUR_RATE = 0.002;
 export const POP_GOLD_RATE = 0;
-export const WORKER_WAGE_SEASONAL = 0;
+export const WORKER_WAGE_SEASONAL = 2;
 
 export const TICKS_PER_SECOND = 5;
 export const TICK_MS = 1000 / TICKS_PER_SECOND;
 
 export const ARRIVAL_DURATION = 30;
 
-export const DEV_START_ERA = 1;
-
-export const STORAGE_KEY = "plush-clicker:state-v10";
+export const STORAGE_KEY = "plush-clicker:state";
+export const OFFLINE_MAX_SECONDS = 3600;

@@ -17,7 +17,6 @@ import { createSeasonChip } from "./season-chip.js";
 import { createMigrationStrip } from "./migration-strip.js";
 import { createGoldChip } from "./gold-chip.js";
 import { createEraChip } from "./era-chip.js";
-import { triggerEraTransition } from "./era-transition.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                      HEADER PANEL OLUŞTURUCU                              */
@@ -45,9 +44,7 @@ export function createHeaderPanel() {
   const seasonChip = createSeasonChip();
   const goldChip = createGoldChip();
 
-  const eraChip = createEraChip(() => {
-    triggerEraTransition();
-  });
+  const eraChip = createEraChip();
 
   const resetBtn = document.createElement("button");
   resetBtn.className = "reset-btn";

@@ -8,7 +8,6 @@ import {
   getPopulationDeficiency,
   getHappinessBreakdown,
   getMigrationInterval,
-  getArrivalDuration,
   onChange,
 } from "./game-state.js";
 
@@ -39,15 +38,18 @@ export function createHappinessChip() {
   const title = document.createElement("div");
   title.className = "happiness-title";
 
-  const posSec = createHappinessSection("Mutluluğu Artıranlar");
-  const negSec = createHappinessSection("Mutluluğu Düşürenler");
+  const posSec = createHappinessSection("Memnuniyet Kaynakları");
+  const negSec = createHappinessSection("Eksiklikler");
 
   const info = document.createElement("div");
   info.className = "happiness-info";
   const infoText = document.createElement("span");
   info.appendChild(infoText);
 
-  tooltip.append(title, posSec.section, negSec.section, info);
+  const divider = document.createElement("div");
+  divider.className = "tt-divider";
+
+  tooltip.append(title, posSec.section, negSec.section, divider, info);
   el.appendChild(tooltip);
 
   let active = false;
@@ -76,15 +78,18 @@ export function createHappinessChip() {
     const satisfaction = getPopulationSatisfaction();
     const { items, target } = getHappinessBreakdown();
 
-    title.textContent = "😊 Mutluluk " + Math.round(satisfaction) + " / Hedef " + Math.round(target);
+    title.textContent = "😊 Mutluluk " + Math.round(satisfaction);
 
-    fillHappinessList(posSec, items.filter((i) => i.delta > 0));
-    fillHappinessList(negSec, items.filter((i) => i.delta < 0));
+    const deductions = items.filter((i) => !i.met);
+    const metItems = items.filter((i) => i.met);
+
+    fillHappinessList(posSec, metItems);
+    fillHappinessList(negSec, deductions);
 
     const deficiency = getPopulationDeficiency();
     const parts = [];
-    if (deficiency > 0.05) parts.push("⚠️ Temel ihtiyaç açığı: nüfus risk altında");
-    parts.push("🚶 Göç: ~" + getMigrationInterval() + " sn / kişi · Varış ~" + getArrivalDuration() + " sn");
+    parts.push("🚶 Göçmen Gelişi: ~" + getMigrationInterval() + " saniye");
+    if (deficiency > 0.05) parts.push("⚠️ Temel ihtiyaç açığı");
     infoText.textContent = parts.join("  ·  ");
 
     tooltip.hidden = false;
@@ -136,7 +141,13 @@ function fillHappinessList(sec, items) {
 
     const val = document.createElement("span");
     val.className = "happiness-row-value";
-    val.textContent = (item.delta >= 0 ? "+" : "−") + Math.abs(item.delta);
+    if (item.delta === 0) {
+      val.textContent = "✓";
+      val.classList.add("happiness-met");
+    } else {
+      val.textContent = "−" + Math.abs(item.delta);
+      val.classList.add("happiness-unmet");
+    }
 
     row.append(label, val);
     sec.list.appendChild(row);

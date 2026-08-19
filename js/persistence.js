@@ -2,7 +2,7 @@
 /*                         KALICILIK YÖNETİMİ                                */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL_MIN, TRADE_INTERVAL_MAX, INDUSTRY_MAX_LEVEL, ARRIVAL_DURATION, STORAGE_KEY, DEV_START_ERA } from "./config.js";
+import { SEASON_DURATION, SEASONS_DATA, TRADE_INTERVAL_MIN, TRADE_INTERVAL_MAX, INDUSTRY_MAX_LEVEL, ARRIVAL_DURATION, STORAGE_KEY } from "./config.js";
 import { state, freshIndustryEntry, listeners } from "./state.js";
 import { RESOURCES } from "./resources.js";
 import { PACKS_DATA } from "./packs.js";
@@ -88,16 +88,20 @@ function loadSeason(saved) {
 }
 
 function loadEra(saved) {
-  if (DEV_START_ERA !== null && Number.isFinite(DEV_START_ERA) && DEV_START_ERA >= 1 && DEV_START_ERA <= 3) {
-    state.era.current = DEV_START_ERA;
-    return;
-  }
   if (!saved || typeof saved !== "object") return;
   if (Number.isFinite(saved.current) && saved.current >= 1 && saved.current <= 3) {
     state.era.current = saved.current;
   }
   if (typeof saved.transitioning === "boolean") {
     state.era.transitioning = saved.transitioning;
+  }
+}
+
+function loadLastActive(saved) {
+  if (Number.isFinite(saved)) {
+    state.lastActive = saved;
+  } else {
+    state.lastActive = Date.now();
   }
 }
 
@@ -143,10 +147,6 @@ function loadTrade(saved) {
 
 export function loadState() {
   try {
-    if (DEV_START_ERA === null) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
@@ -159,6 +159,7 @@ export function loadState() {
       loadEra(saved.era);
       loadTrade(saved.trade);
       loadSettings(saved.settings);
+      loadLastActive(saved.lastActive);
       return;
     }
 
@@ -192,6 +193,7 @@ export function saveState() {
       era: state.era,
       trade: state.trade,
       settings: state.settings,
+      lastActive: Date.now(),
     }),
   );
 }
@@ -250,7 +252,7 @@ export function resetGame() {
   };
 
   state.era = {
-    current: (DEV_START_ERA !== null && Number.isFinite(DEV_START_ERA) && DEV_START_ERA >= 1 && DEV_START_ERA <= 3) ? DEV_START_ERA : 1,
+    current: 1,
     transitioning: false,
   };
 
@@ -288,6 +290,8 @@ function emitReset() {
 
 export function clearLegacyStorage() {
   const legacyKeys = [
+    "plush-clicker:state-v11",
+    "plush-clicker:state-v10",
     "plush-clicker:state-v9",
     "plush-clicker:state-v8",
     "plush-clicker:state-v7",

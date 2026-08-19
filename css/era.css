@@ -89,77 +89,6 @@
     min-width: 0;
 }
 
-/* ─────────────────── Çağ Atla Butonu ─────────────────── */
-
-.era-advance-btn {
-    display: none;
-    font-family: var(--font-ui);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.03em;
-    color: #1a1a1a;
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
-    border: 1px solid #2ecc71;
-    border-radius: 0.375rem;
-    padding: 0.2rem 0.55rem;
-    cursor: pointer;
-    white-space: nowrap;
-    animation: era-btn-glow 1.5s ease-in-out infinite;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.era-advance-btn.era-advance-ready {
-    display: inline-flex;
-}
-
-.era-advance-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
-}
-
-.era-advance-btn:active {
-    transform: scale(0.97);
-}
-
-@keyframes era-btn-glow {
-    0%, 100% { box-shadow: 0 0 4px rgba(46, 204, 113, 0.3); }
-    50% { box-shadow: 0 0 14px rgba(46, 204, 113, 0.6); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
-/*                    ÇAĞ DEBUG DROPDOWN                                     */
-/* ═══════════════════════════════════════════════════════════════════════════ */
-
-.era-debug-dropdown {
-    position: absolute;
-    top: calc(100% + 0.25rem);
-    left: 0;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    min-width: 9rem;
-    background: linear-gradient(145deg, #1f2630, #171d24);
-    border: 1px solid #4a5563;
-    border-radius: 0.5rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-    overflow: hidden;
-}
-
-.era-debug-option {
-    font-family: var(--font-ui);
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #b8c2cc;
-    padding: 0.4rem 0.65rem;
-    cursor: pointer;
-    transition: background 0.1s ease, color 0.1s ease;
-}
-
-.era-debug-option:hover {
-    background: #3a4450;
-    color: #ffffff;
-}
-
 /* ─────────────────── Çağ Tooltip ─────────────────── */
 
 .era-tooltip {
@@ -363,4 +292,91 @@
 
 .power-icon {
     margin-right: 0.15em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      ÇAĞ GEÇİŞ ONAY DIALOGU                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.era-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: era-confirm-fadein 0.3s ease;
+}
+
+@keyframes era-confirm-fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.era-confirm-dialog {
+  background: #1a1d23;
+  border: 1px solid #2d3139;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: era-confirm-scalein 0.3s ease;
+}
+
+@keyframes era-confirm-scalein {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.era-confirm-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffd166;
+  margin-bottom: 12px;
+}
+
+.era-confirm-desc {
+  font-size: 0.9rem;
+  color: #a0a8b4;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.era-confirm-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.era-confirm-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.era-confirm-cancel {
+  background: #2d3139;
+  color: #a0a8b4;
+}
+
+.era-confirm-cancel:hover {
+  background: #3a3f47;
+  color: #d7dde4;
+}
+
+.era-confirm-ok {
+  background: #ffd166;
+  color: #1a1d23;
+}
+
+.era-confirm-ok:hover {
+  background: #ffe5a0;
+  transform: translateY(-1px);
 }

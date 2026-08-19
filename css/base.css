@@ -304,9 +304,10 @@ body.era-theme-space {
     gap: 0.25rem;
     padding: 0.5rem;
     border-radius: 0.5rem;
-    background: linear-gradient(145deg, rgba(26, 32, 39, 0.94), rgba(18, 23, 30, 0.97));
+    background: linear-gradient(145deg, rgba(26, 32, 39, 1), rgba(18, 23, 30, 1));
     z-index: 2;
     text-align: center;
+    pointer-events: none;
 }
 
 .building-card.locked .lock-overlay,

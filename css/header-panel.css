@@ -310,6 +310,16 @@
     text-overflow: ellipsis;
 }
 
+.happiness-met {
+    color: #7ee2a8;
+    font-weight: 700;
+}
+
+.happiness-unmet {
+    color: #ff8a8a;
+    font-weight: 700;
+}
+
 .happiness-sec:nth-of-type(2) .happiness-row-value {
     color: #7ee2a8;
 }

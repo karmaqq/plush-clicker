@@ -16,8 +16,6 @@ import {
   onChange,
 } from "./game-state.js";
 import { state } from "./state.js";
-import { DEV_START_ERA } from "./config.js";
-import { triggerEraTransition } from "./era-transition.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                       ÇAĞ ÇİP OLUŞTURUCU                                  */
@@ -25,7 +23,7 @@ import { triggerEraTransition } from "./era-transition.js";
 
 /* ─────────────────── Çağ Çip Bileşeni ─────────────────── */
 
-export function createEraChip(onAdvanceRequest) {
+export function createEraChip() {
   const el = document.createElement("div");
   el.className = "era-chip";
 
@@ -56,55 +54,7 @@ export function createEraChip(onAdvanceRequest) {
 
   progressArea.append(progressBar, progressLabel);
 
-  const advanceBtn = document.createElement("button");
-  advanceBtn.type = "button";
-  advanceBtn.className = "era-advance-btn";
-  advanceBtn.textContent = "Çağ Atla";
-  advanceBtn.hidden = true;
-
-  advanceBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (canAdvanceEra() && !isEraTransitioning()) {
-      if (onAdvanceRequest) {
-        onAdvanceRequest();
-      }
-    }
-  });
-
-  el.append(infoRow, progressArea, advanceBtn);
-
-  /* ─────────────────── Debug Era Seçici ─────────────────── */
-
-  if (DEV_START_ERA !== null) {
-    const eraDebugDropdown = document.createElement("div");
-    eraDebugDropdown.className = "era-debug-dropdown";
-    eraDebugDropdown.hidden = true;
-
-    for (const eraNum of [1, 2, 3]) {
-      const opt = document.createElement("div");
-      opt.className = "era-debug-option";
-      opt.textContent = eraNum + " — " + (ERA_DATA[eraNum]?.name || "");
-      opt.addEventListener("click", (e) => {
-        e.stopPropagation();
-        triggerEraTransition(eraNum);
-        eraDebugDropdown.hidden = true;
-      });
-      eraDebugDropdown.appendChild(opt);
-    }
-
-    el.appendChild(eraDebugDropdown);
-
-    el.addEventListener("dblclick", (e) => {
-      e.preventDefault();
-      eraDebugDropdown.hidden = !eraDebugDropdown.hidden;
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!el.contains(e.target)) {
-        eraDebugDropdown.hidden = true;
-      }
-    });
-  }
+  el.append(infoRow, progressArea);
 
   /* ─────────────────── Tooltip ─────────────────── */
 
@@ -173,14 +123,9 @@ export function createEraChip(onAdvanceRequest) {
         progressFill.classList.add("era-bar-fill");
       }
 
-      const ready = canAdvanceEra();
-      advanceBtn.hidden = !ready;
-      advanceBtn.classList.toggle("era-advance-ready", ready);
-
       if (tooltipActive) refreshTooltip();
     } else {
       progressArea.hidden = true;
-      advanceBtn.hidden = true;
     }
   }
 

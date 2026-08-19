@@ -41,6 +41,8 @@ import {
   onChange,
 } from "./game-state.js";
 
+import { UNLOCK_STRATEGIES } from "./unlock.js";
+
 export const tooltip = createTooltip("building-tooltip");
 
 const tooltipLive = { id: null, rows: [], effectValue: null, seviyeEl: null, bonusTotalEl: null };
@@ -86,7 +88,11 @@ export function createBuildingCard(id, data) {
   let tooltipActive = false;
 
   card.addEventListener("mouseenter", () => {
-    if (!getUnlock(data) && getBuildingCount(id) === 0) return;
+    if (!getUnlock(data) && getBuildingCount(id) === 0) {
+      buildLockedTooltip(id, data);
+      tooltip.show(card);
+      return;
+    }
     tooltipActive = true;
     buildBuildingTooltip(id, data);
     tooltip.show(card);
@@ -242,6 +248,88 @@ export function createBuildingCard(id, data) {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                        BİNA BİLGİ KUTUCUĞU                               */
 /* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Kilitli Bina Tooltip Oluşturucu ─────────────────── */
+
+function buildLockedTooltip(id, data) {
+  resetResourceClass(tooltip.element, "power");
+
+  tooltip.element.textContent = "";
+
+  const title = document.createElement("div");
+  title.className = "tooltip-title";
+  title.textContent = getBuildingName(id);
+  tooltip.element.appendChild(title);
+
+  const lockedLabel = document.createElement("div");
+  lockedLabel.className = "tooltip-effect";
+  const lockedLine = document.createElement("div");
+  lockedLine.className = "tooltip-effect-line";
+  const lockedText = document.createElement("span");
+  lockedText.className = "effect-label";
+  lockedText.textContent = "🔒 Kilitli";
+  lockedLine.appendChild(lockedText);
+  lockedLabel.appendChild(lockedLine);
+  tooltip.element.appendChild(lockedLabel);
+
+  const divider = document.createElement("div");
+  divider.className = "tt-divider";
+  tooltip.element.appendChild(divider);
+
+  const reqSection = document.createElement("div");
+  reqSection.className = "tooltip-effect";
+  const reqTitle = document.createElement("div");
+  reqTitle.className = "tooltip-effect-line";
+  const reqLabel = document.createElement("span");
+  reqLabel.className = "effect-label";
+  reqLabel.textContent = "Koşul:";
+  reqTitle.appendChild(reqLabel);
+  reqSection.appendChild(reqTitle);
+
+  const unlock = data.unlock;
+  if (unlock) {
+    if (unlock.type === "all" && unlock.conditions) {
+      for (const cond of unlock.conditions) {
+        const strategy = UNLOCK_STRATEGIES[cond.type];
+        if (!strategy) continue;
+        const met = strategy.isMet(cond);
+        const name = strategy.target(cond);
+        const progress = strategy.progress(cond);
+
+        const condLine = document.createElement("div");
+        condLine.className = "tooltip-effect-line";
+        const condName = document.createElement("span");
+        condName.className = "lock-cond-name";
+        condName.textContent = name + " ";
+        const condProg = document.createElement("span");
+        condProg.className = met ? "lock-cond met" : "lock-cond unmet";
+        condProg.textContent = "(" + progress + ")";
+        condLine.append(condName, condProg);
+        reqSection.appendChild(condLine);
+      }
+    } else {
+      const strategy = UNLOCK_STRATEGIES[unlock.type];
+      if (strategy) {
+        const met = strategy.isMet(unlock);
+        const name = strategy.target(unlock);
+        const progress = strategy.progress(unlock);
+
+        const condLine = document.createElement("div");
+        condLine.className = "tooltip-effect-line";
+        const condName = document.createElement("span");
+        condName.className = "lock-cond-name";
+        condName.textContent = name + " ";
+        const condProg = document.createElement("span");
+        condProg.className = met ? "lock-cond met" : "lock-cond unmet";
+        condProg.textContent = "(" + progress + ")";
+        condLine.append(condName, condProg);
+        reqSection.appendChild(condLine);
+      }
+    }
+  }
+
+  tooltip.element.appendChild(reqSection);
+}
 
 /* ─────────────────── Bina Tooltip Oluşturucu ─────────────────── */
 

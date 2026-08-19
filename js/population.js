@@ -10,10 +10,12 @@ import {
   POP_KULTUR_RATE,
   TICKS_PER_SECOND,
   ARRIVAL_DURATION,
+  WORKER_WAGE_SEASONAL,
+  SEASON_DURATION,
 } from "./config.js";
 import { state, getResource, getBuildingCount, getPopulationAlive } from "./state.js";
 import { RESOURCES } from "./resources.js";
-import { BUILDINGS_DATA, HOUSING_DATA } from "./buildings.js";
+import { HOUSING_DATA } from "./buildings.js";
 import { INDUSTRY_DATA } from "./industry.js";
 import {
   getTotalProduction,
@@ -89,129 +91,161 @@ function computeHappinessBreakdown() {
   const alive = getPopulationAlive();
   const items = [];
 
-  if (alive <= 0) return { items, target: 50 };
+  if (alive <= 0) return { items, target: 100 };
 
   const ticks = TICKS_PER_SECOND;
+  let target = 100;
+
+  /* ═══ HAYATI KAYNAKLAR — Her zaman değerlendirilir ═══ */
 
   const suNeed = (alive * POP_SU_RATE) / ticks;
   const suMet = getResource("su") >= suNeed;
+  if (!suMet) {
+    const penalty = 15;
+    target -= penalty;
+  }
   items.push({
-    emoji: "💧",
-    label: "Temiz Su",
-    delta: suMet ? 10 : -15,
-    met: suMet,
+    emoji: "💧", label: "Temiz Su",
+    delta: suMet ? 0 : -15, met: suMet,
   });
 
   const foodNeed = (alive * POP_YIYECEK_RATE) / ticks;
   const foodMet = getResource("yiyecek") >= foodNeed;
+  if (!foodMet) {
+    const penalty = 12;
+    target -= penalty;
+  }
   items.push({
-    emoji: "🌾",
-    label: "Yiyecek",
-    delta: foodMet ? 10 : -15,
-    met: foodMet,
+    emoji: "🌾", label: "Yiyecek",
+    delta: foodMet ? 0 : -12, met: foodMet,
   });
 
-  const ekmekNeed = (alive * POP_EKMEK_RATE) / ticks;
-  const ekmekMet = getResource("ekmek") >= ekmekNeed;
-  items.push({
-    emoji: "🍞",
-    label: "Ekmek",
-    delta: ekmekMet ? 5 : -8,
-    met: ekmekMet,
-  });
+  /* ═══ SAĞLIK — Üretim zinciri varsa değerlendirilir ═══ */
 
-  const ilacNeed = (alive * POP_ILAC_RATE) / ticks;
-  const ilacMet = getResource("ilac") >= ilacNeed;
-  items.push({
-    emoji: "💊",
-    label: "İlaç",
-    delta: ilacMet ? 5 : -10,
-    met: ilacMet,
-  });
+  if (state.industry.sifaOcagi?.built) {
+    const ilacNeed = (alive * POP_ILAC_RATE) / ticks;
+    const ilacMet = getResource("ilac") >= ilacNeed;
+    if (!ilacMet) {
+      const penalty = 7;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "💊", label: "İlaç",
+      delta: ilacMet ? 0 : -7, met: ilacMet,
+    });
+  }
 
-  const kulturNeed = (alive * POP_KULTUR_RATE) / ticks;
-  const kulturMet = getResource("kultur") >= kulturNeed;
-  items.push({
-    emoji: "🎭",
-    label: "Kültür",
-    delta: kulturMet ? 3 : -5,
-    met: kulturMet,
-  });
+  /* ═══ LÜKS TIER 1 — Düşük nüfus eşiği ═══ */
 
-  const wagesMet = state.population.wagesPaid;
-  items.push({
-    emoji: "💰",
-    label: "İşçi Maaşları",
-    delta: wagesMet ? 20 : -10,
-    met: wagesMet,
-  });
+  if (alive >= 5 && state.industry.firin?.built) {
+    const ekmekNeed = (alive * POP_EKMEK_RATE) / ticks;
+    const ekmekMet = getResource("ekmek") >= ekmekNeed;
+    if (!ekmekMet) {
+      const penalty = 5;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "🍞", label: "Ekmek",
+      delta: ekmekMet ? 0 : -5, met: ekmekMet,
+    });
+  }
+
+  /* ═══ LÜKS TIER 2 — Orta nüfus eşiği ═══ */
+
+  if (alive >= 20 && getBuildingCount("theatre") > 0) {
+    const kulturNeed = (alive * POP_KULTUR_RATE) / ticks;
+    const kulturMet = getResource("kultur") >= kulturNeed;
+    if (!kulturMet) {
+      const penalty = 5;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "🎭", label: "Kültür",
+      delta: kulturMet ? 0 : -5, met: kulturMet,
+    });
+  }
+
+  /* ═══ LÜKS TIER 3 — Yüksek nüfus eşiği ═══ */
+
+  if (alive >= 30 && getBuildingCount("temple") > 0) {
+    const inancMet = getResource("inanç") > 0;
+    if (!inancMet) {
+      const penalty = 4;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "🕯️", label: "İnanç",
+      delta: inancMet ? 0 : -4, met: inancMet,
+    });
+  }
+
+  if (alive >= 50 && getBuildingCount("silkWorkshop") > 0) {
+    const ipekMet = getResource("ipek") > 0;
+    if (!ipekMet) {
+      const penalty = 5;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "🧵", label: "İpek",
+      delta: ipekMet ? 0 : -5, met: ipekMet,
+    });
+  }
+
+  /* ═══ KONUT KONFORU ═══ */
 
   const evCap = getBuildingCount("ev") * HOUSING_DATA.ev.housingCapacity;
   const barakaCap =
     getBuildingCount("baraka") * HOUSING_DATA.baraka.housingCapacity;
   const totalCap = evCap + barakaCap;
   const evRatio = totalCap > 0 ? evCap / totalCap : 0;
-  const housingDelta = Math.round(evRatio * 8);
-  if (housingDelta > 0) {
+
+  if (alive >= 10 && totalCap > 0) {
+    if (evRatio < 0.2) {
+      const penalty = 4;
+      target -= penalty;
+      items.push({ emoji: "🏠", label: "Konut Konforu", delta: -penalty, met: false });
+    } else if (evRatio < 0.5) {
+      const penalty = 2;
+      target -= penalty;
+      items.push({ emoji: "🏠", label: "Konut Konforu", delta: -penalty, met: false });
+    } else {
+      items.push({ emoji: "🏠", label: "Konut Konforu", delta: 0, met: true });
+    }
+  }
+
+  /* ═══ MAAŞLAR ═══ */
+
+  const wagesMet = state.population.wagesPaid;
+  if (alive >= 5) {
+    if (!wagesMet) {
+      const penalty = 8;
+      target -= penalty;
+    }
     items.push({
-      emoji: "🏠",
-      label: "Konut Konforu",
-      delta: housingDelta,
-      met: true,
+      emoji: "💰", label: "İşçi Maaşları",
+      delta: wagesMet ? 0 : -8, met: wagesMet,
     });
   }
 
-  let buildingDelta = 0;
-  for (const id of Object.keys(BUILDINGS_DATA)) {
-    const building = BUILDINGS_DATA[id];
-    if (building.happinessPerLevel) {
-      buildingDelta += getBuildingCount(id) * building.happinessPerLevel;
-    }
-  }
-  buildingDelta = Math.min(5, buildingDelta);
-  if (buildingDelta > 0) {
-    items.push({
-      emoji: "🌿",
-      label: "Rahatlama",
-      delta: buildingDelta,
-      met: true,
-    });
-  }
-
-  const cultureProd = getTotalProduction("kultur");
-  if (cultureProd > 0) {
-    const cultureDelta = Math.min(8, getBuildingCount("amphitheatre"));
-    if (cultureDelta > 0) {
-      items.push({
-        emoji: "🏛️",
-        label: "Kültür",
-        delta: cultureDelta,
-        met: true,
-      });
-    }
-  }
+  /* ═══ İŞGÜCÜ DENGESİ ═══ */
 
   let totalJobSlots = 0;
   for (const id of Object.keys(INDUSTRY_DATA)) {
     if (state.industry[id].built) totalJobSlots += getIndustryMaxWorkers(id);
   }
-  let idleDelta = 0;
   if (totalJobSlots > 0) {
     const idleRatio = 1 - getWorkerCount() / alive;
-    if (idleRatio <= 0.35) idleDelta = 5;
-    else if (idleRatio > 0.65) idleDelta = -3;
-  }
-  if (idleDelta !== 0) {
+    const jobMet = idleRatio <= 0.65;
+    if (!jobMet) {
+      const penalty = 3;
+      target -= penalty;
+    }
     items.push({
-      emoji: "👷",
-      label: "İşgücü Dengesi",
-      delta: idleDelta,
-      met: idleDelta > 0,
+      emoji: "👷", label: "İşgücü Dengesi",
+      delta: jobMet ? 0 : -3, met: jobMet,
     });
   }
 
-  let target = 0;
-  for (const item of items) target += item.delta;
   target = Math.max(0, Math.min(100, target));
 
   return { items, target };
@@ -248,6 +282,7 @@ export function consumePopulation() {
   if (alive <= 0) {
     state.population.deficiency = 0;
     state.population.ilacOk = false;
+    state.population.wagesPaid = true;
     return false;
   }
 
@@ -273,16 +308,36 @@ export function consumePopulation() {
   const ilacUsed = Math.min(getResource("ilac"), ilacNeed);
   state.resources.ilac -= ilacUsed;
   if (ilacUsed > 0) changed = true;
-  state.population.ilacOk = ilacUsed >= ilacNeed * 0.99;
+  state.population.ilacOk = ilacUsed >= ilacNeed * 0.80;
 
   const kulturNeed = (alive * POP_KULTUR_RATE) / TICKS_PER_SECOND;
   const kulturUsed = Math.min(getResource("kultur"), kulturNeed);
   state.resources.kultur -= kulturUsed;
   if (kulturUsed > 0) changed = true;
 
+  /* ═══ MAAŞ ÖDEMESİ ═══ */
+
+  const workerCount = getWorkerCount();
+  const wageCostPerTick = (workerCount * WORKER_WAGE_SEASONAL) / SEASON_DURATION / TICKS_PER_SECOND;
+  if (wageCostPerTick > 0) {
+    const goldAvailable = getResource("altin");
+    if (goldAvailable >= wageCostPerTick) {
+      state.resources.altin -= wageCostPerTick;
+      state.population.wagesPaid = true;
+    } else {
+      state.resources.altin = Math.max(0, goldAvailable - wageCostPerTick);
+      state.population.wagesPaid = false;
+    }
+    changed = true;
+  } else {
+    state.population.wagesPaid = true;
+  }
+
+  /* ═══ TATMİN GÜNCELLEMESİ ═══ */
+
   const sat = state.population.satisfaction;
-  const newSat = sat + (happiness.target - sat) * 0.05;
-  if (Math.abs(newSat - sat) > 0.01) {
+  const newSat = sat + (happiness.target - sat) * 0.10;
+  if (Math.abs(newSat - sat) > 0.001) {
     state.population.satisfaction = newSat;
     changed = true;
   }
@@ -313,15 +368,15 @@ export function applyPopulationLifecycle() {
 
   if (getPopulationAlive() > 0) {
     const sat = state.population.satisfaction;
-    let threshold = 0.2;
-    if (sat < 30) threshold = 0.12;
-    else if (sat >= 50) threshold = 0.28;
+    let threshold = 0.25;
+    if (sat < 30) threshold = 0.15;
+    else if (sat >= 50) threshold = 0.35;
 
     const deficiency = state.population.deficiency || 0;
     if (deficiency > threshold) {
       const excess = Math.min(1, (deficiency - threshold) / (1 - threshold));
       const ilacFactor = state.population.ilacOk ? 0.5 : 1;
-      const deathRate = excess * 0.05 * ilacFactor;
+      const deathRate = excess * 0.025 * ilacFactor;
       const deathAmount =
         (state.population.current * deathRate) / TICKS_PER_SECOND;
 
