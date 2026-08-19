@@ -2,8 +2,8 @@
 /*                          EVRE YÖNETİMİ                                     */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { state, getPopulationAlive, getAltin, getResource } from "./state.js";
-import { RESOURCES } from "./resources.js";
+import { state, listeners, getPopulationAlive, getAltin, getResource, isEraTransitioning } from "./game-core.js";
+import { RESOURCES } from "./game-data.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          EVRE TANIMLARI                                    */
@@ -424,4 +424,379 @@ export function advanceEra() {
   state.era.transitioning = false;
 
   return true;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                        ÇAĞ GEÇİŞ KONTROLÜ                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Era Onay Durumu ─────────────────── */
+let eraPromptShown = false;
+
+/* ─────────────────── Era Kontrol İşlemcisi ─────────────────── */
+export function checkEraAdvance() {
+  if (isEraTransitioning()) return;
+  if (eraPromptShown) return;
+  if (!canAdvanceEra()) {
+    eraPromptShown = false;
+    return;
+  }
+
+  const currentEra = getEra();
+  const data = ERA_DATA[currentEra];
+  if (!data || !data.next) return;
+
+  eraPromptShown = true;
+  showEraAdvanceConfirm(currentEra, data);
+}
+
+/* ─────────────────── Era Onay Dialogu ─────────────────── */
+function showEraAdvanceConfirm(currentEra, data) {
+  const overlay = document.createElement("div");
+  overlay.className = "era-confirm-overlay";
+
+  const dialog = document.createElement("div");
+  dialog.className = "era-confirm-dialog";
+
+  const title = document.createElement("div");
+  title.className = "era-confirm-title";
+  title.textContent = "Çağınızı İlerletmeye Hazır Mısınız?";
+
+  const desc = document.createElement("div");
+  desc.className = "era-confirm-desc";
+  desc.textContent = "Çağ " + currentEra + " (" + getEraName(currentEra) + ") hedeflerine ulaştınız. Sonraki çağa geçmek istiyor musunuz?";
+
+  const btnRow = document.createElement("div");
+  btnRow.className = "era-confirm-btns";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "era-confirm-btn era-confirm-cancel";
+  cancelBtn.textContent = "Şimdilik Hayır";
+
+  const confirmBtn = document.createElement("button");
+  confirmBtn.type = "button";
+  confirmBtn.className = "era-confirm-btn era-confirm-ok";
+  confirmBtn.textContent = "Evet, Geç!";
+
+  cancelBtn.addEventListener("click", () => {
+    overlay.remove();
+    eraPromptShown = false;
+  });
+
+  confirmBtn.addEventListener("click", () => {
+    overlay.remove();
+    eraPromptShown = false;
+    triggerEraTransition();
+  });
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+      eraPromptShown = false;
+    }
+  });
+
+  btnRow.append(cancelBtn, confirmBtn);
+  dialog.append(title, desc, btnRow);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+/* ─────────────────── Era Prompt Sıfırlayıcı ─────────────────── */
+export function resetEraPrompt() {
+  eraPromptShown = false;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                     ÇAĞ GEÇİŞ ANİMASYONU                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    ÇAĞ GEÇİŞ ANİMASYON AKIŞI                               */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Geçiş Tetikleyicisi ─────────────────── */
+
+export function triggerEraTransition(targetEra) {
+  if (state.era.transitioning) return false;
+
+  const currentEra = state.era.current;
+  const eraData = ERA_DATA[currentEra];
+  if (!eraData) return false;
+
+  const nextEra = targetEra ?? eraData.next;
+  if (nextEra === null || nextEra === currentEra) return false;
+
+  const tData = TRANSITION_DATA[currentEra + "_" + nextEra] || TRANSITION_DATA[currentEra];
+  if (!tData) return false;
+
+  state.era.transitioning = true;
+
+  const altinAmount = state.resources.altin || 0;
+  const korunanAltin = Math.floor(altinAmount * 0.5);
+
+  runTransition(currentEra, nextEra, tData, korunanAltin);
+
+  return true;
+}
+
+/* ─────────────────── Geçiş Akışı Orkestratörü ─────────────────── */
+
+async function runTransition(fromEra, toEra, tData, korunanAltin) {
+  showToast("Çağ değişiyor...", "⏳");
+
+  await demolishAllBuildings();
+
+  const buildingIds = Object.keys(state.buildings);
+  for (const id of buildingIds) {
+    state.buildings[id] = 0;
+  }
+
+  await Promise.all([
+    drainAllResources(),
+    performThemeTransition(toEra, tData),
+  ]);
+
+  for (const id of Object.keys(state.resources)) {
+    state.resources[id] = 0;
+  }
+  state.resources.altin = korunanAltin;
+  state.resources.power = 40;
+  state.era.current = toEra;
+  state.era.transitioning = false;
+
+  for (const fn of listeners) fn(state);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    FAZE 1: BİNA SÖKÜM ANİMASYONU                           */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Toplu Bina Sökümü ─────────────────── */
+
+function demolishAllBuildings() {
+  return new Promise((resolve) => {
+    const cards = document.querySelectorAll(".building-card:not(.demolished):not(.locked)");
+    if (cards.length === 0) { resolve(); return; }
+
+    let completed = 0;
+    const total = cards.length;
+    const step = 60;
+
+    cards.forEach((card, i) => {
+      setTimeout(() => {
+        card.classList.add("demolishing");
+        card.addEventListener("animationend", () => {
+          card.classList.remove("demolishing");
+          card.classList.add("demolished");
+          completed++;
+          if (completed >= total) resolve();
+        }, { once: true });
+      }, i * step);
+    });
+
+    setTimeout(() => {
+      if (completed < total) resolve();
+    }, total * step + 500);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    FAZE 2: KAYNAK DRAIN ANİMASYONU                         */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Toplu Kaynak Düşürme ─────────────────── */
+
+function drainAllResources() {
+  return new Promise((resolve) => {
+    const tiles = document.querySelectorAll(".resource-tile:not(.drain-done)");
+    if (tiles.length === 0) { resolve(); return; }
+
+    let completed = 0;
+    const total = tiles.length;
+
+    tiles.forEach((tile) => {
+      const tileObj = findTileObject(tile);
+      if (tileObj && tileObj.drain) {
+        tileObj.drain(800).then(() => {
+          completed++;
+          if (completed >= total) resolve();
+        });
+      } else {
+        tile.classList.add("drain-done");
+        completed++;
+        if (completed >= total) resolve();
+      }
+    });
+  });
+}
+
+/* ─────────────────── Tile Objesi Bulucu ─────────────────── */
+
+function findTileObject(element) {
+  const resourceIds = ["su", "yiyecek", "bilgi", "tas", "maden", "kultur", "inanc", "ipek", "altin", "ekmek", "demir", "celik", "mermer", "kumas", "ilac", "mobilya", "heykel", "mucevher"];
+  for (const rid of resourceIds) {
+    if (element.classList.contains("resource-" + rid)) {
+      return element.__tileObj || null;
+    }
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    FAZE 3: TEMA GEÇİŞ ANİMASYONU                           */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Tema Geçiş Orkestratörü ─────────────────── */
+
+async function performThemeTransition(toEra, tData) {
+  if (tData.themeClass) {
+    createSparkles(toEra, 18);
+    await showFlash(toEra, 600);
+  }
+
+  setTheme(toEra);
+
+  showBadge(tData.title, toEra);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                    TEMA GEÇİŞ YÖNETİCİSİ                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Tema Sınıfı Haritası ─────────────────── */
+
+const THEME_CLASSES = {
+  1: "",
+  2: "era-theme-tech",
+  3: "era-theme-space",
+};
+
+const FLASH_CLASSES = {
+  2: "era-flash-tech",
+  3: "era-flash-space",
+};
+
+const BADGE_CLASSES = {
+  2: "tech",
+  3: "space",
+};
+
+/* ─────────────────── Tema Uygulayıcı ─────────────────── */
+
+export function setTheme(era) {
+  const body = document.body;
+  for (const cls of Object.values(THEME_CLASSES)) {
+    if (cls) body.classList.remove(cls);
+  }
+  const next = THEME_CLASSES[era];
+  if (next) body.classList.add(next);
+}
+
+/* ─────────────────── Flash Gösterici ─────────────────── */
+
+export function showFlash(era, duration) {
+  return new Promise((resolve) => {
+    const flash = document.createElement("div");
+    flash.className = "era-flash " + (FLASH_CLASSES[era] || "");
+    document.body.appendChild(flash);
+
+    requestAnimationFrame(() => {
+      flash.classList.add("era-flash-visible");
+    });
+
+    setTimeout(() => {
+      flash.classList.remove("era-flash-visible");
+      setTimeout(() => {
+        flash.remove();
+        resolve();
+      }, 800);
+    }, duration || 600);
+  });
+}
+
+/* ─────────────────── Çağ Etiketi Gösterici ─────────────────── */
+
+export function showBadge(text, era) {
+  return new Promise((resolve) => {
+    const badge = document.createElement("div");
+    badge.className = "era-badge-anim " + (BADGE_CLASSES[era] || "");
+    badge.textContent = text;
+    document.body.appendChild(badge);
+
+    requestAnimationFrame(() => {
+      badge.classList.add("era-badge-anim-enter");
+    });
+
+    setTimeout(() => {
+      badge.classList.remove("era-badge-anim-enter");
+      badge.classList.add("era-badge-anim-exit");
+      setTimeout(() => {
+        badge.remove();
+        resolve();
+      }, 500);
+    }, 1400);
+  });
+}
+
+/* ─────────────────── Parçacık Oluşturucu ─────────────────── */
+
+export function createSparkles(era, count) {
+  const container = document.createElement("div");
+  container.className = "era-sparkle-container";
+  const themeClass = BADGE_CLASSES[era] || "";
+
+  for (let i = 0; i < (count || 15); i++) {
+    const p = document.createElement("div");
+    p.className = "era-sparkle " + themeClass;
+    p.style.left = Math.random() * 100 + "%";
+    p.style.bottom = "-5px";
+    p.style.animationDelay = Math.random() * 1.5 + "s";
+    p.style.animationDuration = (1.2 + Math.random() * 1.8) + "s";
+    p.classList.add("era-sparkle-rise");
+    container.appendChild(p);
+  }
+
+  document.body.appendChild(container);
+
+  setTimeout(() => {
+    container.remove();
+  }, 3500);
+}
+
+/* ─────────────────── Toast Bildirim Gösterici ─────────────────── */
+
+export function showToast(text, icon) {
+  return new Promise((resolve) => {
+    const toast = document.createElement("div");
+    toast.className = "era-toast";
+
+    if (icon) {
+      const iconEl = document.createElement("span");
+      iconEl.className = "era-toast-icon";
+      iconEl.textContent = icon;
+      toast.appendChild(iconEl);
+    }
+
+    const textNode = document.createTextNode(text);
+    toast.appendChild(textNode);
+
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add("era-toast-visible");
+    });
+
+    setTimeout(() => {
+      toast.classList.remove("era-toast-visible");
+      setTimeout(() => {
+        toast.remove();
+        resolve();
+      }, 400);
+    }, 2000);
+  });
 }

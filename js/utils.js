@@ -2,7 +2,7 @@
 /*                          YARDIMCI FONKSİYONLAR                              */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { RESOURCES } from "./resources.js";
+import { RESOURCES } from "./game-data.js";
 
 /* ─────────────────── Kalın Metin Oluşturucu ─────────────────── */
 export function strong(text) {

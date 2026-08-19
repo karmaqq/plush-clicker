@@ -12,21 +12,22 @@ import {
   ARRIVAL_DURATION,
   WORKER_WAGE_SEASONAL,
   SEASON_DURATION,
-} from "./config.js";
-import { state, getResource, getBuildingCount, getPopulationAlive } from "./state.js";
-import { RESOURCES } from "./resources.js";
-import { HOUSING_DATA } from "./buildings.js";
-import { INDUSTRY_DATA } from "./industry.js";
+  RESOURCES,
+  HOUSING_DATA,
+  INDUSTRY_DATA,
+} from "./game-data.js";
 import {
+  state,
+  getResource,
+  getBuildingCount,
+  getPopulationAlive,
   getTotalProduction,
   getWorkerCount,
   getIndustryMaxWorkers,
   isSellable,
   getAutoSell,
   getSellPrice,
-} from "./production.js";
-
-export { getPopulationAlive } from "./state.js";
+} from "./game-core.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          NÜFUS VERİLERİ                                   */

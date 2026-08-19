@@ -1,14 +1,23 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*                             ANA GİRİŞ NOKTASI                              */
+/*                          ANA GIRIS NOKTASI                                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { createLayout } from "./layout.js";
-import { createHeaderPanel } from "./header-panel.js";
-import { createLeftPanel } from "./left-panel.js";
-import { createCenterPanel } from "./center-panel.js";
-import { createRightPanel } from "./right-panel.js";
-import { produce, processOfflineProgress, TICK_MS } from "./engine.js";
-import { loadState } from "./persistence.js";
+import { createHeaderPanel, createLeftPanel, createCenterPanel, createRightPanel } from "./ui-panels.js";
+import { produce, processOfflineProgress, TICK_MS, loadState } from "./game-core.js";
+
+/* ─────────────────── Layout Olusturucu ─────────────────── */
+function createLayout({ header, left, center, right }) {
+  const shell = document.createElement("div");
+  shell.className = "app-shell";
+  const headerRow = document.createElement("div");
+  headerRow.className = "row app-header-row";
+  headerRow.appendChild(header);
+  const mainRow = document.createElement("div");
+  mainRow.className = "row";
+  mainRow.append(left, center, right);
+  shell.append(headerRow, mainRow);
+  return shell;
+}
 
 loadState();
 
@@ -21,7 +30,7 @@ const layout = createLayout({
 
 document.body.appendChild(layout);
 
-/* ─────────────────── Oyun Döngüsü ─────────────────── */
+/* ─────────────────── Oyun Dongusu ─────────────────── */
 let gameLoop = window.setInterval(produce, TICK_MS);
 
 /* ─────────────────── VisibilityChange Dinleyicisi ─────────────────── */

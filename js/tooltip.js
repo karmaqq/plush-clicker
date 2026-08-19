@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import { formatCount, formatDuration } from "./utils.js";
-import { getResourceName, getResourceEmoji } from "./game-state.js";
+import { getResourceName, getResourceEmoji } from "./era.js";
 
 /* ─────────────────── Tooltip Oluşturucu ─────────────────── */
 export function createTooltip(extraClass) {

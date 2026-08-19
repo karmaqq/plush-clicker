@@ -10,7 +10,7 @@
 .trade-section {
     flex: 1;
     width: 100%;
-    padding: 0.375rem;
+    padding: 0.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
