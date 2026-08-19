@@ -1,0 +1,527 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          TICARET ARAYUZU                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.trade-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem;
+}
+
+/* ─────────────────── Tüccar Sekme Çubuğu ─────────────────── */
+
+.trade-tab-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.375rem;
+    padding: 0 0 0.5rem;
+    flex: none;
+}
+
+.trade-tab {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+    font-weight: 700;
+    color: #8895a3;
+    background: #232b35;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.5rem;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trade-tab.empty {
+    background: transparent;
+    border-color: transparent;
+    pointer-events: none;
+}
+
+.trade-tab.empty .trade-tab-label {
+    visibility: hidden;
+}
+
+.trade-tab-label {
+    line-height: 1.2;
+}
+
+.trade-tab-timer {
+    font-size: 0.7em;
+    font-weight: 600;
+    color: #6b7683;
+    line-height: 1;
+}
+
+.trade-tab:hover {
+    background: #2b343f;
+    color: #d7dde4;
+}
+
+.trade-tab.active {
+    background: #2f3a47;
+    color: #fff;
+    border-color: #4a5a6b;
+}
+
+/* ─────────────────── Bakiye Alanı ─────────────────── */
+
+.trade-balance {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.4rem 0.625rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid #3a4553;
+    background: linear-gradient(145deg, #2a323d, #1d232b);
+    font-family: var(--font-ui);
+    font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+    font-weight: 700;
+    color: var(--c-altin);
+    white-space: nowrap;
+}
+
+/* ─────────────────── Başlık Satırı (6 sütun) ─────────────────── */
+
+.trade-header {
+    display: grid;
+    grid-template-columns: 0.7fr 1.4fr 0.9fr 0.7fr 0.7fr 1.3fr;
+    gap: 0;
+    align-items: center;
+    padding: 0.5rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-top: 1.5px solid #3a4553;
+    border-bottom: 1.5px solid #3a4553;
+    background: #232b35;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* ─────────────────── Başlık Sütunu ─────────────────── */
+
+.trade-header-col {
+    padding: 0 0.5rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+    font-weight: 700;
+    color: #6b7683;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    border-left: 1.5px solid #1a2027;
+}
+
+.trade-header-col:first-child {
+    border-left: none;
+}
+
+/* ─────────────────── Liste Konteyneri ─────────────────── */
+
+.trade-list-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border: 1.5px solid #3a4553;
+    border-top: none;
+    border-radius: 0.5rem;
+    background: linear-gradient(145deg, #2a323d, #1d232b);
+}
+
+.trade-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ─────────────────── Ayırıcı Çizgi ─────────────────── */
+
+.trade-divider {
+    border-top: 1.5px solid #3a4553;
+    margin: 0.5rem 0;
+}
+
+/* ─────────────────── Ürün Satırı (6 sütun) ─────────────────── */
+
+.trade-row {
+    display: grid;
+    grid-template-columns: 0.7fr 1.4fr 0.9fr 0.7fr 0.7fr 1.3fr;
+    gap: 0;
+    align-items: stretch;
+    min-height: 2.8rem;
+    border-bottom: none;
+    transition: background 0.15s ease;
+}
+
+.trade-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.trade-row:last-child {
+    border-bottom: none;
+}
+
+/* ─────────────────── Sütun Ortak ─────────────────── */
+
+.trade-col {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.5rem;
+    min-width: 0;
+}
+
+/* ─────────────────── Sütun 1: Stok ─────────────────── */
+
+.trade-col-stock {
+    justify-content: flex-start;
+    border-left: none;
+}
+
+/* ─────────────────── Sütun 2: Emoji + İsim ─────────────────── */
+
+.trade-col-info {
+    gap: 0.4rem;
+    justify-content: flex-start;
+    border-left: none;
+}
+
+.trade-col-emoji {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    flex-shrink: 0;
+    width: 1.6rem;
+    height: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trade-col-name {
+    font-family: var(--font-ui);
+    font-size: clamp(0.78rem, 1.5vw, 0.9rem);
+    font-weight: 700;
+    color: var(--res, #d7dde4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+/* ─────────────────── Sütun 3: Birim Fiyat ─────────────────── */
+
+.trade-col-price {
+    gap: 0.2rem;
+    justify-content: flex-start;
+    font-family: var(--font-ui);
+    font-size: clamp(0.78rem, 1.5vw, 0.9rem);
+    font-weight: 700;
+    color: #e6ebf0;
+    white-space: nowrap;
+    border-left: none;
+}
+
+/* ─────────────────── Sütun 4: Kar/Zarar ─────────────────── */
+
+.trade-col-modifier {
+    justify-content: flex-start;
+    border-left: none;
+}
+
+/* ─────────────────── Sütun 5: Tüccar Stoğu ─────────────────── */
+
+.trade-col-merchant {
+    justify-content: flex-start;
+    border-left: none;
+}
+
+/* ─────────────────── Sütun 6: İşlem ─────────────────── */
+
+.trade-col-action {
+    gap: 0.3rem;
+    justify-content: flex-start;
+    border-left: none;
+    overflow: visible;
+}
+
+.trade-row:first-child .trade-col-stock {
+    border-left: none;
+}
+
+/* ─────────────────── Miktar Rozetleri ─────────────────── */
+
+.trade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.2em;
+    padding: 0.15em 0;
+    border-radius: 0.4em;
+    font-family: var(--font-ui);
+    font-size: clamp(0.72rem, 1.35vw, 0.875rem);
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.trade-badge-mine {
+    background: rgba(126, 226, 168, 0.08);
+    border: 1.5px solid rgba(126, 226, 168, 0.25);
+    color: #7ee2a8;
+}
+
+.trade-badge-theirs {
+    background: rgba(156, 201, 255, 0.08);
+    border: 1.5px solid rgba(156, 201, 255, 0.25);
+    color: #9cc9ff;
+}
+
+.trade-badge-high {
+    background: rgba(126, 226, 168, 0.12);
+    border-color: rgba(126, 226, 168, 0.4);
+    color: #7ee2a8;
+}
+
+.trade-badge-mid {
+    background: rgba(255, 209, 102, 0.08);
+    border-color: rgba(255, 209, 102, 0.3);
+    color: #ffd166;
+}
+
+.trade-badge-low {
+    background: rgba(157, 173, 189, 0.06);
+    border-color: rgba(157, 173, 189, 0.2);
+    color: #9dadbd;
+}
+
+.trade-badge-zero {
+    background: rgba(90, 100, 112, 0.1);
+    border-color: rgba(90, 100, 112, 0.25);
+    color: #5a6470;
+}
+
+/* ─────────────────── Altın Küçük ─────────────────── */
+
+.gold-sm {
+    font-size: 0.85em;
+}
+
+/* ─────────────────── Fiyat Numarası ─────────────────── */
+
+.trade-price-num {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────── Fiyat Değişim Rozeti ─────────────────── */
+
+.trade-price-modifier {
+    font-family: var(--font-ui);
+    font-size: 0.75em;
+    font-weight: 700;
+    padding: 0.1em 0.35em;
+    border-radius: 0.3em;
+    white-space: nowrap;
+}
+
+.trade-modifier-up {
+    color: #7ee2a8;
+    background: rgba(126, 226, 168, 0.1);
+}
+
+.trade-modifier-down {
+    color: #e27e7e;
+    background: rgba(226, 126, 126, 0.1);
+}
+
+/* ─────────────────── Adet Input ─────────────────── */
+
+.trade-qty-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.trade-qty-input {
+    width: 2.8rem;
+    padding: 0.3rem 0;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.35rem;
+    background: #1a2027;
+    color: #e6ebf0;
+    font-family: var(--font-ui);
+    font-size: clamp(0.78rem, 1.5vw, 0.9375rem);
+    font-weight: 600;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.trade-qty-input::-webkit-outer-spin-button,
+.trade-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.trade-qty-input:focus {
+    outline: none;
+    border-color: #4a5a6b;
+    background: #232b35;
+}
+
+.trade-qty-input.trade-qty-over {
+    border-color: #ff5a5a;
+    background: rgba(255, 90, 90, 0.08);
+    color: #ff8a8a;
+}
+
+/* ─────────────────── Adet Okları ─────────────────── */
+
+.trade-qty-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 100%;
+    border: none;
+    background: none;
+    color: #6b7683;
+    font-size: 0.6rem;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.12s ease, transform 0.08s ease;
+    user-select: none;
+}
+
+.trade-qty-arrow:hover {
+    color: #e6ebf0;
+    transform: scale(1.2);
+}
+
+.trade-qty-arrow:active {
+    transform: scale(0.9);
+}
+
+/* ─────────────────── MAX Butonu ─────────────────── */
+
+.trade-max-btn {
+    position: absolute;
+    left: 50%;
+    top: 0%;
+    transform: translate(-50%, -50%);
+    padding: 0.1rem 0.35rem;
+    border: 1px solid #4a5563;
+    border-radius: 0.25rem;
+    background: #3c4753;
+    color: #e6ebf0;
+    font-family: var(--font-ui);
+    font-size: 0.55rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, background 0.12s ease;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+.trade-qty-wrap:hover .trade-max-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.trade-max-btn:hover {
+    background: #4a5563;
+}
+
+/* ─────────────────── İşlem Butonu ─────────────────── */
+
+.trade-btn {
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.35rem;
+    border: 1.5px solid #4a5563;
+    background: linear-gradient(145deg, #3c4753, #2a323d);
+    color: #e6ebf0;
+    font-family: var(--font-ui);
+    font-size: clamp(0.72rem, 1.35vw, 0.85rem);
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.08s ease, filter 0.12s ease;
+    white-space: nowrap;
+}
+
+.trade-btn:hover {
+    filter: brightness(1.15);
+}
+
+.trade-btn:active {
+    transform: scale(0.96);
+}
+
+.trade-btn.disabled {
+    background: linear-gradient(145deg, #242b33, #1a2027);
+    border-color: #2f3740;
+    color: #5a6470;
+    filter: none;
+    pointer-events: none;
+}
+
+.trade-btn-spend {
+    color: #f87171;
+}
+
+.trade-btn-earn {
+    color: #4ade80;
+}
+
+/* ─────────────────── Durum Çubuğu ─────────────────── */
+
+.trade-status {
+    padding: 0.4rem 0;
+    margin-top: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.75rem, 1.4vw, 0.875rem);
+    font-weight: 500;
+    color: #6b7683;
+    text-align: center;
+    border-top: 1.5px solid #3a4553;
+    flex-shrink: 0;
+}
+
+/* ─────────────────── Scrollbar ─────────────────── */
+
+.trade-list-wrap::-webkit-scrollbar {
+    width: 12px;
+}
+
+.trade-list-wrap::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.trade-list-wrap::-webkit-scrollbar-thumb {
+    background: #3c4753;
+    border-radius: 999px;
+    min-height: 42px;
+    transition: background 0.15s ease;
+}
+
+.trade-list-wrap::-webkit-scrollbar-thumb:hover {
+    background: #4a5563;
+}
+
+.trade-list-wrap::-webkit-scrollbar-thumb:active {
+    background: #5a6470;
+}

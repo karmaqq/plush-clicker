@@ -12,8 +12,8 @@ import { RESOURCES } from "./game-data.js";
 export const ERA_DATA = {
   1: {
     name: "Kasaba",
-    populationTarget: 500,
-    goldTarget: 10000,
+    populationTarget: 15,
+    goldTarget: 0,
     next: 2,
   },
   2: {
@@ -152,7 +152,7 @@ export const RESOURCE_EMOJIS = {
     kultur: "🎭",
     inanc: "🕯️",
     ipek: "🧵",
-    altin: "💰",
+    altin: "🪙",
     ekmek: "🍞",
     demir: "⚒️",
     celik: "🔩",

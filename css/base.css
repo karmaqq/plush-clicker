@@ -392,23 +392,20 @@ body.era-theme-space {
 
 .building-list::-webkit-scrollbar,
 .resource-area::-webkit-scrollbar,
-.upgrade-list::-webkit-scrollbar,
-.trade-section::-webkit-scrollbar {
+.upgrade-list::-webkit-scrollbar {
     width: 12px;
 }
 
 .building-list::-webkit-scrollbar-track,
 .resource-area::-webkit-scrollbar-track,
-.upgrade-list::-webkit-scrollbar-track,
-.trade-section::-webkit-scrollbar-track {
+.upgrade-list::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.18);
     border-radius: 999px;
 }
 
 .building-list::-webkit-scrollbar-thumb,
 .resource-area::-webkit-scrollbar-thumb,
-.upgrade-list::-webkit-scrollbar-thumb,
-.trade-section::-webkit-scrollbar-thumb {
+.upgrade-list::-webkit-scrollbar-thumb {
     background: #3c4753;
     border-radius: 999px;
     min-height: 42px;
@@ -417,23 +414,20 @@ body.era-theme-space {
 
 .building-list::-webkit-scrollbar-thumb:hover,
 .resource-area::-webkit-scrollbar-thumb:hover,
-.upgrade-list::-webkit-scrollbar-thumb:hover,
-.trade-section::-webkit-scrollbar-thumb:hover {
+.upgrade-list::-webkit-scrollbar-thumb:hover {
     background: #4a5563;
 }
 
 .building-list::-webkit-scrollbar-thumb:active,
 .resource-area::-webkit-scrollbar-thumb:active,
-.upgrade-list::-webkit-scrollbar-thumb:active,
-.trade-section::-webkit-scrollbar-thumb:active {
+.upgrade-list::-webkit-scrollbar-thumb:active {
     background: #5a6470;
 }
 
 @-moz-document url-prefix() {
     .building-list,
     .resource-area,
-    .upgrade-list,
-    .trade-section {
+    .upgrade-list {
         scrollbar-width: auto;
         scrollbar-color: rgba(91, 108, 126, 0.55) transparent;
     }

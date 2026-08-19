@@ -34,18 +34,37 @@ export const SEASONS_DATA = {
 
 export const SEASON_ORDER = Object.keys(SEASONS_DATA);
 
-export const TRADE_INTERVAL_MIN = 180;
-export const TRADE_INTERVAL_MAX = 420;
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          YENİ TİCARET YAPILANDIRMASI                       */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
-export const TRADE_PRICES = {
-  su: { buy: [2, 4], sell: [1, 2] },
-  yiyecek: { buy: [3, 5], sell: [1, 3] },
-  bilgi: { buy: [5, 8], sell: [2, 4] },
-  tas: { buy: [3, 5], sell: [1, 3] },
-  maden: { buy: [6, 10], sell: [3, 5] },
-  kultur: { buy: [10, 15], sell: [5, 8] },
-  inanc: { buy: [12, 18], sell: [6, 10] },
-  ipek: { buy: [15, 25], sell: [8, 15] },
+export const TRADE_MERCHANT_MIN_GOLD = 300;
+export const TRADE_MERCHANT_MAX_GOLD = 3000;
+export const TRADE_MERCHANT_MAX_ACTIVE = 3;
+export const TRADE_MERCHANT_STAY_MIN = 45;
+export const TRADE_MERCHANT_STAY_MAX = 120;
+export const TRADE_MERCHANT_INTERVAL_MIN = 20;
+export const TRADE_MERCHANT_INTERVAL_MAX = 60;
+
+/* ─────────────────── Ticaret Ürün Havuzu ─────────────────── */
+export const TRADE_ITEM_POOL = {
+  su:        { basePrice: 3,   minQty: 15, maxQty: 50, tier: 1 },
+  yiyecek:   { basePrice: 4,   minQty: 12, maxQty: 40, tier: 1 },
+  bilgi:     { basePrice: 7,   minQty: 6,  maxQty: 20, tier: 2 },
+  tas:       { basePrice: 4,   minQty: 10, maxQty: 30, tier: 2 },
+  maden:     { basePrice: 8,   minQty: 5,  maxQty: 18, tier: 2 },
+  kultur:    { basePrice: 12,  minQty: 3,  maxQty: 10, tier: 3 },
+  inanc:     { basePrice: 15,  minQty: 2,  maxQty: 8,  tier: 3 },
+  ipek:      { basePrice: 20,  minQty: 1,  maxQty: 4,  tier: 3 },
+  ekmek:     { basePrice: 6,   minQty: 5,  maxQty: 15, tier: 1, product: true },
+  demir:     { basePrice: 10,  minQty: 3,  maxQty: 10, tier: 2, product: true },
+  celik:     { basePrice: 18,  minQty: 1,  maxQty: 6,  tier: 2, product: true },
+  mermer:    { basePrice: 15,  minQty: 2,  maxQty: 6,  tier: 3, product: true },
+  kumas:     { basePrice: 22,  minQty: 1,  maxQty: 4,  tier: 3, product: true },
+  ilac:      { basePrice: 25,  minQty: 1,  maxQty: 4,  tier: 3, product: true },
+  mobilya:   { basePrice: 30,  minQty: 1,  maxQty: 3,  tier: 3, product: true },
+  heykel:    { basePrice: 40,  minQty: 1,  maxQty: 2,  tier: 3, product: true },
+  mucevher:  { basePrice: 60,  minQty: 1,  maxQty: 2,  tier: 3, product: true },
 };
 
 export const POP_SU_RATE = 0.020;
@@ -169,7 +188,7 @@ export const RESOURCES = {
     },
     altin: {
         name: "Altın",
-        emoji: "💰",
+        emoji: "🪙",
         tier: -1,
         baseCapacity: Infinity,
         storagePerDepo: 0,

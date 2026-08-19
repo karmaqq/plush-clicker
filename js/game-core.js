@@ -6,8 +6,8 @@ import {
   SEASON_DURATION,
   SEASONS_DATA,
   SEASON_ORDER,
-  TRADE_INTERVAL_MIN,
-  TRADE_INTERVAL_MAX,
+  TRADE_MERCHANT_INTERVAL_MIN,
+  TRADE_MERCHANT_INTERVAL_MAX,
   TICKS_PER_SECOND,
   TICK_MS,
   OFFLINE_MAX_SECONDS,
@@ -35,18 +35,13 @@ import {
   autoSellSurplus,
   getPopulationCapacity,
 } from "./population.js";
-import {
-  getTradeInterval,
-  generateTradeOffer,
-} from "./trade.js";
+import { updateMerchants, setSkipMerchantUpdate } from "./trade.js";
 
 export { TICK_MS };
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          DURUM YONETIMI                                   */
 /* ═══════════════════════════════════════════════════════════════════════════ */
-
-const initialTradeInterval = Math.random() * (TRADE_INTERVAL_MAX - TRADE_INTERVAL_MIN) + TRADE_INTERVAL_MIN;
 
 export const state = {
   resources: {},
@@ -68,9 +63,9 @@ export const state = {
     timer: SEASON_DURATION,
   },
   trade: {
-    timer: initialTradeInterval,
-    interval: initialTradeInterval,
-    current: null,
+    merchants: [],
+    spawnTimer: Math.random() * (TRADE_MERCHANT_INTERVAL_MAX - TRADE_MERCHANT_INTERVAL_MIN) + TRADE_MERCHANT_INTERVAL_MIN,
+    nextId: 1,
     count: 0,
   },
   era: {
@@ -1018,13 +1013,7 @@ export function produce(silent) {
     changed = true;
   }
 
-  state.trade.timer -= 1 / TICKS_PER_SECOND;
-  if (state.trade.timer <= 0) {
-    state.trade.interval = getTradeInterval();
-    state.trade.timer = state.trade.interval;
-    state.trade.current = generateTradeOffer();
-    changed = true;
-  }
+  updateMerchants(1 / TICKS_PER_SECOND);
 
   if (changed && !silent) {
     emit(snapshot);
@@ -1043,9 +1032,11 @@ export function processOfflineProgress() {
 
   const offlineTicks = elapsedSeconds * TICKS_PER_SECOND;
 
+  setSkipMerchantUpdate(true);
   for (let i = 0; i < offlineTicks; i++) {
     produce(true);
   }
+  setSkipMerchantUpdate(false);
 
   state.lastActive = Date.now();
   emit();
@@ -1151,36 +1142,24 @@ function loadLastActive(saved) {
 
 function loadTrade(saved) {
   if (!saved || typeof saved !== "object") return;
-  if (Number.isFinite(saved.timer))
-    state.trade.timer = Math.max(0, saved.timer);
 
-  if (Number.isFinite(saved.interval))
-    state.trade.interval = Math.max(0, saved.interval);
-
-  if (saved.current && typeof saved.current === "object") {
-    if (Array.isArray(saved.current.offers)) {
-      state.trade.current = {
-        offers: saved.current.offers.filter(
-          (o) => o && typeof o.resource === "string" && Number.isFinite(o.amount) && Number.isFinite(o.cost)
-        ),
-      };
-    } else if (
-      Number.isFinite(saved.current.cost) &&
-      saved.current.get &&
-      typeof saved.current.get === "object"
-    ) {
-      state.trade.current = {
-        offers: [{
-          resource: saved.current.get.resource,
-          amount: saved.current.get.amount,
-          cost: saved.current.cost,
-        }],
-      };
-    }
+  if (Array.isArray(saved.merchants)) {
+    state.trade.merchants = saved.merchants.filter(m =>
+      m && typeof m === "object" &&
+      Array.isArray(m.sellsToPlayer) &&
+      Array.isArray(m.buysFromPlayer)
+    );
   }
 
-  if (Number.isFinite(saved.count))
+  if (Number.isFinite(saved.spawnTimer)) {
+    state.trade.spawnTimer = Math.max(0, saved.spawnTimer);
+  }
+  if (Number.isFinite(saved.nextId)) {
+    state.trade.nextId = Math.max(1, saved.nextId);
+  }
+  if (Number.isFinite(saved.count)) {
     state.trade.count = Math.max(0, Math.floor(saved.count));
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -1235,7 +1214,12 @@ export function saveState() {
       population: state.population,
       season: state.season,
       era: state.era,
-      trade: state.trade,
+      trade: {
+        merchants: state.trade.merchants,
+        spawnTimer: state.trade.spawnTimer,
+        nextId: state.trade.nextId,
+        count: state.trade.count,
+      },
       settings: state.settings,
       lastActive: Date.now(),
     }),
@@ -1301,9 +1285,9 @@ export function resetGame() {
   };
 
   state.trade = {
-    timer: Math.random() * (TRADE_INTERVAL_MAX - TRADE_INTERVAL_MIN) + TRADE_INTERVAL_MIN,
-    interval: 0,
-    current: null,
+    merchants: [],
+    spawnTimer: Math.random() * (TRADE_MERCHANT_INTERVAL_MAX - TRADE_MERCHANT_INTERVAL_MIN) + TRADE_MERCHANT_INTERVAL_MIN,
+    nextId: 1,
     count: 0,
   };
 

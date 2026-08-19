@@ -6,8 +6,7 @@
     align-items: stretch;
 }
 
-.upgrade-list,
-.trade-section {
+.upgrade-list {
     flex: 1;
     width: 100%;
     padding: 0.5rem;
@@ -15,6 +14,12 @@
     flex-direction: column;
     gap: 0.5rem;
     overflow-y: auto;
+    min-height: 0;
+}
+
+.trade-section {
+    flex: 1;
+    width: 100%;
     min-height: 0;
 }
 
@@ -136,112 +141,6 @@
 .pack-tooltip {
     min-width: 16rem;
     max-width: 22rem;
-}
-
-.trade-offer {
-    padding: 0.625rem;
-    border-radius: 0.5rem;
-    border: 1.5px solid #3a4553;
-    background: linear-gradient(145deg, #2a323d, #1d232b);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    flex: none;
-}
-
-.trade-offer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-}
-
-.trade-offer-name {
-    font-family: var(--font-ui);
-    font-size: clamp(0.9rem, 1.8vw, 1.1rem);
-    font-weight: 700;
-    color: #e8b46a;
-}
-
-.trade-offer-timer {
-    font-family: var(--font-ui);
-    font-size: clamp(0.75rem, 1.5vw, 0.875rem);
-    color: #9aa7b5;
-    white-space: nowrap;
-}
-
-.trade-offer-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.trade-offer-empty {
-    font-family: var(--font-ui);
-    font-size: clamp(0.85rem, 1.6vw, 1rem);
-    color: #5a6470;
-    text-align: center;
-    padding: 0.5rem 0;
-}
-
-.trade-offer-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    font-family: var(--font-ui);
-    font-size: clamp(0.9rem, 1.8vw, 1.1rem);
-    font-weight: 700;
-}
-
-.trade-offer-get {
-    color: #7ee2a8;
-}
-
-.trade-accept-btn {
-    padding: 0.4rem 0;
-    border-radius: 0.375rem;
-    border: 1px solid #4a5563;
-    background: linear-gradient(145deg, #2e9e5b, #1f6b3d);
-    color: #ffffff;
-    font-family: var(--font-ui);
-    font-size: clamp(0.85rem, 1.7vw, 1.125rem);
-    font-weight: 700;
-    cursor: pointer;
-    transition:
-        transform 0.08s ease,
-        filter 0.12s ease;
-}
-
-.trade-accept-btn:hover {
-    filter: brightness(1.15);
-}
-
-.trade-accept-btn:active {
-    transform: scale(0.96);
-}
-
-.trade-accept-btn.disabled {
-    background: linear-gradient(145deg, #242b33, #1a2027);
-    border-color: #2f3740;
-    color: #5a6470;
-    filter: none;
-}
-
-.trade-accept-btn.disabled:active {
-    transform: none;
-}
-
-.trade-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.trade-stat {
-    font-family: var(--font-ui);
-    font-size: clamp(0.75rem, 1.5vw, 0.875rem);
-    color: #9aa7b5;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */

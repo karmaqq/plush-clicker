@@ -223,7 +223,7 @@ function computeHappinessBreakdown() {
       target -= penalty;
     }
     items.push({
-      emoji: "💰", label: "İşçi Maaşları",
+      emoji: "🪙", label: "İşçi Maaşları",
       delta: wagesMet ? 0 : -8, met: wagesMet,
     });
   }
@@ -260,10 +260,10 @@ function computeHappinessBreakdown() {
 
 export function getMigrationInterval() {
   const sat = state.population.satisfaction;
-  if (sat >= 70) return 45;
-  if (sat >= 50) return 60;
-  if (sat >= 30) return 90;
-  return 120;
+  if (sat >= 70) return 5;
+  if (sat >= 50) return 10;
+  if (sat >= 30) return 15;
+  return 30;
 }
 
 /* ─────────────────── Varış Süresi Getter'ı ─────────────────── */
