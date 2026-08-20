@@ -2,7 +2,15 @@
 /*                          EVRE YÖNETİMİ                                     */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { state, listeners, getPopulationAlive, getAltin, getResource, isEraTransitioning } from "./game-core.js";
+import {
+  state,
+  listeners,
+  getPopulationAlive,
+  getAltin,
+  getResource,
+  isEraTransitioning,
+  getEra,
+} from "./game-core.js";
 import { RESOURCES } from "./game-data.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -12,8 +20,8 @@ import { RESOURCES } from "./game-data.js";
 export const ERA_DATA = {
   1: {
     name: "Kasaba",
-    populationTarget: 15,
-    goldTarget: 0,
+    populationTarget: 500,
+    goldTarget: 5000,
     next: 2,
   },
   2: {
@@ -34,20 +42,23 @@ export const ERA_DATA = {
 
 export const TRANSITION_DATA = {
   1: {
-    title: "SANAYİ ÇAĞI BAŞLADI",
-    narrative: "Kasaban sessizce büyüdü, ama artık daha büyük bir vizyon gerekiyor. Fabrikalar yükseliyor, çarklar dönüyor, veri akıyor.",
+    title: "TEKNOLOJİ ÇAĞI BAŞLADI",
+    narrative:
+      "Kasaban sessizce büyüdü, ama artık daha büyük bir vizyon gerekiyor. Fabrikalar yükseliyor, çarklar dönüyor, veri akıyor.",
     duration: 3000,
     themeClass: "era-transition-to-tech",
   },
   2: {
     title: "UZAY ÇAĞI AÇILDI",
-    narrative: "Fabrikalar artık yetmiyor. İnsanlık yıldızlara uzanıyor. Plazma enerjisi, kuantum hesaplama, yapay zeka...",
+    narrative:
+      "Fabrikalar artık yetmiyor. İnsanlık yıldızlara uzanıyor. Plazma enerjisi, kuantum hesaplama, yapay zeka...",
     duration: 4000,
     themeClass: "era-transition-to-space",
   },
   3: {
     title: "KASABA ÇAĞINA DÖNÜŞ",
-    narrative: "Sonsuzluk yorucu oldu. Yıldızlar söndü, çarklar durdu. Toprağa dönüş, basitliğin gücünü hatırla...",
+    narrative:
+      "Sonsuzluk yorucu oldu. Yıldızlar söndü, çarklar durdu. Toprağa dönüş, basitliğin gücünü hatırla...",
     duration: 3500,
     themeClass: "",
   },
@@ -59,13 +70,15 @@ export const TRANSITION_DATA = {
   },
   "3_1": {
     title: "KASABA ÇAĞINA DÖNÜŞ",
-    narrative: "Yıldızlar sönüyor, toprak çağırıyor. Sıfıla dönüş, yeniden başlangıç...",
+    narrative:
+      "Yıldızlar sönüyor, toprak çağırıyor. Sıfıla dönüş, yeniden başlangıç...",
     duration: 3500,
     themeClass: "",
   },
   "3_2": {
     title: "SANAYİ ÇAĞINA DÖNÜŞ",
-    narrative: "Uzayın soğuğundan kaçış. Çarklar tekrar dönüyor, fabrikalar yeniden alevleniyor...",
+    narrative:
+      "Uzayın soğuğundan kaçış. Çarklar tekrar dönüyor, fabrikalar yeniden alevleniyor...",
     duration: 3000,
     themeClass: "era-transition-to-tech",
   },
@@ -345,21 +358,35 @@ export function getEraName(era) {
 
 export function getResourceName(resourceId) {
   const era = state.era.current;
-  return RESOURCE_NAMES[era]?.[resourceId] || RESOURCE_NAMES[1][resourceId] || RESOURCES[resourceId]?.name || resourceId;
+  return (
+    RESOURCE_NAMES[era]?.[resourceId] ||
+    RESOURCE_NAMES[1][resourceId] ||
+    RESOURCES[resourceId]?.name ||
+    resourceId
+  );
 }
 
 /* ─────────────────── Kaynak Emoji Getter'ı ─────────────────── */
 
 export function getResourceEmoji(resourceId) {
   const era = state.era.current;
-  return RESOURCE_EMOJIS[era]?.[resourceId] || RESOURCE_EMOJIS[1][resourceId] || RESOURCES[resourceId]?.emoji || "";
+  return (
+    RESOURCE_EMOJIS[era]?.[resourceId] ||
+    RESOURCE_EMOJIS[1][resourceId] ||
+    RESOURCES[resourceId]?.emoji ||
+    ""
+  );
 }
 
 /* ─────────────────── Bina İsmi Getter'ı ─────────────────── */
 
 export function getBuildingName(buildingId) {
   const era = state.era.current;
-  return BUILDING_NAMES[era]?.[buildingId] || BUILDING_NAMES[1][buildingId] || buildingId;
+  return (
+    BUILDING_NAMES[era]?.[buildingId] ||
+    BUILDING_NAMES[1][buildingId] ||
+    buildingId
+  );
 }
 
 /* ─────────────────── Paket İsmi Getter'ı ─────────────────── */
@@ -426,7 +453,6 @@ export function advanceEra() {
   return true;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                        ÇAĞ GEÇİŞ KONTROLÜ                                */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -465,7 +491,12 @@ function showEraAdvanceConfirm(currentEra, data) {
 
   const desc = document.createElement("div");
   desc.className = "era-confirm-desc";
-  desc.textContent = "Çağ " + currentEra + " (" + getEraName(currentEra) + ") hedeflerine ulaştınız. Sonraki çağa geçmek istiyor musunuz?";
+  desc.textContent =
+    "Çağ " +
+    currentEra +
+    " (" +
+    getEraName(currentEra) +
+    ") hedeflerine ulaştınız. Sonraki çağa geçmek istiyor musunuz?";
 
   const btnRow = document.createElement("div");
   btnRow.className = "era-confirm-btns";
@@ -509,7 +540,6 @@ export function resetEraPrompt() {
   eraPromptShown = false;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                     ÇAĞ GEÇİŞ ANİMASYONU                                  */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -530,7 +560,8 @@ export function triggerEraTransition(targetEra) {
   const nextEra = targetEra ?? eraData.next;
   if (nextEra === null || nextEra === currentEra) return false;
 
-  const tData = TRANSITION_DATA[currentEra + "_" + nextEra] || TRANSITION_DATA[currentEra];
+  const tData =
+    TRANSITION_DATA[currentEra + "_" + nextEra] || TRANSITION_DATA[currentEra];
   if (!tData) return false;
 
   state.era.transitioning = true;
@@ -579,8 +610,13 @@ async function runTransition(fromEra, toEra, tData, korunanAltin) {
 
 function demolishAllBuildings() {
   return new Promise((resolve) => {
-    const cards = document.querySelectorAll(".building-card:not(.demolished):not(.locked)");
-    if (cards.length === 0) { resolve(); return; }
+    const cards = document.querySelectorAll(
+      ".building-card:not(.demolished):not(.locked)",
+    );
+    if (cards.length === 0) {
+      resolve();
+      return;
+    }
 
     let completed = 0;
     const total = cards.length;
@@ -589,18 +625,25 @@ function demolishAllBuildings() {
     cards.forEach((card, i) => {
       setTimeout(() => {
         card.classList.add("demolishing");
-        card.addEventListener("animationend", () => {
-          card.classList.remove("demolishing");
-          card.classList.add("demolished");
-          completed++;
-          if (completed >= total) resolve();
-        }, { once: true });
+        card.addEventListener(
+          "animationend",
+          () => {
+            card.classList.remove("demolishing");
+            card.classList.add("demolished");
+            completed++;
+            if (completed >= total) resolve();
+          },
+          { once: true },
+        );
       }, i * step);
     });
 
-    setTimeout(() => {
-      if (completed < total) resolve();
-    }, total * step + 500);
+    setTimeout(
+      () => {
+        if (completed < total) resolve();
+      },
+      total * step + 500,
+    );
   });
 }
 
@@ -613,7 +656,10 @@ function demolishAllBuildings() {
 function drainAllResources() {
   return new Promise((resolve) => {
     const tiles = document.querySelectorAll(".resource-tile:not(.drain-done)");
-    if (tiles.length === 0) { resolve(); return; }
+    if (tiles.length === 0) {
+      resolve();
+      return;
+    }
 
     let completed = 0;
     const total = tiles.length;
@@ -637,7 +683,26 @@ function drainAllResources() {
 /* ─────────────────── Tile Objesi Bulucu ─────────────────── */
 
 function findTileObject(element) {
-  const resourceIds = ["su", "yiyecek", "bilgi", "tas", "maden", "kultur", "inanc", "ipek", "altin", "ekmek", "demir", "celik", "mermer", "kumas", "ilac", "mobilya", "heykel", "mucevher"];
+  const resourceIds = [
+    "su",
+    "yiyecek",
+    "bilgi",
+    "tas",
+    "maden",
+    "kultur",
+    "inanc",
+    "ipek",
+    "altin",
+    "ekmek",
+    "demir",
+    "celik",
+    "mermer",
+    "kumas",
+    "ilac",
+    "mobilya",
+    "heykel",
+    "mucevher",
+  ];
   for (const rid of resourceIds) {
     if (element.classList.contains("resource-" + rid)) {
       return element.__tileObj || null;
@@ -662,7 +727,6 @@ async function performThemeTransition(toEra, tData) {
 
   showBadge(tData.title, toEra);
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                    TEMA GEÇİŞ YÖNETİCİSİ                                   */
@@ -756,7 +820,7 @@ export function createSparkles(era, count) {
     p.style.left = Math.random() * 100 + "%";
     p.style.bottom = "-5px";
     p.style.animationDelay = Math.random() * 1.5 + "s";
-    p.style.animationDuration = (1.2 + Math.random() * 1.8) + "s";
+    p.style.animationDuration = 1.2 + Math.random() * 1.8 + "s";
     p.classList.add("era-sparkle-rise");
     container.appendChild(p);
   }
