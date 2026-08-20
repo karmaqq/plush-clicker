@@ -941,7 +941,7 @@ export function createPackCard(id, data) {
     if (data.productionBonusPerLevel) { effectText = "Tüm üretim: +%" + Math.round(count * data.productionBonusPerLevel * 100); }
     else if (data.powerBonusPerLevel) { effectText = "Güç üretimi: +%" + Math.round(count * data.powerBonusPerLevel * 100); }
     else if (data.costDiscountPerLevel) { effectText = "Bina maliyeti: −%" + Math.round(count * data.costDiscountPerLevel * 100); }
-    else if (data.productBonusPerLevel) { effectText = "Urun uretimi: +%" + Math.round(count * data.productBonusPerLevel * 100); }
+    else if (data.productBonusPerLevel) { effectText = "Ürün Üretimi: +%" + Math.round(count * data.productBonusPerLevel * 100); }
     else if (data.workerBonusPerLevel) { effectText = "İşçi üretimi: +%" + Math.round(count * data.workerBonusPerLevel * 100); }
     else if (data.storageBonusPerLevel) { effectText = "Kapasite: +%" + Math.round(count * data.storageBonusPerLevel * 100); }
     else if (data.tradeBonusPerLevel) { effectText = "Ticaret: +%" + Math.round(count * data.tradeBonusPerLevel * 100); }

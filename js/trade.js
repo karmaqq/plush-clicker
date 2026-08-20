@@ -3,14 +3,14 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import {
-  TRADE_MERCHANT_MIN_GOLD,
-  TRADE_MERCHANT_MAX_GOLD,
-  TRADE_MERCHANT_MAX_ACTIVE,
   TRADE_MERCHANT_STAY_MIN,
   TRADE_MERCHANT_STAY_MAX,
   TRADE_MERCHANT_INTERVAL_MIN,
   TRADE_MERCHANT_INTERVAL_MAX,
+  TRADE_MERCHANT_BUDGET_MIN,
+  TRADE_MERCHANT_BUDGET_MAX,
   TRADE_ITEM_POOL,
+  TRADE_ITEMS_ORDER,
 } from "./game-data.js";
 import {
   state,
@@ -25,6 +25,8 @@ import { getResourceName, getResourceEmoji } from "./era.js";
 /*                          YARDIMCI FONKSİYONLAR                              */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+const TRADE_MERCHANT_MAX_ITEMS = 10;
+
 /* ─────────────────── Rastgele Tam Sayı Üretici ─────────────────── */
 function randomBetween(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -35,17 +37,28 @@ function randomFloat(min, max) {
   return Math.random() * (max - min) + min;
 }
 
-/* ─────────────────── Tüccar İsim Havuzu ─────────────────── */
-const MERCHANT_NAMES = [
-  "Tüccar", "Tüccar", "Tüccar",
-];
+/* ─────────────────── Karıştır (Fisher-Yates) ─────────────────── */
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 /* ─────────────────── Miktar Rozeti Oluşturucu ─────────────────── */
 function getQtyBadgeClass(qty) {
-  if (qty >= 40) return "trade-badge-high";
-  if (qty >= 20) return "trade-badge-mid";
+  if (qty >= 100) return "trade-badge-high";
+  if (qty >= 30) return "trade-badge-mid";
   if (qty >= 1) return "trade-badge-low";
   return "trade-badge-zero";
+}
+
+/* ─────────────────── Fiyat Hesaplayıcı ─────────────────── */
+function getFinalPrice(resourceId, merchant) {
+  const pool = TRADE_ITEM_POOL[resourceId];
+  const mod = merchant.priceModifiers[resourceId] || 0;
+  return pool.basePrice * (1 + mod);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -54,54 +67,52 @@ function getQtyBadgeClass(qty) {
 
 /* ─────────────────── Tüccar Oluşturucu ─────────────────── */
 function createMerchant(id) {
-  const budget = randomBetween(TRADE_MERCHANT_MIN_GOLD, TRADE_MERCHANT_MAX_GOLD);
+  const budget = randomBetween(TRADE_MERCHANT_BUDGET_MIN, TRADE_MERCHANT_BUDGET_MAX);
   const stayDuration = randomBetween(TRADE_MERCHANT_STAY_MIN, TRADE_MERCHANT_STAY_MAX);
 
-  const sellsToPlayer = generateMerchantItems(budget * 0.6);
-  const buysFromPlayer = generateMerchantItems(budget * 0.4);
+  const candidates = shuffle(TRADE_ITEMS_ORDER.slice());
+  const stock = {};
+  const priceModifiers = {};
+  let spent = 0;
+  let itemCount = 0;
+
+  for (const resId of candidates) {
+    const pool = TRADE_ITEM_POOL[resId];
+    priceModifiers[resId] = randomFloat(-0.30, 0.40);
+
+    if (itemCount >= TRADE_MERCHANT_MAX_ITEMS) {
+      stock[resId] = 0;
+      continue;
+    }
+
+    const qty = randomBetween(pool.minQty, pool.maxQty);
+    const cost = qty * pool.basePrice;
+    if (spent + cost <= budget) {
+      stock[resId] = qty;
+      spent += cost;
+      itemCount++;
+    } else {
+      stock[resId] = 0;
+    }
+  }
+
+  for (const resId of TRADE_ITEMS_ORDER) {
+    if (!(resId in stock)) {
+      stock[resId] = 0;
+    }
+    if (!(resId in priceModifiers)) {
+      priceModifiers[resId] = randomFloat(-0.30, 0.40);
+    }
+  }
 
   return {
     id,
-    name: MERCHANT_NAMES[(id - 1) % MERCHANT_NAMES.length],
     budget,
+    stock,
+    priceModifiers,
     stayDuration,
     stayRemaining: stayDuration,
-    sellsToPlayer,
-    buysFromPlayer,
   };
-}
-
-/* ─────────────────── Ürün Listesi Üretici ─────────────────── */
-function generateMerchantItems(budget) {
-  const poolKeys = Object.keys(TRADE_ITEM_POOL);
-  const items = [];
-  let spent = 0;
-  let attempts = 0;
-
-  while (items.length < 5 && attempts < 200) {
-    attempts++;
-    const resourceId = poolKeys[Math.floor(Math.random() * poolKeys.length)];
-    if (items.some(i => i.resourceId === resourceId)) continue;
-
-    const itemData = TRADE_ITEM_POOL[resourceId];
-    const qty = randomBetween(itemData.minQty, itemData.maxQty);
-    const unitPrice = itemData.basePrice;
-    const totalCost = qty * unitPrice;
-
-    if (spent + totalCost > budget) continue;
-
-    const priceModifier = randomFloat(-0.30, 0.40);
-
-    items.push({
-      resourceId,
-      quantity: qty,
-      unitPrice,
-      finalUnitPrice: +(unitPrice * (1 + priceModifier)).toFixed(4),
-      priceModifier,
-    });
-    spent += totalCost;
-  }
-  return items;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -153,9 +164,12 @@ export function updateMerchants(delta) {
     }
   }
 
-  if (state.trade.spawnTimer <= 0 && state.trade.merchants.length < TRADE_MERCHANT_MAX_ACTIVE) {
+  if (state.trade.spawnTimer <= 0) {
     state.trade.merchants.push(createMerchant(state.trade.nextId++));
     state.trade.spawnTimer = randomBetween(TRADE_MERCHANT_INTERVAL_MIN, TRADE_MERCHANT_INTERVAL_MAX);
+    if (activeMerchantId === null && state.trade.merchants.length === 1) {
+      activeMerchantId = state.trade.merchants[0].id;
+    }
   }
 }
 
@@ -164,49 +178,49 @@ export function updateMerchants(delta) {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────── Tüccardan Satın Alma ─────────────────── */
-export function buyFromMerchant(merchantId, itemIndex, quantity) {
+export function buyFromMerchant(merchantId, resourceId, quantity) {
   const merchant = state.trade.merchants.find(m => m.id === merchantId);
   if (!merchant) return false;
 
-  const item = merchant.sellsToPlayer[itemIndex];
-  if (!item || quantity <= 0 || quantity > item.quantity) return false;
+  const merchantStock = merchant.stock[resourceId] || 0;
+  if (quantity <= 0 || quantity > merchantStock) return false;
 
-  const cost = Math.floor(quantity * item.finalUnitPrice);
+  const finalPrice = getFinalPrice(resourceId, merchant);
+  const cost = Math.floor(quantity * finalPrice);
   if (getResource("altin") < cost) return false;
 
-  const cap = getResourceCapacity(item.resourceId);
-  if (Number.isFinite(cap) && getResource(item.resourceId) >= cap) return false;
+  const cap = getResourceCapacity(resourceId);
+  const current = getResource(resourceId);
+  if (Number.isFinite(cap) && current >= cap) return false;
+
+  const actualQty = Number.isFinite(cap) ? Math.min(quantity, cap - current) : quantity;
 
   state.resources.altin -= cost;
-  state.resources[item.resourceId] = Number.isFinite(cap)
-    ? Math.min(cap, getResource(item.resourceId) + quantity)
-    : getResource(item.resourceId) + quantity;
-
-  item.quantity -= quantity;
-  if (item.quantity <= 0) merchant.sellsToPlayer.splice(itemIndex, 1);
+  state.resources[resourceId] += actualQty;
+  merchant.stock[resourceId] -= actualQty;
+  merchant.budget += cost;
   state.trade.count++;
   return true;
 }
 
 /* ─────────────────── Tüccara Satış ─────────────────── */
-export function sellToMerchant(merchantId, itemIndex, quantity) {
+export function sellToMerchant(merchantId, resourceId, quantity) {
   const merchant = state.trade.merchants.find(m => m.id === merchantId);
   if (!merchant) return false;
 
-  const item = merchant.buysFromPlayer[itemIndex];
-  if (!item || quantity <= 0 || quantity > item.quantity) return false;
-  if (getResource(item.resourceId) < quantity) return false;
+  if (quantity <= 0 || getResource(resourceId) < quantity) return false;
 
-  const payment = Math.floor(quantity * item.finalUnitPrice);
-  const cap = getResourceCapacity("altin");
+  const finalPrice = getFinalPrice(resourceId, merchant);
+  const payment = Math.floor(quantity * finalPrice);
+  const goldCap = getResourceCapacity("altin");
 
-  state.resources[item.resourceId] -= quantity;
-  state.resources.altin = Number.isFinite(cap)
-    ? Math.min(cap, state.resources.altin + payment)
+  state.resources[resourceId] -= quantity;
+  state.resources.altin = Number.isFinite(goldCap)
+    ? Math.min(goldCap, state.resources.altin + payment)
     : state.resources.altin + payment;
 
-  item.quantity -= quantity;
-  if (item.quantity <= 0) merchant.buysFromPlayer.splice(itemIndex, 1);
+  merchant.stock[resourceId] = (merchant.stock[resourceId] || 0) + quantity;
+  merchant.budget -= payment;
   state.trade.count++;
   return true;
 }
@@ -215,181 +229,24 @@ export function sellToMerchant(merchantId, itemIndex, quantity) {
 /*                       TİCARET BÖLÜMÜ ARAYÜZÜ                               */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─────────────────── Ürün Satırı Oluşturucu ─────────────────── */
-function createTradeRow(item, direction, merchant) {
-  const row = document.createElement("div");
-  row.className = "trade-row resource-" + item.resourceId;
-  row.dataset.resId = item.resourceId;
-  row.dataset.dir = direction;
+/* ─────────────────── Maksimum Alış Miktarı ─────────────────── */
+function getMaxBuyQty(resourceId, merchant) {
+  const playerGold = Math.floor(getResource("altin"));
+  const finalPrice = getFinalPrice(resourceId, merchant);
+  const affordByGold = Math.floor(playerGold / finalPrice);
+  const cap = getResourceCapacity(resourceId);
+  const currentStock = getResource(resourceId);
+  const spaceLeft = Number.isFinite(cap) ? Math.max(0, Math.floor(cap - currentStock)) : Infinity;
+  const merchantStock = merchant.stock[resourceId] || 0;
+  return Math.floor(Math.max(0, Math.min(merchantStock, affordByGold, spaceLeft)));
+}
 
-  /* Sütun 1: Benim stokum */
-  const colStock = document.createElement("div");
-  colStock.className = "trade-col trade-col-stock";
-
-  const myStockBadge = document.createElement("span");
-  myStockBadge.className = "trade-badge trade-badge-mine";
-  updateBadgeContent(myStockBadge, item.resourceId);
-
-  colStock.appendChild(myStockBadge);
-
-  /* Sütun 2: Emoji + Kaynak adı */
-  const colInfo = document.createElement("div");
-  colInfo.className = "trade-col trade-col-info";
-
-  const emoji = document.createElement("span");
-  emoji.className = "trade-col-emoji";
-  emoji.textContent = getResourceEmoji(item.resourceId);
-
-  const name = document.createElement("span");
-  name.className = "trade-col-name";
-  name.textContent = getResourceName(item.resourceId);
-
-  colInfo.append(emoji, name);
-
-  /* Sütun 3: Birim fiyat */
-  const colPrice = document.createElement("div");
-  colPrice.className = "trade-col trade-col-price";
-
-  const goldSm = document.createElement("span");
-  goldSm.className = "gold-sm";
-  goldSm.textContent = getResourceEmoji("altin");
-
-  const priceNum = document.createElement("span");
-  priceNum.className = "trade-price-num";
-  priceNum.textContent = Math.floor(item.finalUnitPrice).toLocaleString("tr-TR");
-
-  colPrice.append(goldSm, " ", priceNum);
-
-  /* Sütun 4: Kar/zarar oranı */
-  const colMod = document.createElement("div");
-  colMod.className = "trade-col trade-col-modifier";
-
-  const pct = Math.round(item.priceModifier * 100);
-  const mod = document.createElement("span");
-  mod.className = "trade-price-modifier " + (pct > 0 ? "trade-modifier-up" : pct < 0 ? "trade-modifier-down" : "");
-  mod.textContent = pct !== 0 ? (pct > 0 ? "+" : "") + pct + "%" : "\u2014";
-  colMod.appendChild(mod);
-
-  /* Sütun 5: Tüccar stoğu */
-  const colMerchant = document.createElement("div");
-  colMerchant.className = "trade-col trade-col-merchant";
-
-  const theirBadge = document.createElement("span");
-  theirBadge.className = "trade-badge trade-badge-theirs";
-  updateTheirBadge(theirBadge, item.quantity);
-
-  colMerchant.appendChild(theirBadge);
-
-  /* Sütun 6: Adet input + toplam fiyat butonu */
-  const colAction = document.createElement("div");
-  colAction.className = "trade-col trade-col-action";
-
-  const inputWrap = document.createElement("div");
-  inputWrap.className = "trade-qty-wrap";
-
-  const btnDown = document.createElement("button");
-  btnDown.type = "button";
-  btnDown.className = "trade-qty-arrow";
-  btnDown.textContent = "\u25C0";
-
-  const qtyInput = document.createElement("input");
-  qtyInput.type = "number";
-  qtyInput.min = "0";
-  qtyInput.max = String(item.quantity);
-  qtyInput.step = "1";
-  qtyInput.value = "0";
-  qtyInput.className = "trade-qty-input";
-
-  const btnUp = document.createElement("button");
-  btnUp.type = "button";
-  btnUp.className = "trade-qty-arrow";
-  btnUp.textContent = "\u25B6";
-
-  const maxBtn = document.createElement("button");
-  maxBtn.type = "button";
-  maxBtn.className = "trade-max-btn";
-  maxBtn.textContent = "MAX";
-  maxBtn.addEventListener("click", () => {
-    const cap = getResourceCapacity("altin");
-    const playerGold = Math.floor(getResource("altin"));
-    let maxQty = 0;
-    if (direction === "buy") {
-      const affordByGold = Math.floor(playerGold / item.finalUnitPrice);
-      maxQty = Math.min(item.quantity, affordByGold);
-    } else {
-      const playerStock = Math.floor(getResource(item.resourceId));
-      const affordByMerchant = Math.floor(merchant.budget / item.finalUnitPrice);
-      maxQty = Math.min(item.quantity, playerStock, affordByMerchant);
-    }
-    qtyInput.value = String(maxQty);
-    refreshBtn();
-  });
-
-  inputWrap.append(btnDown, qtyInput, btnUp, maxBtn);
-
-  function clampInput(val) {
-    const n = Math.max(0, Math.min(val, item.quantity));
-    qtyInput.value = String(n);
-    refreshBtn();
-  }
-
-  btnDown.addEventListener("click", () => {
-    clampInput((parseInt(qtyInput.value, 10) || 0) - 1);
-  });
-
-  btnUp.addEventListener("click", () => {
-    clampInput((parseInt(qtyInput.value, 10) || 0) + 1);
-  });
-
-  qtyInput.addEventListener("input", () => {
-    const v = parseInt(qtyInput.value, 10);
-    if (!isNaN(v)) clampInput(v);
-    else refreshBtn();
-  });
-
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "trade-btn";
-
-  function refreshBtn() {
-    const qty = parseInt(qtyInput.value, 10) || 0;
-    const total = Math.floor(qty * item.finalUnitPrice);
-    const sign = direction === "buy" ? "-" : "+";
-    btn.textContent = qty > 0
-      ? getResourceEmoji("altin") + " " + sign + total.toLocaleString("tr-TR")
-      : getResourceEmoji("altin") + " 0";
-    btn.classList.toggle("trade-btn-spend", direction === "buy" && qty > 0);
-    btn.classList.toggle("trade-btn-earn", direction === "sell" && qty > 0);
-
-    const overMax = qty > item.quantity;
-    const invalid = qty <= 0 || overMax;
-    btn.classList.toggle("disabled", invalid);
-
-    qtyInput.classList.toggle("trade-qty-over", overMax);
-  }
-  refreshBtn();
-
-  btn.addEventListener("click", () => {
-    const qty = parseInt(qtyInput.value, 10) || 0;
-    if (qty <= 0) {
-      triggerShake(qtyInput);
-      return;
-    }
-
-    const ok = direction === "buy"
-      ? buyFromMerchant(merchant.id, item._index, qty)
-      : sellToMerchant(merchant.id, item._index, qty);
-    if (!ok) {
-      triggerShake(btn);
-    } else {
-      qtyInput.value = "0";
-      refreshBtn();
-    }
-  });
-
-  colAction.append(inputWrap, btn);
-  row.append(colStock, colInfo, colPrice, colMod, colMerchant, colAction);
-  return row;
+/* ─────────────────── Maksimum Satış Miktarı ─────────────────── */
+function getMaxSellQty(resourceId, merchant) {
+  const playerStock = Math.floor(getResource(resourceId));
+  const finalPrice = getFinalPrice(resourceId, merchant);
+  const affordByMerchant = Math.floor(merchant.budget / finalPrice);
+  return Math.floor(Math.max(0, Math.min(playerStock, affordByMerchant)));
 }
 
 /* ─────────────────── Badge İçerik Güncelleyici ─────────────────── */
@@ -401,8 +258,305 @@ function updateBadgeContent(badgeEl, resourceId) {
 
 /* ─────────────────── Tüccar Badge Güncelleyici ─────────────────── */
 function updateTheirBadge(badgeEl, qty) {
-  badgeEl.textContent = "x" + qty;
+  badgeEl.textContent = formatCount(qty);
   badgeEl.className = "trade-badge trade-badge-theirs " + getQtyBadgeClass(qty);
+}
+
+/* ─────────────────── Ürün Satırı Oluşturucu ─────────────────── */
+function createTradeRow(resourceId, merchant) {
+  const row = document.createElement("div");
+  row.className = "trade-row resource-" + resourceId;
+  row.dataset.resId = resourceId;
+
+  const pool = TRADE_ITEM_POOL[resourceId];
+  const finalPrice = getFinalPrice(resourceId, merchant);
+
+  /* Sütun 1: Emoji + İsim */
+  const colInfo = document.createElement("div");
+  colInfo.className = "trade-col trade-col-info";
+
+  const emoji = document.createElement("span");
+  emoji.className = "trade-col-emoji";
+  emoji.textContent = getResourceEmoji(resourceId);
+
+  const name = document.createElement("span");
+  name.className = "trade-col-name";
+  name.textContent = getResourceName(resourceId);
+
+  colInfo.append(emoji, name);
+
+  /* Sütun 2: Birim fiyat */
+  const colPrice = document.createElement("div");
+  colPrice.className = "trade-col trade-col-price";
+
+  const goldSm = document.createElement("span");
+  goldSm.className = "gold-sm";
+  goldSm.textContent = getResourceEmoji("altin");
+
+  const priceNum = document.createElement("span");
+  priceNum.className = "trade-price-num";
+  priceNum.textContent = Math.floor(finalPrice).toLocaleString("tr-TR");
+
+  colPrice.append(goldSm, " ", priceNum);
+
+  /* Sütun 3: Kar/zarar oranı */
+  const colMod = document.createElement("div");
+  colMod.className = "trade-col trade-col-modifier";
+
+  const pct = pool.basePrice > 0
+    ? Math.round(((finalPrice - pool.basePrice) / pool.basePrice) * 100)
+    : 0;
+  const mod = document.createElement("span");
+  mod.className = "trade-price-modifier " + (pct > 0 ? "trade-modifier-up" : pct < 0 ? "trade-modifier-down" : "");
+  mod.textContent = pct !== 0 ? (pct > 0 ? "+" : "") + pct + "%" : "\u2014";
+  colMod.appendChild(mod);
+
+  /* Sütun 4: Benim stoğum */
+  const colStock = document.createElement("div");
+  colStock.className = "trade-col trade-col-stock";
+
+  const myStockBadge = document.createElement("span");
+  myStockBadge.className = "trade-badge trade-badge-mine";
+  updateBadgeContent(myStockBadge, resourceId);
+
+  colStock.appendChild(myStockBadge);
+
+  /* Sütun 5: < [input] > tek sütun */
+  const colQty = document.createElement("div");
+  colQty.className = "trade-col trade-col-qty";
+
+  const qtyGroup = document.createElement("div");
+  qtyGroup.className = "trade-qty-group";
+
+  const btnLeft = document.createElement("button");
+  btnLeft.type = "button";
+  btnLeft.className = "trade-qty-arrow";
+  btnLeft.textContent = "\u25C0";
+
+  const qtyInput = document.createElement("input");
+  qtyInput.type = "number";
+  qtyInput.min = "0";
+  qtyInput.max = "0";
+  qtyInput.step = "1";
+  qtyInput.value = "0";
+  qtyInput.className = "trade-qty-input";
+
+  const btnRight = document.createElement("button");
+  btnRight.type = "button";
+  btnRight.className = "trade-qty-arrow";
+  btnRight.textContent = "\u25B6";
+
+  const maxSellBtn = document.createElement("button");
+  maxSellBtn.type = "button";
+  maxSellBtn.className = "trade-max-btn trade-max-sell";
+  maxSellBtn.textContent = "Ver";
+
+  const maxBuyBtn = document.createElement("button");
+  maxBuyBtn.type = "button";
+  maxBuyBtn.className = "trade-max-btn trade-max-buy";
+  maxBuyBtn.textContent = "Al";
+
+  qtyGroup.append(maxSellBtn, btnLeft, qtyInput, btnRight, maxBuyBtn);
+  colQty.appendChild(qtyGroup);
+
+  function clampInput(val) {
+    const maxBuy = getMaxBuyQty(resourceId, merchant);
+    const maxSell = getMaxSellQty(resourceId, merchant);
+    const n = Math.max(-maxSell, Math.min(val, maxBuy));
+    qtyInput.value = String(n);
+    refreshBtn();
+  }
+
+  qtyInput.addEventListener("input", () => {
+    const v = parseInt(qtyInput.value, 10);
+    if (!isNaN(v)) clampInput(v);
+    else refreshBtn();
+  });
+
+  btnLeft.addEventListener("click", () => {
+    const maxBuy = getMaxBuyQty(resourceId, merchant);
+    if (maxBuy > 0) {
+      qtyInput.value = String(maxBuy);
+      refreshBtn();
+    } else {
+      triggerShake(qtyInput);
+    }
+  });
+
+  btnRight.addEventListener("click", () => {
+    const maxSell = getMaxSellQty(resourceId, merchant);
+    if (maxSell > 0) {
+      qtyInput.value = String(-maxSell);
+      refreshBtn();
+    } else {
+      triggerShake(qtyInput);
+    }
+  });
+
+  maxSellBtn.addEventListener("click", () => {
+    const maxSell = getMaxSellQty(resourceId, merchant);
+    if (maxSell > 0) {
+      qtyInput.value = String(-maxSell);
+      refreshBtn();
+    }
+  });
+
+  maxBuyBtn.addEventListener("click", () => {
+    const maxBuy = getMaxBuyQty(resourceId, merchant);
+    if (maxBuy > 0) {
+      qtyInput.value = String(maxBuy);
+      refreshBtn();
+    }
+  });
+
+  /* Sütun 6: Tüccar stoğu */
+  const colMerchant = document.createElement("div");
+  colMerchant.className = "trade-col trade-col-merchant";
+
+  const theirBadge = document.createElement("span");
+  theirBadge.className = "trade-badge trade-badge-theirs";
+  updateTheirBadge(theirBadge, merchant.stock[resourceId] || 0);
+
+  colMerchant.appendChild(theirBadge);
+
+  /* Sütun 7: Maliyet butonu */
+  const colCost = document.createElement("div");
+  colCost.className = "trade-col trade-col-cost";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "trade-btn";
+
+  function refreshBtn() {
+    const qty = parseInt(qtyInput.value, 10) || 0;
+    const maxBuy = getMaxBuyQty(resourceId, merchant);
+    const maxSell = getMaxSellQty(resourceId, merchant);
+    const total = Math.floor(Math.abs(qty) * finalPrice);
+
+    if (qty > 0) {
+      btn.textContent = getResourceEmoji("altin") + " -" + total.toLocaleString("tr-TR");
+      btn.classList.add("trade-btn-spend");
+      btn.classList.remove("trade-btn-earn");
+    } else if (qty < 0) {
+      btn.textContent = getResourceEmoji("altin") + " +" + total.toLocaleString("tr-TR");
+      btn.classList.add("trade-btn-earn");
+      btn.classList.remove("trade-btn-spend");
+    } else {
+      btn.textContent = getResourceEmoji("altin") + " 0";
+      btn.classList.remove("trade-btn-spend", "trade-btn-earn");
+    }
+
+    const overMax = qty > maxBuy || qty < -maxSell;
+    const invalid = qty === 0 || overMax;
+    btn.classList.toggle("disabled", invalid);
+
+    qtyInput.classList.toggle("trade-qty-over", overMax);
+
+    btnLeft.disabled = maxBuy <= 0;
+    btnRight.disabled = maxSell <= 0;
+    maxSellBtn.disabled = maxSell <= 0;
+    maxBuyBtn.disabled = maxBuy <= 0;
+  }
+  refreshBtn();
+
+  btn.addEventListener("click", () => {
+    const qty = parseInt(qtyInput.value, 10) || 0;
+    if (qty === 0) {
+      triggerShake(qtyInput);
+      return;
+    }
+
+    let ok;
+    if (qty > 0) {
+      ok = buyFromMerchant(merchant.id, resourceId, qty);
+    } else {
+      ok = sellToMerchant(merchant.id, resourceId, Math.abs(qty));
+    }
+
+    if (!ok) {
+      triggerShake(btn);
+    } else {
+      qtyInput.value = "0";
+      refreshBtn();
+    }
+  });
+
+  colCost.appendChild(btn);
+  row.append(colInfo, colPrice, colMod, colStock, colQty, colMerchant, colCost);
+  return row;
+}
+
+/* ─────────────────── Satır İçerik Güncelleyici ─────────────────── */
+function updateTradeRow(row, resourceId, merchant) {
+  const mineBadge = row.querySelector(".trade-badge-mine");
+  if (mineBadge) updateBadgeContent(mineBadge, resourceId);
+
+  const theirBadge = row.querySelector(".trade-badge-theirs");
+  if (theirBadge) updateTheirBadge(theirBadge, merchant.stock[resourceId] || 0);
+
+  const priceNum = row.querySelector(".trade-price-num");
+  if (priceNum) {
+    const fp = getFinalPrice(resourceId, merchant);
+    priceNum.textContent = Math.floor(fp).toLocaleString("tr-TR");
+  }
+
+  const mod = row.querySelector(".trade-price-modifier");
+  if (mod) {
+    const pool = TRADE_ITEM_POOL[resourceId];
+    const fp = getFinalPrice(resourceId, merchant);
+    const pct = pool.basePrice > 0
+      ? Math.round(((fp - pool.basePrice) / pool.basePrice) * 100)
+      : 0;
+    mod.className = "trade-price-modifier " + (pct > 0 ? "trade-modifier-up" : pct < 0 ? "trade-modifier-down" : "");
+    mod.textContent = pct !== 0 ? (pct > 0 ? "+" : "") + pct + "%" : "\u2014";
+  }
+
+  const name = row.querySelector(".trade-col-name");
+  if (name) {
+    const depleted = getResource(resourceId) <= 0 && (merchant.stock[resourceId] || 0) <= 0;
+    name.classList.toggle("depleted", depleted);
+  }
+
+  const qtyInput = row.querySelector(".trade-qty-input");
+  const btnLeft = row.querySelector(".trade-qty-arrow:first-of-type");
+  const btnRight = row.querySelector(".trade-qty-arrow:last-of-type");
+  const maxSellBtn = row.querySelector(".trade-max-sell");
+  const maxBuyBtn = row.querySelector(".trade-max-buy");
+  const btn = row.querySelector(".trade-btn");
+
+  if (qtyInput) {
+    const maxBuy = getMaxBuyQty(resourceId, merchant);
+    const maxSell = getMaxSellQty(resourceId, merchant);
+    const currentVal = parseInt(qtyInput.value, 10) || 0;
+    if (currentVal > maxBuy) qtyInput.value = String(maxBuy);
+    if (currentVal < -maxSell) qtyInput.value = String(-maxSell);
+
+    if (btnLeft) btnLeft.disabled = maxBuy <= 0;
+    if (btnRight) btnRight.disabled = maxSell <= 0;
+    if (maxSellBtn) maxSellBtn.disabled = maxSell <= 0;
+    if (maxBuyBtn) maxBuyBtn.disabled = maxBuy <= 0;
+
+    if (btn) {
+      const qty = parseInt(qtyInput.value, 10) || 0;
+      const fp = getFinalPrice(resourceId, merchant);
+      const total = Math.floor(Math.abs(qty) * fp);
+      if (qty > 0) {
+        btn.textContent = getResourceEmoji("altin") + " -" + total.toLocaleString("tr-TR");
+        btn.classList.add("trade-btn-spend");
+        btn.classList.remove("trade-btn-earn");
+      } else if (qty < 0) {
+        btn.textContent = getResourceEmoji("altin") + " +" + total.toLocaleString("tr-TR");
+        btn.classList.add("trade-btn-earn");
+        btn.classList.remove("trade-btn-spend");
+      } else {
+        btn.textContent = getResourceEmoji("altin") + " 0";
+        btn.classList.remove("trade-btn-spend", "trade-btn-earn");
+      }
+      const overMax = qty > maxBuy || qty < -maxSell;
+      btn.classList.toggle("disabled", qty === 0 || overMax);
+      qtyInput.classList.toggle("trade-qty-over", overMax);
+    }
+  }
 }
 
 /* ─────────────────── Ticaret Bölümü Bileşeni ─────────────────── */
@@ -411,11 +565,10 @@ export function createTradeSection() {
   section.className = "trade-section";
   section.hidden = true;
 
-  /* Ust bar: tuccar sekmeleri */
+  /* Üst bar: tüccar sekmeleri + bakiye */
   const tabBar = document.createElement("div");
   tabBar.className = "trade-tab-bar";
 
-  /* Tuccar bakiyesi */
   const balanceArea = document.createElement("div");
   balanceArea.className = "trade-balance";
 
@@ -423,35 +576,39 @@ export function createTradeSection() {
   const listWrap = document.createElement("div");
   listWrap.className = "trade-list-wrap";
 
-  /* Baslik satiri — list-wrap icinde, sticky */
+  /* Başlık satırı — list-wrap icinde, sticky */
   const header = document.createElement("div");
   header.className = "trade-header";
+
+  const hdrProduct = document.createElement("div");
+  hdrProduct.className = "trade-header-col";
+  hdrProduct.textContent = "\u00dcr\u00fcn";
+
+  const hdrPrice = document.createElement("div");
+  hdrPrice.className = "trade-header-col";
+  hdrPrice.textContent = "Fiyat";
+
+  const hdrModifier = document.createElement("div");
+  hdrModifier.className = "trade-header-col";
+  hdrModifier.textContent = "De\u011fişim";
 
   const hdrStock = document.createElement("div");
   hdrStock.className = "trade-header-col";
   hdrStock.textContent = "Stok";
 
-  const hdrProduct = document.createElement("div");
-  hdrProduct.className = "trade-header-col";
-  hdrProduct.textContent = "\u00dcrün";
-
-  const hdrPrice = document.createElement("div");
-  hdrPrice.className = "trade-header-col";
-  hdrPrice.textContent = "Birim Fiyat";
-
-  const hdrModifier = document.createElement("div");
-  hdrModifier.className = "trade-header-col";
-  hdrModifier.textContent = "De\u011fi\u015fim";
+  const hdrQty = document.createElement("div");
+  hdrQty.className = "trade-header-col";
+  hdrQty.textContent = "Miktar";
 
   const hdrMerchant = document.createElement("div");
   hdrMerchant.className = "trade-header-col";
-  hdrMerchant.textContent = "T\u00fcccar";
+  hdrMerchant.textContent = "Tüccar";
 
-  const hdrAction = document.createElement("div");
-  hdrAction.className = "trade-header-col";
-  hdrAction.textContent = "\u0130\u015flem";
+  const hdrCost = document.createElement("div");
+  hdrCost.className = "trade-header-col";
+  hdrCost.textContent = "Maliyet";
 
-  header.append(hdrStock, hdrProduct, hdrPrice, hdrModifier, hdrMerchant, hdrAction);
+  header.append(hdrProduct, hdrPrice, hdrModifier, hdrStock, hdrQty, hdrMerchant, hdrCost);
 
   const list = document.createElement("div");
   list.className = "trade-list";
@@ -466,48 +623,78 @@ export function createTradeSection() {
 
   /* ─────────────────── Durum Takibi ─────────────────── */
   let tabMap = new Map();
+  let prevMerchantIds = [];
   let lastMerchantId = null;
-  let rowPool = [];
-  let dividerEl = null;
+  let rowEls = [];
 
-  /* ─────────────────── Tab Bar Guncelle ─────────────────── */
+  /* ─────────────────── Aktif Sekme Sınıfı Güncelle ─────────────────── */
+  function refreshActiveTabClass() {
+    const active = getActiveMerchant();
+    for (const [id, tab] of tabMap) {
+      tab.classList.toggle("active", active !== null && id === active.id);
+    }
+  }
+
+  /* ─────────────────── Tab Bar Guncelle (Artımlı) ─────────────────── */
   function syncTabs() {
     const merchants = state.trade.merchants;
     const active = getActiveMerchant();
 
-    const existingTabs = tabBar.querySelectorAll(".trade-tab");
-    existingTabs.forEach(t => t.remove());
-    tabMap.clear();
+    const currentIds = [];
+    for (let i = 0; i < Math.min(3, merchants.length); i++) {
+      currentIds.push(merchants[i].id);
+    }
 
-    for (let i = 0; i < 3; i++) {
-      const m = merchants[i];
-      const tab = document.createElement("button");
-      tab.type = "button";
-      tab.className = "trade-tab";
+    const listChanged = currentIds.length !== prevMerchantIds.length ||
+      currentIds.some((id, i) => id !== prevMerchantIds[i]);
 
-      const label = document.createElement("span");
-      label.className = "trade-tab-label";
+    if (listChanged) {
+      const existingTabs = tabBar.querySelectorAll(".trade-tab");
+      existingTabs.forEach(t => t.remove());
+      tabMap.clear();
 
-      if (m) {
-        label.textContent = "Tüccar " + (i + 1);
+      for (let i = 0; i < 3; i++) {
+        const m = merchants[i];
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "trade-tab";
 
-        const timer = document.createElement("span");
-        timer.className = "trade-tab-timer";
-        timer.textContent = formatDuration(m.stayRemaining);
+        const label = document.createElement("span");
+        label.className = "trade-tab-label";
 
-        tab.append(label, timer);
-        tab.addEventListener("click", () => {
-          setActiveMerchant(m.id);
-        });
-        tab.classList.toggle("active", active && m.id === active.id);
-        tabMap.set(m.id, tab);
-      } else {
-        tab.classList.add("empty");
-        label.textContent = "";
-        tab.appendChild(label);
+        if (m) {
+          label.textContent = "T\u00fccar " + (i + 1);
+
+          const timer = document.createElement("span");
+          timer.className = "trade-tab-timer";
+          timer.textContent = formatDuration(m.stayRemaining);
+
+          tab.append(label, timer);
+          tab.addEventListener("click", () => {
+            setActiveMerchant(m.id);
+            refreshActiveTabClass();
+          });
+          tab.classList.toggle("active", active && m.id === active.id);
+          tabMap.set(m.id, tab);
+        } else {
+          tab.classList.add("empty");
+          label.textContent = "";
+          tab.appendChild(label);
+        }
+
+        tabBar.insertBefore(tab, balanceArea);
       }
 
-      tabBar.insertBefore(tab, balanceArea);
+      prevMerchantIds = currentIds;
+    } else {
+      for (const [id, tab] of tabMap) {
+        const timer = tab.querySelector(".trade-tab-timer");
+        if (timer) {
+          const m = merchants.find(x => x.id === id);
+          if (m) timer.textContent = formatDuration(m.stayRemaining);
+        }
+      }
+      refreshActiveTabClass();
     }
   }
 
@@ -516,120 +703,42 @@ export function createTradeSection() {
     const active = getActiveMerchant();
     const merchantChanged = active && active.id !== lastMerchantId;
 
-    /* Tüccar değiştiyse veya ilk açılışsa tam yeniden oluştur */
     if (merchantChanged || (lastMerchantId === null && active)) {
       lastMerchantId = active ? active.id : null;
       list.innerHTML = "";
-      rowPool = [];
-      dividerEl = null;
+      rowEls = [];
     }
 
     if (!active) {
       list.innerHTML = "";
-      rowPool = [];
-      dividerEl = null;
+      rowEls = [];
       return;
     }
 
-    const buyCount = active.sellsToPlayer.length;
-    const sellCount = active.buysFromPlayer.length;
-    const needsDivider = buyCount > 0 && sellCount > 0;
+    const activeResIds = TRADE_ITEMS_ORDER.filter(resId => (active.stock[resId] || 0) > 0);
 
-    if (needsDivider && !dividerEl) {
-      dividerEl = document.createElement("div");
-      dividerEl.className = "trade-divider";
-    }
-
-    /* Tum satirlari topla: buy + sell */
-    const allItems = [];
-    active.sellsToPlayer.forEach((item, i) => {
-      item._index = i;
-      allItems.push({ item, direction: "buy", merchant: active });
-    });
-    active.buysFromPlayer.forEach((item, i) => {
-      item._index = i;
-      allItems.push({ item, direction: "sell", merchant: active });
-    });
-
-    const targetCount = allItems.length + (needsDivider ? 1 : 0);
-
-    /* fazlalari kaldir */
-    while (list.children.length > targetCount) {
+    while (rowEls.length > activeResIds.length) {
       list.removeChild(list.lastChild);
+      rowEls.pop();
     }
 
-    /* divider'i dogru yere yerlestir */
-    if (needsDivider) {
-      const curIdx = dividerEl.parentNode === list ? [...list.children].indexOf(dividerEl) : -1;
-      if (curIdx !== buyCount) {
-        if (dividerEl.parentNode === list) list.removeChild(dividerEl);
-        list.insertBefore(dividerEl, list.children[buyCount] || null);
-      }
-    } else if (dividerEl && dividerEl.parentNode === list) {
-      list.removeChild(dividerEl);
-    }
+    for (let i = 0; i < activeResIds.length; i++) {
+      const resId = activeResIds[i];
 
-    /* guncelle veya olustur */
-    for (let i = 0; i < allItems.length; i++) {
-      const { item, direction, merchant } = allItems[i];
-      const offset = needsDivider && i >= buyCount ? 1 : 0;
-      const childIdx = i + offset;
-      let row = list.children[childIdx];
-
-      if (!row || row === dividerEl || row.dataset.resId !== item.resourceId || row.dataset.dir !== direction) {
-        row = createTradeRow(item, direction, merchant);
-        if (list.children[childIdx] && list.children[childIdx] !== dividerEl) {
-          list.replaceChild(row, list.children[childIdx]);
-        } else {
-          list.insertBefore(row, list.children[childIdx] || null);
-        }
+      if (i >= rowEls.length) {
+        const row = createTradeRow(resId, active);
+        list.appendChild(row);
+        rowEls.push(row);
       }
 
-      /* Satir icerigini guncelle (DOM'i yeniden olusturmadan) */
-      updateTradeRow(row, item, direction, merchant);
-    }
-  }
-
-  /* ─────────────────── Satir Icerik Guncelleyici ─────────────────── */
-  function updateTradeRow(row, item, direction, merchant) {
-    const mineBadge = row.querySelector(".trade-badge-mine");
-    if (mineBadge) updateBadgeContent(mineBadge, item.resourceId);
-
-    const theirBadge = row.querySelector(".trade-badge-theirs");
-    if (theirBadge) updateTheirBadge(theirBadge, item.quantity);
-
-    const priceNum = row.querySelector(".trade-price-num");
-    if (priceNum) {
-      priceNum.textContent = Math.floor(item.finalUnitPrice).toLocaleString("tr-TR");
-    }
-
-    const mod = row.querySelector(".trade-price-modifier");
-    if (mod) {
-      const pct = Math.round(item.priceModifier * 100);
-      mod.className = "trade-price-modifier " + (pct > 0 ? "trade-modifier-up" : pct < 0 ? "trade-modifier-down" : "");
-      mod.textContent = pct !== 0 ? (pct > 0 ? "+" : "") + pct + "%" : "\u2014";
-    }
-
-    const qtyInput = row.querySelector(".trade-qty-input");
-    if (qtyInput) {
-      qtyInput.max = String(item.quantity);
-      const currentVal = parseInt(qtyInput.value, 10) || 0;
-      if (currentVal > item.quantity) {
-        qtyInput.value = item.quantity;
+      const row = rowEls[i];
+      if (row.dataset.resId !== resId) {
+        const newRow = createTradeRow(resId, active);
+        list.replaceChild(newRow, row);
+        rowEls[i] = newRow;
       }
-    }
 
-    const btn = row.querySelector(".trade-btn");
-    if (btn) {
-      const qty = parseInt(row.querySelector(".trade-qty-input")?.value, 10) || 0;
-      const total = Math.floor(qty * item.finalUnitPrice);
-      const sign = direction === "buy" ? "-" : "+";
-      btn.textContent = qty > 0
-        ? getResourceEmoji("altin") + " " + sign + total.toLocaleString("tr-TR")
-        : getResourceEmoji("altin") + " 0";
-      btn.classList.toggle("trade-btn-spend", direction === "buy" && qty > 0);
-      btn.classList.toggle("trade-btn-earn", direction === "sell" && qty > 0);
-      btn.classList.toggle("disabled", qty <= 0 || qty > item.quantity);
+      updateTradeRow(row, resId, active);
     }
   }
 
@@ -643,7 +752,7 @@ export function createTradeSection() {
       ? getResourceEmoji("altin") + " " + active.budget.toLocaleString("tr-TR")
       : "";
 
-    statusBar.textContent = "Toplam işlem: " + state.trade.count;
+    statusBar.textContent = "Toplam i\u015flem: " + state.trade.count;
   }
 
   onChange(update);

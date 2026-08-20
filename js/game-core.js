@@ -1146,8 +1146,8 @@ function loadTrade(saved) {
   if (Array.isArray(saved.merchants)) {
     state.trade.merchants = saved.merchants.filter(m =>
       m && typeof m === "object" &&
-      Array.isArray(m.sellsToPlayer) &&
-      Array.isArray(m.buysFromPlayer)
+      m.stock && typeof m.stock === "object" &&
+      m.priceModifiers && typeof m.priceModifiers === "object"
     );
   }
 
