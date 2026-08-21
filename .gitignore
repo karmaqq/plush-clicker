@@ -1,2 +1,11 @@
-plan/
+kurallar/
 .opencode/
+
+era geçişinde yaşanan sıkıntılar:
+
+nüfus sıfırlanmıyor geçişte kaynakalr tükendiği için nüfus ölmeye başlıyor ve sıfırlanmıyor. bu yüzden geçişte nüfus sıfırlanmalı.
+sanayi binaları açık halde başlıyor seviyeleri korunuyor bu olmalaı tüm sanayi binaları sıfırlanmalı kilit koşulları korunmalı.
+kaynaklar orta panelde saydam şekilde başlıyor geçiş anında tüm kaynaklar silinmeli. sadece güç kaynağı kalmalı.
+kredi akışında çift divider var kredi kazanımı era başlangıcında olmadığı için türetim tüketim olmamalı divider tek olmalı.
+mutluluk da aynı şekilde çift divider var nüfus olmadığı sürece mutluluk gizli olmalı her erada.
+paketler önceki era seviyesini koruyor bu da başlangıç kaynağına etki ediyor. era geçişinde paketler ve kilitleri sıfırlanmalı.

@@ -19,8 +19,8 @@ import { RESOURCES } from "./game-data.js";
 export const ERA_DATA = {
   1: {
     name: "Kasaba",
-    populationTarget: 500,
-    goldTarget: 5000,
+    populationTarget: 250,
+    goldTarget: 500000,
     next: 2,
   },
   2: {

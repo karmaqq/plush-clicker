@@ -2,19 +2,33 @@
 /*                       ARAÇ İPUCU STİLLERİ                                */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ─────────────────── Ortak Kabuk ─────────────────── */
+
 .tooltip {
+    --tt-fs-title: clamp(1rem, 2vw, 1.25rem);
+    --tt-fs-row: clamp(0.78rem, 1.55vw, 0.9375rem);
+    --tt-fs-sub: clamp(0.7rem, 1.35vw, 0.8125rem);
+
     position: fixed;
     z-index: 1000;
     pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.375rem;
     min-width: 15rem;
     max-width: 21rem;
+    max-height: calc(100vh - 1rem);
     padding: 0.625rem 0.875rem;
     border-radius: 0.625rem;
     border: 1px solid #4a5563;
     background: linear-gradient(145deg, #1f2630, #171d24);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
     font-family: var(--font-ui);
+    font-size: var(--tt-fs-row);
+    color: #d7dde4;
     text-align: left;
+    overflow-y: auto;
     opacity: 0;
     transform: translateY(6px) scale(0.94);
     transition:
@@ -27,9 +41,11 @@
     transform: translateY(0) scale(1);
 }
 
+/* ─────────────────── Başlıklar ─────────────────── */
+
 .tt-title,
 .tooltip-title {
-    font-size: clamp(1rem, 2vw, 1.25rem);
+    font-size: var(--tt-fs-title);
     font-weight: 800;
     color: var(--res, #ffd166);
     white-space: nowrap;
@@ -40,12 +56,41 @@
     border-bottom: 1px solid #3a4553;
 }
 
+.tt-heading {
+    font-size: var(--tt-fs-title);
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #3a4553;
+}
+
+.tooltip-title .badge {
+    margin-right: 0.35em;
+}
+
+.tt-badge {
+    font-size: 0.85em;
+}
+
+/* ─────────────────── Satırlar ─────────────────── */
+
+.tt-row,
+.tt-line,
+.tt-total,
+.tt-cap,
+.tooltip-effect-line,
+.cost-row {
+    font-size: var(--tt-fs-row);
+}
+
 .tt-row {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    margin-top: 0.25rem;
-    font-size: clamp(0.78rem, 1.55vw, 0.9375rem);
     font-weight: 600;
     color: #d7dde4;
     line-height: 1.35;
@@ -64,17 +109,82 @@
     color: #ff5a5a;
 }
 
-.tt-badge {
-    font-size: 0.85em;
+.tt-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    white-space: nowrap;
 }
 
-.tooltip-title .badge {
-    margin-right: 0.35em;
+.tt-label {
+    color: #8895a3;
 }
+
+.tt-value {
+    font-weight: 700;
+}
+
+.tt-line-label {
+    color: #b8c2cc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tt-subs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.tt-subrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-left: 0.75rem;
+    white-space: nowrap;
+    font-size: var(--tt-fs-sub);
+    color: #9aa5b1;
+}
+
+.tt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+/* ─────────────────── Anlamsal Renk Sözlüğü ─────────────────── */
+
+.tt-pos {
+    color: #7ee2a8;
+}
+
+.tt-neg {
+    color: #ff8a8a;
+}
+
+.tt-met {
+    color: #7ee2a8;
+    font-weight: 700;
+}
+
+.tt-unmet {
+    color: #ff8a8a;
+    font-weight: 700;
+}
+
+.tt-muted {
+    color: #8895a3;
+}
+
+.tt-gold {
+    color: #ffe95c;
+}
+
+/* ─────────────────── Toplam / Depo / Not ─────────────────── */
 
 .tt-total {
-    margin-top: 0.375rem;
-    font-size: clamp(0.8rem, 1.6vw, 0.9375rem);
     font-weight: 700;
     color: #d7dde4;
 }
@@ -84,8 +194,28 @@
     font-weight: 800;
 }
 
-.tt-total .tt-gold {
-    color: #ffe95c;
+.tt-cap {
+    font-weight: 600;
+    color: #8fa0b0;
+}
+
+.tt-cap strong {
+    color: #d7dde4;
+    font-weight: 800;
+}
+
+.tt-time {
+    color: #ffd166;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.tt-note {
+    font-size: var(--tt-fs-sub);
+    font-weight: 600;
+    color: #8895a3;
+    line-height: 1.35;
 }
 
 .tt-unsellable {
@@ -96,63 +226,25 @@
     border: 1px solid #000000;
     color: #ffffff;
     font-family: var(--font-ui);
-    font-size: 0.88rem;
+    font-size: var(--tt-fs-row);
     font-weight: 700;
     letter-spacing: 0.02em;
 }
 
-.tt-cap {
-    margin-top: 0.375rem;
-    font-size: clamp(0.78rem, 1.55vw, 0.9375rem);
-    font-weight: 600;
-    color: #8fa0b0;
-}
-
-.tt-cap strong {
-    color: #d7dde4;
-    font-weight: 800;
-}
+/* ─────────────────── Ayraç ─────────────────── */
 
 .tt-divider {
     height: 1px;
     background: #3a4553;
-    margin: 0.375rem 0;
+    flex: none;
 }
 
-.tt-divider + .tt-total,
-.tt-divider + .tooltip-costs,
-.tt-divider + .tt-row {
-    margin-top: 0;
-}
+/* ─────────────────── Etki Bloğu ─────────────────── */
 
 .tooltip-effect {
-    margin-top: 0.375rem;
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
-}
-
-.tooltip-effect-line {
-    font-size: clamp(0.8125rem, 1.5vw, 1rem);
-    font-weight: 600;
-    color: #9aa5b1;
-    text-align: left;
-}
-
-.storage-cap-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.125rem 0.5rem;
-    margin-top: 0.25rem;
-    max-height: 11rem;
-    overflow-y: auto;
-}
-
-.storage-cap-item {
-    font-size: clamp(0.72rem, 1.35vw, 0.875rem);
-    font-weight: 600;
-    color: #b8c2cc;
-    white-space: nowrap;
 }
 
 .effect-label {
@@ -163,8 +255,24 @@
     color: var(--res, #2ecc71);
 }
 
+.storage-cap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.125rem 0.5rem;
+    max-height: 11rem;
+    overflow-y: auto;
+}
+
+.storage-cap-item {
+    font-size: var(--tt-fs-sub);
+    font-weight: 600;
+    color: #b8c2cc;
+    white-space: nowrap;
+}
+
+/* ─────────────────── Maliyet Bloğu ─────────────────── */
+
 .tooltip-costs {
-    margin-top: 0.375rem;
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
@@ -176,7 +284,6 @@
     justify-content: space-between;
     gap: 0.75rem;
     min-width: 0;
-    font-size: clamp(0.875rem, 1.7vw, 1.0625rem);
     font-weight: 700;
     white-space: nowrap;
 }
@@ -204,13 +311,6 @@
     font-size: 1em;
     font-weight: 700;
     color: #ffb454;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.tt-time {
-    color: #ffd166;
-    font-weight: 700;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }

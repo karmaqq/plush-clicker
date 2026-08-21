@@ -87,17 +87,38 @@ export function refreshCostRows(rows, cost, getResource, getNetRate) {
 }
 
 function positionTooltip(tooltip, anchor) {
-    const rect = anchor.getBoundingClientRect();
-    const w = tooltip.offsetWidth;
-    const h = tooltip.offsetHeight;
     const margin = 8;
+    const gap = 6;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const rect = anchor.getBoundingClientRect();
 
-    let top = rect.top - h - margin;
-    if (top < margin) {
-        top = rect.bottom + margin;
+    tooltip.style.maxHeight = "";
+    const w = tooltip.offsetWidth;
+    let h = tooltip.offsetHeight;
+
+    const spaceAbove = rect.top - margin;
+    const spaceBelow = vh - rect.bottom - margin;
+
+    let above;
+    if (h <= spaceAbove && h <= spaceBelow) {
+        above = spaceAbove >= spaceBelow;
+    } else if (h <= spaceAbove) {
+        above = true;
+    } else if (h <= spaceBelow) {
+        above = false;
+    } else {
+        above = spaceAbove >= spaceBelow;
+        tooltip.style.maxHeight = Math.max(120, (above ? spaceAbove : spaceBelow) - gap) + "px";
+        h = tooltip.offsetHeight;
     }
 
-    const left = rect.left + rect.width / 2 - w / 2;
-    tooltip.style.left = Math.min(Math.max(margin, left), window.innerWidth - w - margin) + "px";
-    tooltip.style.top = Math.max(margin, top) + "px";
+    let top = above ? rect.top - h - gap : rect.bottom + gap;
+    top = Math.min(Math.max(margin, top), vh - h - margin);
+
+    let left = rect.left + rect.width / 2 - w / 2;
+    left = Math.min(Math.max(margin, left), vw - w - margin);
+
+    tooltip.style.left = Math.round(left) + "px";
+    tooltip.style.top = Math.round(top) + "px";
 }

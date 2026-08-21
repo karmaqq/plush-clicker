@@ -61,6 +61,7 @@ import {
   getResourceName as getEraResourceName,
   getResourceEmoji as getEraResourceEmoji,
   getBuildingName as getEraBuildingName,
+  getGoldLabel,
   ERA_DATA,
 } from "./era.js";
 import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingTooltip } from "./ui-cards.js";
@@ -78,22 +79,24 @@ export function createGoldChip() {
   icon.textContent = "🪙";
   const value = document.createElement("span");
   el.append(icon, value);
-  const tooltip = document.createElement("div");
-  tooltip.className = "gold-tooltip";
-  tooltip.hidden = true;
-  const sellRow = createGoldRow("Otomatik satış");
+  const tooltip = createTooltip("gold-tooltip");
+  const title = document.createElement("div");
+  title.className = "tt-heading";
+  tooltip.element.appendChild(title);
+  const sellRow = createGoldRow("Otomatik satış:");
   const sellDetail = document.createElement("div");
-  sellDetail.className = "gold-tooltip-subs";
+  sellDetail.className = "tt-subs";
   const sellDivider = document.createElement("div");
   sellDivider.className = "tt-divider";
-  const industryRow = createGoldRow("Darphane");
+  const industryRow = createGoldRow("Darphane:");
   const wageDivider = document.createElement("div");
   wageDivider.className = "tt-divider";
-  const wageRow = createGoldRow("İşçi maaşları");
+  const wageRow = createGoldRow("İşçi maaşları:");
   const divider = document.createElement("div");
   divider.className = "tt-divider";
-  const netRow = createGoldRow("Net");
-  tooltip.append(
+  const netRow = createGoldRow("Net:");
+  tooltip.element.append(
+    title,
     sellRow.row,
     sellDetail,
     sellDivider,
@@ -103,12 +106,11 @@ export function createGoldChip() {
     divider,
     netRow.row,
   );
-  el.appendChild(tooltip);
   let active = false;
-  el.addEventListener("mouseenter", () => { active = true; refresh(); });
-  el.addEventListener("mouseleave", () => { active = false; tooltip.hidden = true; });
-  el.addEventListener("focus", () => { active = true; refresh(); });
-  el.addEventListener("blur", () => { active = false; tooltip.hidden = true; });
+  el.addEventListener("mouseenter", () => { active = true; refresh(); tooltip.show(el); });
+  el.addEventListener("mouseleave", () => { active = false; tooltip.hide(); });
+  el.addEventListener("focus", () => { active = true; refresh(); tooltip.show(el); });
+  el.addEventListener("blur", () => { active = false; tooltip.hide(); });
   function setRow(row, rate) {
     const visible = Math.abs(rate) > 0.0001;
     row.row.hidden = !visible;
@@ -123,7 +125,7 @@ export function createGoldChip() {
     sellDetail.hidden = ids.length === 0;
     for (const rid of ids) {
       const row = document.createElement("div");
-      row.className = "gold-tooltip-subrow";
+      row.className = "tt-subrow";
       const label = document.createElement("span");
       label.textContent = "↳ " + getEraResourceEmoji(rid) + " " + getEraResourceName(rid);
       const value = document.createElement("span");
@@ -134,6 +136,7 @@ export function createGoldChip() {
     }
   }
   function refresh() {
+    title.textContent = getGoldLabel() + " Akışı";
     const industryGold = getIndustryOutput("altin");
     const { breakdown, total: autoSellGold } = getAutoSellBreakdown();
     const wageRate = getWageRate();
@@ -147,7 +150,6 @@ export function createGoldChip() {
     netRow.value.textContent = (netRate >= 0 ? "+" : "−") + formatNumber(Math.abs(netRate)) + "/s";
     netRow.value.classList.toggle("tt-pos", netRate >= 0);
     netRow.value.classList.toggle("tt-neg", netRate < 0);
-    tooltip.hidden = false;
   }
   function update() {
     value.textContent = formatCount(getAltin());
@@ -160,7 +162,7 @@ export function createGoldChip() {
 
 function createGoldRow(labelText) {
   const row = document.createElement("div");
-  row.className = "gold-tooltip-row";
+  row.className = "tt-line";
   const label = document.createElement("span");
   label.className = "tt-label";
   label.textContent = labelText;
@@ -183,44 +185,40 @@ export function createHappinessChip() {
   icon.textContent = "🥳";
   const value = document.createElement("span");
   el.append(icon, value);
-  const tooltip = document.createElement("div");
-  tooltip.className = "happiness-tooltip";
-  tooltip.hidden = true;
+  const tooltip = createTooltip("happiness-tooltip");
   const title = document.createElement("div");
-  title.className = "happiness-title";
+  title.className = "tt-heading";
   const posSec = createHappinessSection("Memnuniyet Kaynakları");
   const negSec = createHappinessSection("Eksiklikler");
   const info = document.createElement("div");
-  info.className = "happiness-info";
+  info.className = "tt-note";
   const infoText = document.createElement("span");
   info.appendChild(infoText);
   const divider = document.createElement("div");
   divider.className = "tt-divider";
-  tooltip.append(title, posSec.section, negSec.section, divider, info);
-  el.appendChild(tooltip);
+  tooltip.element.append(title, posSec.section, negSec.section, divider, info);
   let active = false;
   function refreshDeficitHighlight() {
     const { items } = getHappinessBreakdown();
     setManualHighlight(items.filter((i) => !i.met && i.resId).map((i) => i.resId));
   }
-  el.addEventListener("mouseenter", () => { active = true; refresh(); refreshDeficitHighlight(); });
-  el.addEventListener("mouseleave", () => { active = false; tooltip.hidden = true; clearManualHighlight(); });
-  el.addEventListener("focus", () => { active = true; refresh(); refreshDeficitHighlight(); });
-  el.addEventListener("blur", () => { active = false; tooltip.hidden = true; clearManualHighlight(); });
+  el.addEventListener("mouseenter", () => { active = true; refresh(); refreshDeficitHighlight(); tooltip.show(el); });
+  el.addEventListener("mouseleave", () => { active = false; tooltip.hide(); clearManualHighlight(); });
+  el.addEventListener("focus", () => { active = true; refresh(); refreshDeficitHighlight(); tooltip.show(el); });
+  el.addEventListener("blur", () => { active = false; tooltip.hide(); clearManualHighlight(); });
   function refresh() {
     const satisfaction = getPopulationSatisfaction();
     const { items, target } = getHappinessBreakdown();
-    title.textContent = " Mutluluk " + Math.round(satisfaction);
+    title.textContent = "Mutluluk " + Math.round(satisfaction);
     const deductions = items.filter((i) => !i.met);
     const metItems = items.filter((i) => i.met);
     fillHappinessList(posSec, metItems);
     fillHappinessList(negSec, deductions);
     const deficiency = getPopulationDeficiency();
     const parts = [];
-    parts.push(" Göçmen Gelişi: ~" + getMigrationInterval() + " saniye");
+    parts.push("Göçmen Gelişi: ~" + getMigrationInterval() + " saniye");
     if (deficiency > 0.05) parts.push("⚠️ Temel ihtiyaç açığı");
     infoText.textContent = parts.join("  ·  ");
-    tooltip.hidden = false;
   }
   function update() {
     const satisfaction = getPopulationSatisfaction();
@@ -240,7 +238,7 @@ function createHappinessSection(titleText) {
   heading.className = "happiness-sec-title";
   heading.textContent = titleText;
   const list = document.createElement("div");
-  list.className = "happiness-list";
+  list.className = "tt-list";
   section.append(heading, list);
   return { section, list };
 }
@@ -249,18 +247,18 @@ function fillHappinessList(sec, items) {
   while (sec.list.firstChild) sec.list.removeChild(sec.list.firstChild);
   for (const item of items) {
     const row = document.createElement("div");
-    row.className = "happiness-row";
+    row.className = "tt-line";
     const label = document.createElement("span");
-    label.className = "happiness-row-label";
+    label.className = "tt-line-label";
     label.textContent = item.emoji + " " + item.label;
     const val = document.createElement("span");
-    val.className = "happiness-row-value";
+    val.className = "tt-line-value";
     if (item.delta === 0) {
       val.textContent = "✓";
-      val.classList.add("happiness-met");
+      val.classList.add("tt-met");
     } else {
       val.textContent = "−" + Math.abs(item.delta);
-      val.classList.add("happiness-unmet");
+      val.classList.add("tt-unmet");
     }
     row.append(label, val);
     sec.list.appendChild(row);
@@ -332,6 +330,7 @@ export function createHousingChip(id) {
 export function createEraChip() {
   const el = document.createElement("div");
   el.className = "era-chip";
+  el.tabIndex = 0;
   const infoRow = document.createElement("div");
   infoRow.className = "era-chip-info";
   const eraBadge = document.createElement("span");
@@ -351,23 +350,22 @@ export function createEraChip() {
   progressArea.append(progressBar, progressLabel);
   el.append(infoRow, progressArea);
 
-  const tooltip = document.createElement("div");
-  tooltip.className = "era-tooltip";
-  tooltip.hidden = true;
+  const tooltip = createTooltip("era-tooltip");
   const ttTitle = document.createElement("div");
-  ttTitle.className = "era-tooltip-title";
-  const ttPopRow = createEraTooltipRow(" Nüfus");
-  const ttGoldRow = createEraTooltipRow(" Altın");
+  ttTitle.className = "tt-heading";
+  const ttPopRow = createEraTooltipRow("Nüfus:");
+  const ttGoldRow = createEraTooltipRow("Altın:");
   const ttDivider = document.createElement("div");
   ttDivider.className = "tt-divider";
   const ttNextRow = document.createElement("div");
-  ttNextRow.className = "era-tooltip-next";
+  ttNextRow.className = "tt-note";
   ttNextRow.hidden = true;
-  tooltip.append(ttTitle, ttPopRow.row, ttGoldRow.row, ttDivider, ttNextRow);
-  el.appendChild(tooltip);
+  tooltip.element.append(ttTitle, ttPopRow.row, ttGoldRow.row, ttDivider, ttNextRow);
   let tooltipActive = false;
-  el.addEventListener("mouseenter", () => { tooltipActive = true; refreshTooltip(); tooltip.hidden = false; });
-  el.addEventListener("mouseleave", () => { tooltipActive = false; tooltip.hidden = true; });
+  el.addEventListener("mouseenter", () => { tooltipActive = true; refreshTooltip(); tooltip.show(el); });
+  el.addEventListener("mouseleave", () => { tooltipActive = false; tooltip.hide(); });
+  el.addEventListener("focus", () => { tooltipActive = true; refreshTooltip(); tooltip.show(el); });
+  el.addEventListener("blur", () => { tooltipActive = false; tooltip.hide(); });
 
   function update() {
     const currentEra = getEra();
@@ -405,9 +403,10 @@ export function createEraChip() {
       const popCurrent = getPopulationAlive();
       const goldCurrent = getAltin();
       ttPopRow.value.textContent = formatCount(popCurrent) + " / " + formatCount(popTarget);
-      ttPopRow.value.style.color = popCurrent >= popTarget ? "#7ee2a8" : "#d7dde4";
+      ttPopRow.value.classList.remove("tt-gold");
+      ttPopRow.value.classList.toggle("tt-pos", popCurrent >= popTarget);
       ttGoldRow.value.textContent = formatCount(goldCurrent) + " / " + formatCount(goldTarget);
-      ttGoldRow.value.style.color = goldCurrent >= goldTarget ? "#7ee2a8" : "#d7dde4";
+      ttGoldRow.value.classList.toggle("tt-pos", goldCurrent >= goldTarget);
       const nextData = data.next ? ERA_DATA[data.next] : null;
       if (nextData) {
         ttNextRow.hidden = false;
@@ -415,7 +414,8 @@ export function createEraChip() {
       } else { ttNextRow.hidden = true; }
     } else {
       ttPopRow.value.textContent = "Son çağ";
-      ttPopRow.value.style.color = "#ffd166";
+      ttPopRow.value.classList.remove("tt-pos");
+      ttPopRow.value.classList.add("tt-gold");
       ttGoldRow.row.hidden = true;
       ttNextRow.hidden = true;
     }
@@ -428,7 +428,7 @@ export function createEraChip() {
 
 function createEraTooltipRow(labelText) {
   const row = document.createElement("div");
-  row.className = "era-tooltip-row";
+  row.className = "tt-line";
   const label = document.createElement("span");
   label.className = "tt-label";
   label.textContent = labelText;
@@ -455,54 +455,50 @@ export function createSeasonChip() {
   const icon = document.createElement("span");
   icon.className = "season-chip-icon";
   el.append(icon);
-  const tooltip = document.createElement("div");
-  tooltip.className = "season-tooltip";
-  tooltip.hidden = true;
+  const tooltip = createTooltip("season-tooltip");
   const title = document.createElement("div");
-  title.className = "season-tooltip-title";
+  title.className = "tt-heading";
   const list = document.createElement("div");
-  list.className = "season-tooltip-list";
-  tooltip.append(title, list);
-  el.appendChild(tooltip);
+  list.className = "tt-list";
+  tooltip.element.append(title, list);
   let active = false;
-  el.addEventListener("mouseenter", () => { active = true; refresh(); });
-  el.addEventListener("mouseleave", () => { active = false; tooltip.hidden = true; });
-  el.addEventListener("focus", () => { active = true; refresh(); });
-  el.addEventListener("blur", () => { active = false; tooltip.hidden = true; });
+  el.addEventListener("mouseenter", () => { active = true; refresh(); tooltip.show(el); });
+  el.addEventListener("mouseleave", () => { active = false; tooltip.hide(); });
+  el.addEventListener("focus", () => { active = true; refresh(); tooltip.show(el); });
+  el.addEventListener("blur", () => { active = false; tooltip.hide(); });
   function refresh() {
     const season = getSeason();
     const timer = getSeasonTimer();
-    title.textContent = season.emoji + " " + season.name + "  · değişime " + Math.max(0, Math.ceil(timer)) + " sn";
+    title.textContent = season.emoji + " " + season.name + " · değişime " + Math.max(0, Math.ceil(timer)) + " sn";
     while (list.firstChild) list.removeChild(list.firstChild);
     const rows = [
-      [" Su", season.modifiers.su],
-      [" Yiyecek", season.modifiers.yiyecek],
-      [" Taş", season.modifiers.tas],
-      [" İpek", season.modifiers.ipek],
-      [" Kültür", season.modifiers.kultur],
+      ["Su", season.modifiers.su],
+      ["Yiyecek", season.modifiers.yiyecek],
+      ["Taş", season.modifiers.tas],
+      ["İpek", season.modifiers.ipek],
+      ["Kültür", season.modifiers.kultur],
     ];
     for (const [label, value] of rows) {
       if (typeof value !== "number" || value === 1) continue;
       const row = document.createElement("div");
-      row.className = "season-row";
+      row.className = "tt-line";
       const labelEl = document.createElement("span");
       labelEl.className = "tt-label";
       labelEl.textContent = label;
       const valueEl = document.createElement("span");
       valueEl.className = "tt-value";
       valueEl.textContent = (value > 1 ? "+" : "") + (Math.round((value - 1) * 100)) + "%";
-      valueEl.style.color = value > 1 ? "#7ee2a8" : "#ff9a5a";
+      valueEl.classList.toggle("tt-pos", value > 1);
+      valueEl.classList.toggle("tt-neg", value <= 1);
       row.append(labelEl, valueEl);
       list.appendChild(row);
     }
     if (!list.firstChild) {
       const empty = document.createElement("div");
-      empty.className = "season-row";
+      empty.className = "tt-line tt-muted";
       empty.textContent = "Değişim yok";
-      empty.style.color = "#667";
       list.appendChild(empty);
     }
-    tooltip.hidden = false;
   }
   function update() {
     const season = getSeason();
@@ -571,19 +567,22 @@ export function createPopBlock() {
   const cap = document.createElement("span");
   cap.className = "pop-cap";
   count.append("👥 ", current, " / ", cap);
-  const tooltip = document.createElement("div");
-  tooltip.className = "pop-tooltip";
+  const tooltip = createTooltip("pop-tooltip");
+  const title = document.createElement("div");
+  title.className = "tt-heading";
+  title.textContent = "Nüfus";
+  tooltip.element.appendChild(title);
   const rows = {};
   const rowDefs = [
-    ["Kapasite", "cap", "#8895a3"],
-    ["Nüfus", "pop", "#ffffff"],
-    ["Çalışan", "workers", "#7fb2e0"],
-    ["Boşta", "idle", "#7ee2a8"],
-    ["Göçmen", "migrants", "#e8b46a"],
+    ["Kapasite:", "cap", "#8895a3"],
+    ["Nüfus:", "pop", "#ffffff"],
+    ["Çalışan:", "workers", "#7fb2e0"],
+    ["Boşta:", "idle", "#7ee2a8"],
+    ["Göçmen:", "migrants", "#e8b46a"],
   ];
   for (const [label, key, color] of rowDefs) {
     const row = document.createElement("div");
-    row.className = "pop-tooltip-row";
+    row.className = "tt-line";
     const labelEl = document.createElement("span");
     labelEl.className = "tt-label";
     labelEl.textContent = label;
@@ -592,9 +591,13 @@ export function createPopBlock() {
     valueEl.style.color = color;
     row.append(labelEl, valueEl);
     rows[key] = valueEl;
-    tooltip.appendChild(row);
+    tooltip.element.appendChild(row);
   }
-  el.append(count, tooltip);
+  el.append(count);
+  el.addEventListener("mouseenter", () => tooltip.show(el));
+  el.addEventListener("mouseleave", () => tooltip.hide());
+  el.addEventListener("focus", () => tooltip.show(el));
+  el.addEventListener("blur", () => tooltip.hide());
   function update(alive, capacity, workers, idle, migrants) {
     el.classList.toggle("empty", capacity <= 0);
     current.textContent = String(alive);
