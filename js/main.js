@@ -4,6 +4,7 @@
 
 import { createHeaderPanel, createLeftPanel, createCenterPanel, createRightPanel } from "./ui-panels.js";
 import { produce, processOfflineProgress, TICK_MS, loadState } from "./game-core.js";
+import { initHighlight } from "./highlight.js";
 
 /* ─────────────────── Layout Olusturucu ─────────────────── */
 function createLayout({ header, left, center, right }) {
@@ -29,6 +30,8 @@ const layout = createLayout({
 });
 
 document.body.appendChild(layout);
+
+initHighlight();
 
 /* ─────────────────── Oyun Dongusu ─────────────────── */
 let gameLoop = window.setInterval(produce, TICK_MS);

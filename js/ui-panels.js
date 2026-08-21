@@ -2,7 +2,7 @@
 /*                          PANEL ARAYUZLERI                                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { formatCount, triggerShake } from "./utils.js";
+import { triggerShake } from "./utils.js";
 import {
   BUILDINGS_DATA,
   PACKS_DATA,
@@ -11,16 +11,11 @@ import {
 } from "./game-data.js";
 import {
   state,
-  getPower,
   getWorkerCount,
   hasInfoProduction,
   resetGame,
   onChange,
 } from "./game-core.js";
-import {
-  getResourceName as getEraResourceName,
-  getResourceEmoji as getEraResourceEmoji,
-} from "./era.js";
 import {
   getPopulationCurrent,
   getPopulationCapacity,
@@ -43,22 +38,26 @@ import { createTradeSection } from "./trade.js";
 /*                      MERKEZ PANEL OLUSTURUCU                              */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-const RAW_TILE_ORDER = ["su", "yiyecek", "bilgi", "tas", "maden", "kultur", "inanc", "ipek", "altin"];
+const RAW_TILE_ORDER = ["power", "su", "yiyecek", "bilgi", "tas", "maden", "kultur", "inanc", "ipek"];
 const PRODUCT_TILE_ORDER = ["ekmek", "demir", "celik", "mermer", "kumas", "ilac", "mobilya", "heykel", "mucevher"];
+const NO_BAR_RESOURCES = new Set(["power"]);
+const SEASON_TILE_THEMES = {
+    yaz: {
+        scorched: new Set(["su"]),
+        bountiful: new Set(["yiyecek", "ipek", "kultur"]),
+    },
+    sonbahar: {
+        leafy: new Set(["tas"]),
+    },
+    kis: {
+        frozen: new Set(["su", "yiyecek", "tas", "ipek"]),
+    },
+};
+const TILE_THEME_CLASSES = ["frozen", "scorched", "bountiful", "leafy"];
 
 export function createCenterPanel() {
   const panel = document.createElement("section");
   panel.className = "panel center-panel";
-  const header = document.createElement("div");
-  header.className = "center-header";
-  const powerValue = document.createElement("span");
-  powerValue.className = "power-value";
-  const powerIcon = document.createElement("span");
-  powerIcon.className = "power-icon";
-  const powerSpan = document.createElement("span");
-  powerSpan.className = "num-display";
-  powerValue.append(powerIcon, " ", powerSpan);
-  header.append(powerValue);
   const resourceArea = document.createElement("div");
   resourceArea.className = "resource-area";
   const rawGrid = document.createElement("div");
@@ -70,7 +69,7 @@ export function createCenterPanel() {
   divider.hidden = true;
   const tileMap = {};
   for (const id of RAW_TILE_ORDER) {
-    tileMap[id] = createResourceTile(id);
+    tileMap[id] = createResourceTile(id, { noBar: NO_BAR_RESOURCES.has(id) });
     rawGrid.appendChild(tileMap[id].element);
   }
   for (const id of PRODUCT_TILE_ORDER) {
@@ -91,10 +90,16 @@ export function createCenterPanel() {
   storageRow.appendChild(ambarCard.element);
   storageSection.append(storageRow);
   function update(snapshot) {
-    powerIcon.textContent = getEraResourceEmoji("power");
-    powerSpan.textContent = formatCount(getPower());
     for (const id of Object.keys(tileMap)) {
       tileMap[id].update(snapshot);
+    }
+    const themes = SEASON_TILE_THEMES[state.season.id] || {};
+    for (const id of Object.keys(tileMap)) {
+      const el = tileMap[id].element;
+      const active = Object.keys(themes).find((name) => themes[name].has(id));
+      for (const cls of TILE_THEME_CLASSES) {
+        el.classList.toggle(cls, cls === active);
+      }
     }
     const hasActiveProduct = PRODUCT_TILE_ORDER.some((id) => !tileMap[id].element.hidden);
     divider.hidden = !hasActiveProduct;
@@ -103,7 +108,7 @@ export function createCenterPanel() {
   }
   onChange((_state, snapshot) => update(snapshot));
   update();
-  panel.append(header, resourceArea, storageDivider, storageSection);
+  panel.append(resourceArea, storageDivider, storageSection);
   return panel;
 }
 

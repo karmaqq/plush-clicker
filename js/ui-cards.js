@@ -4,6 +4,7 @@
 
 import {
   getBadgeTier,
+  badge,
   canAfford,
   formatCount,
   formatNumber,
@@ -19,6 +20,7 @@ import {
   INDUSTRY_DATA,
   PACKS_DATA,
   RESOURCES,
+  AUTO_SELL_STEP_PCT,
 } from "./game-data.js";
 import {
   state,
@@ -55,6 +57,9 @@ import {
   getPopulationAlive,
   getPackCost,
   buyPack,
+  getAutoSellPct,
+  setAutoSellPct,
+  getAutoSellLimit,
   UNLOCK_STRATEGIES,
   onChange,
 } from "./game-core.js";
@@ -66,7 +71,7 @@ import { getBuildingName as getEraBuildingName, getResourceEmoji as getEraResour
 
 export const tooltip = createTooltip("building-tooltip");
 
-const tooltipLive = { id: null, rows: [], effectValue: null, seviyeEl: null, bonusTotalEl: null };
+const tooltipLive = { id: null, rows: [], effectValue: null, seviyeEl: null, bonusTotalEl: null, countEl: null };
 
 /* ─────────────────── Bina Kart Bileseni ─────────────────── */
 export function createBuildingCard(id, data) {
@@ -76,6 +81,10 @@ export function createBuildingCard(id, data) {
   const isBonus = data.type === "bonus";
   const resourceId =
     isHousing || isStorage || isCapacityBonus || isBonus
+      ? null
+      : data.outputResource || data.targetResource;
+  const hlResourceId =
+    isHousing || isStorage || isCapacityBonus
       ? null
       : data.outputResource || data.targetResource;
 
@@ -92,6 +101,16 @@ export function createBuildingCard(id, data) {
             ? "building-special-bonus"
             : "resource-" + resourceId) +
     (isBonus || isCapacityBonus ? " building-bonus" : "");
+  if (hlResourceId) {
+    card.dataset.hlOut = hlResourceId;
+    if (!isBonus) card.dataset.hlRel = hlResourceId;
+  } else {
+    card.dataset.hlCost = "building:" + id;
+    if (isHousing) {
+      card.dataset.hlWithPop = "1";
+      card.dataset.hlTargetHousing = "1";
+    }
+  }
 
   card.addEventListener("click", () => {
     if ((getUnlock(data) || getBuildingCount(id) > 0) && !buyBuilding(id)) {
@@ -349,10 +368,17 @@ export function buildBuildingTooltip(id, data) {
   const output = isHousing || isBonus ? null : RESOURCES[resourceId];
 
   resetResourceClass(tooltip.element, isHousing || isStorage || isCapacityBonus || isBonus ? "power" : resourceId);
+  tooltipLive.countEl = null;
   tooltip.element.textContent = "";
   const title = document.createElement("div");
   title.className = "tooltip-title";
-  title.textContent = getEraBuildingName(id);
+  if (isHousing) {
+    const countBadge = badge(getBuildingCount(id));
+    tooltipLive.countEl = countBadge;
+    title.append(countBadge, " ", getEraBuildingName(id));
+  } else {
+    title.textContent = getEraBuildingName(id);
+  }
   tooltip.element.appendChild(title);
   const effect = document.createElement("div");
   effect.className = "tooltip-effect";
@@ -496,6 +522,11 @@ export function refreshBuildingTooltip() {
     tooltipLive.bonusTotalEl.textContent = "";
     tooltipLive.bonusTotalEl.append("%", formatCount(getBuildingBonus(id)));
   }
+  if (tooltipLive.countEl) {
+    const owned = getBuildingCount(id);
+    tooltipLive.countEl.textContent = String(owned);
+    tooltipLive.countEl.className = "badge tt-badge badge-tier-" + getBadgeTier(owned);
+  }
   refreshCostRows(tooltipLive.rows, cost, getResource, getNetRate);
 }
 
@@ -535,13 +566,17 @@ function getBonusSources(resourceId) {
 
 export const industryTooltip = createTooltip("industry-tooltip");
 
-const industryTooltipLive = { id: null, rows: [] };
+const industryTooltipLive = { id: null, rows: [], costsEl: null, costDividerEl: null };
 
 /* ─────────────────── Sanayi Kart Bileseni ─────────────────── */
 export function createIndustryCard(id, data) {
   const outputResource = Object.keys(data.output)[0];
+  const industryResIds = [...Object.keys(data.input), ...Object.keys(data.output)].join(" ");
   const card = document.createElement("div");
   card.className = "industry-card resource-" + outputResource;
+  card.dataset.hlIn = Object.keys(data.input).join(" ");
+  card.dataset.hlOut = Object.keys(data.output).join(" ");
+  card.dataset.hlRel = industryResIds;
   const lockOverlay = createLockOverlay();
   const head = document.createElement("div");
   head.className = "upgrade-head";
@@ -572,7 +607,11 @@ export function createIndustryCard(id, data) {
   outputLabel.textContent = "Çıktı:";
   const outputValue = document.createElement("span");
   outputValue.className = "industry-flow-value output-value";
-  outputRow.append(outputLabel, outputValue);
+  const storageFullBadge = document.createElement("span");
+  storageFullBadge.className = "storage-full-badge";
+  storageFullBadge.textContent = "Depo Dolu";
+  storageFullBadge.hidden = true;
+  outputRow.append(outputLabel, outputValue, storageFullBadge);
   flow.append(inputRow, outputRow);
   const warning = document.createElement("div");
   warning.className = "industry-warning";
@@ -580,6 +619,7 @@ export function createIndustryCard(id, data) {
   const buildBtn = document.createElement("button");
   buildBtn.type = "button";
   buildBtn.className = "industry-build-btn";
+  buildBtn.dataset.hlCost = "industry:" + id;
   const costSpans = {};
   for (const resource of Object.keys(data.baseCost)) {
     const span = document.createElement("span");
@@ -600,6 +640,7 @@ export function createIndustryCard(id, data) {
   upgradeBtn.type = "button";
   upgradeBtn.className = "industry-build-btn";
   upgradeBtn.hidden = true;
+  upgradeBtn.dataset.hlCost = "industryUpgrade:" + id;
   const upgradeCostSpans = {};
   for (const resource of Object.keys(data.baseCost)) {
     const span = document.createElement("span");
@@ -614,13 +655,127 @@ export function createIndustryCard(id, data) {
   upgradeBtn.addEventListener("click", () => {
     if (!upgradeIndustry(id)) { triggerShake(upgradeBtn); }
   });
-  buildRow.append(buildBtn, upgradeBtn, levelLabel);
+  const autoSellSupported = Number.isFinite(RESOURCES[outputResource].baseCapacity);
+  const autoSellBtn = document.createElement("button");
+  autoSellBtn.type = "button";
+  autoSellBtn.className = "autosell-btn";
+  autoSellBtn.hidden = true;
+  const autosellMenu = document.createElement("div");
+  autosellMenu.className = "autosell-menu";
+  autosellMenu.hidden = true;
+  document.body.appendChild(autosellMenu);
+  function buildAutosellMenu() {
+    autosellMenu.textContent = "";
+    const limit = getAutoSellLimit();
+    const currentPct = getAutoSellPct(outputResource);
+    const title = document.createElement("div");
+    title.className = "autosell-title";
+    title.textContent = "Otomatik Satış";
+    autosellMenu.appendChild(title);
+    const divider = document.createElement("div");
+    divider.className = "autosell-divider";
+    autosellMenu.appendChild(divider);
+    const options = [{ pct: 0, label: "Kapalı" }];
+    for (let pct = AUTO_SELL_STEP_PCT; pct <= limit; pct += AUTO_SELL_STEP_PCT) {
+      options.unshift({ pct, label: "%" + pct });
+    }
+    for (const opt of options) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "autosell-option" + (opt.pct === currentPct ? " active" : "");
+      item.textContent = opt.label;
+      if (opt.pct === currentPct) {
+        const mark = document.createElement("span");
+        mark.className = "autosell-check";
+        mark.textContent = "✓";
+        item.appendChild(mark);
+      }
+      item.addEventListener("click", () => {
+        setAutoSellPct(outputResource, opt.pct);
+        closeAutosellMenu();
+      });
+      autosellMenu.appendChild(item);
+    }
+  }
+  function positionAutosellMenu() {
+    const margin = 8;
+    const gap = 6;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const rect = autoSellBtn.getBoundingClientRect();
+
+    autosellMenu.style.maxHeight = "";
+    const menuW = autosellMenu.offsetWidth;
+    let menuH = autosellMenu.offsetHeight;
+
+    const spaceAbove = rect.top - margin;
+    const spaceBelow = vh - rect.bottom - margin;
+
+    let openUp;
+    if (menuH <= spaceAbove && menuH <= spaceBelow) {
+      openUp = spaceAbove >= spaceBelow;
+    } else if (menuH <= spaceAbove) {
+      openUp = true;
+    } else if (menuH <= spaceBelow) {
+      openUp = false;
+    } else {
+      openUp = spaceAbove >= spaceBelow;
+      autosellMenu.style.maxHeight = Math.max(120, (openUp ? spaceAbove : spaceBelow) - gap) + "px";
+      menuH = autosellMenu.offsetHeight;
+    }
+
+    let top = openUp ? rect.top - menuH - gap : rect.bottom + gap;
+    top = Math.min(Math.max(margin, top), vh - menuH - margin);
+
+    let left = rect.left;
+    if (left + menuW > vw - margin) left = vw - margin - menuW;
+    left = Math.max(margin, left);
+
+    autosellMenu.style.left = Math.round(left) + "px";
+    autosellMenu.style.top = Math.round(top) + "px";
+  }
+  function closeAutosellMenu() {
+    if (autosellMenu.hidden) return;
+    autosellMenu.hidden = true;
+    document.removeEventListener("click", onDocClick);
+    document.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("scroll", onScrollOrResize, true);
+    window.removeEventListener("resize", onScrollOrResize);
+  }
+  function onDocClick(e) {
+    if (!autosellMenu.contains(e.target) && !autoSellBtn.contains(e.target)) closeAutosellMenu();
+  }
+  function onKeyDown(e) {
+    if (e.key === "Escape") closeAutosellMenu();
+  }
+  function onScrollOrResize() {
+    closeAutosellMenu();
+  }
+  function openAutosellMenu() {
+    buildAutosellMenu();
+    autosellMenu.hidden = false;
+    autosellMenu.style.visibility = "hidden";
+    positionAutosellMenu();
+    autosellMenu.style.visibility = "";
+    industryTooltip.hide();
+    tooltipActive = false;
+    document.addEventListener("click", onDocClick);
+    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+  }
+  autoSellBtn.addEventListener("click", () => {
+    if (!autosellMenu.hidden) closeAutosellMenu();
+    else openAutosellMenu();
+  });
+  buildRow.append(autoSellBtn, buildBtn, upgradeBtn, levelLabel);
   const controls = document.createElement("div");
   controls.className = "industry-controls";
   const minusBtn = document.createElement("button");
   minusBtn.type = "button";
   minusBtn.className = "worker-btn worker-minus";
   minusBtn.textContent = "−";
+  minusBtn.dataset.hlWithPop = "1";
   const workerCount = document.createElement("span");
   workerCount.className = "worker-count";
   workerCount.textContent = "0/" + getIndustryMaxWorkers(id);
@@ -628,6 +783,7 @@ export function createIndustryCard(id, data) {
   plusBtn.type = "button";
   plusBtn.className = "worker-btn worker-plus";
   plusBtn.textContent = "+";
+  plusBtn.dataset.hlWithPop = "1";
   minusBtn.addEventListener("click", () => removeWorker(id));
   plusBtn.addEventListener("click", () => {
     if (!addWorker(id)) { triggerShake(plusBtn); }
@@ -638,6 +794,7 @@ export function createIndustryCard(id, data) {
 
   let tooltipActive = false;
   card.addEventListener("mouseenter", () => {
+    if (!autosellMenu.hidden) return;
     tooltipActive = true;
     buildIndustryTooltip(id);
     industryTooltip.show(card);
@@ -665,6 +822,7 @@ export function createIndustryCard(id, data) {
       controls.hidden = true;
       flow.hidden = true;
       warning.hidden = true;
+      closeAutosellMenu();
       return;
     }
     card.hidden = false;
@@ -689,6 +847,8 @@ export function createIndustryCard(id, data) {
       controls.hidden = true;
       flow.hidden = true;
       warning.hidden = true;
+      autoSellBtn.hidden = true;
+      closeAutosellMenu();
       if (tooltipActive) refreshIndustryTooltip();
       return;
     }
@@ -701,12 +861,14 @@ export function createIndustryCard(id, data) {
     if (upgradeCost === null) {
       upgradeBtn.hidden = false;
       upgradeBtn.disabled = true;
+      delete upgradeBtn.dataset.hlCost;
       for (const span of Object.values(upgradeCostSpans)) { span.textContent = ""; }
       maxText.textContent = data.name + " En Yüksek Seviyede";
       maxText.hidden = false;
     } else {
       upgradeBtn.hidden = false;
       upgradeBtn.disabled = false;
+      upgradeBtn.dataset.hlCost = "industryUpgrade:" + id;
       maxText.hidden = true;
       for (const [resource, span] of Object.entries(upgradeCostSpans)) {
         const amount = upgradeCost[resource];
@@ -738,11 +900,20 @@ export function createIndustryCard(id, data) {
     if (entry.stalled) {
       warning.textContent = "⚠️ Yetersiz girdi";
       warning.hidden = false;
-    } else if (entry.outputFull) {
-      warning.textContent = "⚠️ Depo dolu";
-      warning.hidden = false;
     } else {
       warning.hidden = true;
+    }
+    storageFullBadge.hidden = !entry.outputFull;
+    if (autoSellSupported) {
+      autoSellBtn.hidden = false;
+      const pct = getAutoSellPct(outputResource);
+      autoSellBtn.textContent = pct > 0 ? "%" + pct : "⟳";
+      autoSellBtn.classList.toggle("active", pct > 0);
+      autoSellBtn.title = pct > 0
+        ? "Otomatik satış: kapasitenin %" + (100 - pct) + "'ından fazlası satılır"
+        : "Otomatik satış: Kapalı";
+    } else {
+      autoSellBtn.hidden = true;
     }
     minusBtn.disabled = workers <= 0;
     plusBtn.disabled = workers >= maxWorkers || getWorkerCount() >= getPopulationAlive();
@@ -764,7 +935,7 @@ export function createIndustryCard(id, data) {
 
 function buildIndustryTooltip(id) {
   const data = INDUSTRY_DATA[id];
-  const cost = getIndustryCost(id);
+  const cost = getCurrentIndustryCost(id);
   resetIndustryTooltipClass(id);
   industryTooltip.element.textContent = "";
   const title = document.createElement("div");
@@ -792,7 +963,17 @@ function buildIndustryTooltip(id) {
   const costs = document.createElement("div");
   costs.className = "tooltip-costs";
   industryTooltipLive.id = id;
-  industryTooltipLive.rows = createCostRows(costs, cost);
+  industryTooltipLive.costsEl = costs;
+  industryTooltipLive.costDividerEl = costDivider;
+  if (cost) {
+    industryTooltipLive.rows = createCostRows(costs, cost);
+    costDivider.hidden = false;
+    costs.hidden = false;
+  } else {
+    industryTooltipLive.rows = [];
+    costDivider.hidden = true;
+    costs.hidden = true;
+  }
   industryTooltip.element.appendChild(costs);
   refreshIndustryTooltip();
 }
@@ -800,8 +981,20 @@ function buildIndustryTooltip(id) {
 function refreshIndustryTooltip() {
   if (industryTooltipLive.id == null) return;
   const id = industryTooltipLive.id;
-  const cost = getIndustryCost(id);
+  const cost = getCurrentIndustryCost(id);
+  if (!cost) {
+    industryTooltipLive.costDividerEl.hidden = true;
+    industryTooltipLive.costsEl.hidden = true;
+    return;
+  }
+  industryTooltipLive.costDividerEl.hidden = false;
+  industryTooltipLive.costsEl.hidden = false;
   refreshCostRows(industryTooltipLive.rows, cost, getResource, getNetRate);
+}
+
+/* ─────────────────── Guncel Sanayi Maliyeti ─────────────────── */
+function getCurrentIndustryCost(id) {
+  return getIndustryBuilt(id) ? getIndustryUpgradeCost(id) : getIndustryCost(id);
 }
 
 function resetIndustryTooltipClass(id) {
@@ -836,6 +1029,7 @@ export function createPackCard(id, data) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "upgrade-btn";
+  btn.dataset.hlCost = "pack:" + id;
   btn.addEventListener("click", () => {
     if (!buyPack(id)) { triggerShake(btn); }
   });
@@ -945,8 +1139,10 @@ export function createPackCard(id, data) {
     else if (data.workerBonusPerLevel) { effectText = "İşçi üretimi: +%" + Math.round(count * data.workerBonusPerLevel * 100); }
     else if (data.storageBonusPerLevel) { effectText = "Kapasite: +%" + Math.round(count * data.storageBonusPerLevel * 100); }
     else if (data.tradeBonusPerLevel) { effectText = "Ticaret: +%" + Math.round(count * data.tradeBonusPerLevel * 100); }
+    else if (data.autoSellPerLevel) { effectText = "Otomatik satış limiti: %" + count * AUTO_SELL_STEP_PCT; }
     effect.textContent = effectText;
     const cost = getPackCost(id);
+    const packMaxed = data.maxLevel && count >= data.maxLevel;
     let affordable = true;
     for (const [resource, amount] of Object.entries(cost)) {
       const span = costSpans[resource];
@@ -956,7 +1152,7 @@ export function createPackCard(id, data) {
       span.classList.toggle("cost-missing", !ok);
       if (!ok) affordable = false;
     }
-    btn.classList.toggle("disabled", !affordable);
+    btn.classList.toggle("disabled", !affordable || packMaxed);
     if (tooltipActive) { refreshPackTooltip(); }
   }
 
@@ -973,6 +1169,7 @@ function getPerLevelText(data) {
   if (data.workerBonusPerLevel) return "%" + Math.round(data.workerBonusPerLevel * 100);
   if (data.storageBonusPerLevel) return "%" + Math.round(data.storageBonusPerLevel * 100);
   if (data.tradeBonusPerLevel) return "%" + Math.round(data.tradeBonusPerLevel * 100);
+  if (data.autoSellPerLevel) return "+" + AUTO_SELL_STEP_PCT + "% limit";
   return "%0";
 }
 
@@ -984,5 +1181,6 @@ function getTotalEffectText(data, count) {
   if (data.workerBonusPerLevel) return "+" + Math.round(count * data.workerBonusPerLevel * 100) + "%";
   if (data.storageBonusPerLevel) return "+" + Math.round(count * data.storageBonusPerLevel * 100) + "%";
   if (data.tradeBonusPerLevel) return "+" + Math.round(count * data.tradeBonusPerLevel * 100) + "%";
+  if (data.autoSellPerLevel) return "%" + count * AUTO_SELL_STEP_PCT + " limit";
   return "+0%";
 }

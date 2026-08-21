@@ -105,6 +105,20 @@
     color: rgba(157, 173, 189, 0.45);
 }
 
+.storage-full-badge {
+    flex: none;
+    display: inline-block;
+    font-family: var(--font-ui);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #ffffff;
+    background: #c0392b;
+    border-radius: 0.35em;
+    padding: 0.05em 0.45em;
+    white-space: nowrap;
+}
+
 .industry-warning {
     font-family: var(--font-ui);
     font-size: 0.72rem;
@@ -194,4 +208,96 @@
     min-width: 2.6rem;
     text-align: center;
     font-variant-numeric: tabular-nums;
+}
+
+.autosell-btn {
+    flex: none;
+    width: 2.6rem;
+    height: 2rem;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #9daebb;
+    background: #2b333d;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.autosell-btn:hover {
+    background: #3a4450;
+}
+
+.autosell-btn.active {
+    color: #7ee2a8;
+    border-color: #2f5a36;
+    background: #15342a;
+}
+
+.autosell-menu {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1001;
+    width: max-content;
+    min-width: 6.5rem;
+    max-width: 14rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.35rem;
+    background: #232a33;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.45);
+    overflow-y: auto;
+}
+
+.autosell-title {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #8895a3;
+    text-align: center;
+    letter-spacing: 0.03em;
+    padding: 0.15rem 0.5rem 0.2rem;
+}
+
+.autosell-divider {
+    height: 1px;
+    background: #3a4553;
+    margin: 0 0.25rem 0.15rem;
+}
+
+.autosell-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #d7dde4;
+    background: transparent;
+    border: none;
+    border-radius: 0.35rem;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.autosell-option:hover {
+    background: #2e3742;
+}
+
+.autosell-option.active {
+    color: #7ee2a8;
+    background: #15342a;
+}
+
+.autosell-check {
+    font-size: 0.8rem;
 }

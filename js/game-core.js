@@ -26,6 +26,7 @@ import {
   ALL_BUILDINGS_DATA,
   PACKS_DATA,
   INDUSTRY_DATA,
+  AUTO_SELL_PACK_ID,
 } from "./game-data.js";
 import { canAfford } from "./utils.js";
 import { checkEraAdvance, getResourceName, getBuildingName, getPackName } from "./era.js";
@@ -73,7 +74,7 @@ export const state = {
     transitioning: false,
   },
   settings: {
-    autoSell: {},
+    autoSellPct: {},
   },
   lastActive: Date.now(),
 };
@@ -107,10 +108,9 @@ for (const id of Object.keys(INDUSTRY_DATA)) {
   state.industry[id] = freshIndustryEntry();
 }
 
-for (const id of Object.keys(RESOURCES)) {
-  const meta = RESOURCES[id];
-  if (meta.tier > 0 && meta.tier <= 3) {
-    state.settings.autoSell[id] = false;
+for (const id of Object.keys(INDUSTRY_DATA)) {
+  for (const outRes of Object.keys(INDUSTRY_DATA[id].output)) {
+    state.settings.autoSellPct[outRes] = 0;
   }
 }
 
@@ -286,6 +286,14 @@ export function getResourceCapacity(resource) {
   return (meta.baseCapacity + flat) * multiplier;
 }
 
+/* ─────────────────── Depo Doluluk Kontrolu ─────────────────── */
+
+export function isResourceFull(resource) {
+  const capacity = getResourceCapacity(resource);
+  if (!Number.isFinite(capacity)) return false;
+  return capacity - getResource(resource) <= 0.5;
+}
+
 /* ─────────────────── Kapasite Bonusu Hesaplayici ─────────────────── */
 
 export function getCapacityBonus(id) {
@@ -356,7 +364,7 @@ export function getIndustryLevel(id) {
 
 export function getIndustryMaxWorkers(id) {
   const base = INDUSTRY_DATA[id].maxWorkers;
-  return base + 3 * (getIndustryLevel(id) - 1);
+  return base * getIndustryLevel(id);
 }
 
 /* ─────────────────── Sanayi Seviye Carpani ─────────────────── */
@@ -511,17 +519,25 @@ export function isSellable(resource) {
   return !!meta && Number.isFinite(meta.satisFiyati) && meta.satisFiyati > 0;
 }
 
-/* ─────────────────── Otomatik Satis Durumu ─────────────────── */
+/* ─────────────────── Otomatik Satis Yuzdesi Getter'i ─────────────────── */
 
-export function getAutoSell(resource) {
-  return state.settings.autoSell[resource] === true;
+export function getAutoSellPct(resource) {
+  return state.settings.autoSellPct[resource] || 0;
 }
 
-/* ─────────────────── Otomatik Satis Degistirici ─────────────────── */
+/* ─────────────────── Otomatik Satis Limiti Getter'i ─────────────────── */
 
-export function toggleAutoSell(resource) {
-  if (!isSellable(resource)) return;
-  state.settings.autoSell[resource] = !getAutoSell(resource);
+export function getAutoSellLimit() {
+  return getPackCount(AUTO_SELL_PACK_ID) * 10;
+}
+
+/* ─────────────────── Otomatik Satis Yuzdesi Ayarlayici ─────────────────── */
+
+export function setAutoSellPct(resource, pct) {
+  if (!(resource in state.settings.autoSellPct)) return;
+  const limit = getAutoSellLimit();
+  state.settings.autoSellPct[resource] = Math.max(0, Math.min(limit, pct));
+  emit();
 }
 
 /* ─────────────────── Tekli Satis ─────────────────── */
@@ -731,6 +747,7 @@ export function buyBuilding(id) {
 export function buyPack(id) {
   const pack = PACKS_DATA[id];
   if (!getUnlock(pack)) return false;
+  if (pack.maxLevel && getPackCount(id) >= pack.maxLevel) return false;
 
   const cost = getPackCost(id);
 
@@ -915,19 +932,7 @@ export function produce(silent) {
     changed = true;
   }
 
-  for (const resource of Object.keys(RESOURCES)) {
-    if (resource === "power" || resource === "altin") continue;
-    if (INDUSTRY_PRODUCTS.has(resource)) continue;
-
-    const production = snapshot.derived[resource].production / TICKS_PER_SECOND;
-    if (production > 0) {
-      state.resources[resource] = Math.min(
-        snapshot.derived[resource].capacity,
-        state.resources[resource] + production,
-      );
-      changed = true;
-    }
-  }
+  if (consumePopulation()) changed = true;
 
   for (const id of Object.keys(INDUSTRY_DATA)) {
     const industry = INDUSTRY_DATA[id];
@@ -943,10 +948,20 @@ export function produce(silent) {
       }
     }
 
+    const levelMult = getIndustryLevelMultiplier(id);
+
     let outputsOk = true;
-    for (const [resource] of Object.entries(industry.output)) {
+    for (const [resource, rate] of Object.entries(industry.output)) {
       const capacity = getResourceCapacity(resource);
-      if (Number.isFinite(capacity) && getResource(resource) >= capacity) {
+      if (!Number.isFinite(capacity)) continue;
+      const produced =
+        (entry.workers *
+          rate *
+          levelMult *
+          getOutputMultiplier(resource) *
+          getWorkerMultiplier()) /
+        TICKS_PER_SECOND;
+      if (capacity - getResource(resource) < produced - 1e-9) {
         outputsOk = false;
         break;
       }
@@ -977,8 +992,6 @@ export function produce(silent) {
       changed = true;
     }
 
-    const levelMult = getIndustryLevelMultiplier(id);
-
     for (const [resource, rate] of Object.entries(industry.input)) {
       state.resources[resource] -=
         (entry.workers * rate * levelMult) / TICKS_PER_SECOND;
@@ -1001,7 +1014,20 @@ export function produce(silent) {
     changed = true;
   }
 
-  if (consumePopulation()) changed = true;
+  for (const resource of Object.keys(RESOURCES)) {
+    if (resource === "power" || resource === "altin") continue;
+    if (INDUSTRY_PRODUCTS.has(resource)) continue;
+
+    const production = snapshot.derived[resource].production / TICKS_PER_SECOND;
+    if (production > 0) {
+      state.resources[resource] = Math.min(
+        snapshot.derived[resource].capacity,
+        state.resources[resource] + production,
+      );
+      changed = true;
+    }
+  }
+
   if (applyPopulationLifecycle()) changed = true;
   if (autoSellSurplus()) changed = true;
 
@@ -1106,10 +1132,11 @@ function loadPopulation(saved) {
 
 function loadSettings(saved) {
   if (!saved || typeof saved !== "object") return;
-  if (saved.autoSell && typeof saved.autoSell === "object") {
-    for (const id of Object.keys(state.settings.autoSell)) {
-      if (typeof saved.autoSell[id] === "boolean") {
-        state.settings.autoSell[id] = saved.autoSell[id];
+  if (saved.autoSellPct && typeof saved.autoSellPct === "object") {
+    for (const id of Object.keys(state.settings.autoSellPct)) {
+      const value = saved.autoSellPct[id];
+      if (Number.isFinite(value)) {
+        state.settings.autoSellPct[id] = Math.max(0, Math.min(100, value));
       }
     }
   }
@@ -1291,8 +1318,8 @@ export function resetGame() {
     count: 0,
   };
 
-  for (const id of Object.keys(state.settings.autoSell)) {
-    state.settings.autoSell[id] = false;
+  for (const id of Object.keys(state.settings.autoSellPct)) {
+    state.settings.autoSellPct[id] = 0;
   }
 
   state.resources.power = 40;

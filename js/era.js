@@ -684,6 +684,7 @@ function drainAllResources() {
 
 function findTileObject(element) {
   const resourceIds = [
+    "power",
     "su",
     "yiyecek",
     "bilgi",

@@ -23,14 +23,14 @@ import {
   state,
   getResource,
   getResourceCapacity,
+  isResourceFull,
   getTotalProduction,
   getResourceConsumption,
   getBuildingCount,
   getBuildingCost,
   getSellPrice,
   isSellable,
-  getAutoSell,
-  toggleAutoSell,
+  getAutoSellPct,
   sellOne,
   getNetRate,
   getSeasonMultiplier,
@@ -67,6 +67,7 @@ import {
   getGoldLabel,
 } from "./era.js";
 import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingTooltip } from "./ui-cards.js";
+import { setManualHighlight, clearManualHighlight } from "./highlight.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                       ALTIN CIP ARAYUZU                                   */
@@ -111,8 +112,7 @@ export function createGoldChip() {
     const netRate = getNetRate("altin");
     let autoSellGold = 0;
     for (const rid of Object.keys(RESOURCES)) {
-      if (!isSellable(rid)) continue;
-      if (!getAutoSell(rid)) continue;
+      if (getAutoSellPct(rid) <= 0) continue;
       const prod = getTotalProduction(rid);
       if (prod > 0) { autoSellGold += prod * getSellPriceCore(rid); }
     }
@@ -177,10 +177,14 @@ export function createHappinessChip() {
   tooltip.append(title, posSec.section, negSec.section, divider, info);
   el.appendChild(tooltip);
   let active = false;
-  el.addEventListener("mouseenter", () => { active = true; refresh(); });
-  el.addEventListener("mouseleave", () => { active = false; tooltip.hidden = true; });
-  el.addEventListener("focus", () => { active = true; refresh(); });
-  el.addEventListener("blur", () => { active = false; tooltip.hidden = true; });
+  function refreshDeficitHighlight() {
+    const { items } = getHappinessBreakdown();
+    setManualHighlight(items.filter((i) => !i.met && i.resId).map((i) => i.resId));
+  }
+  el.addEventListener("mouseenter", () => { active = true; refresh(); refreshDeficitHighlight(); });
+  el.addEventListener("mouseleave", () => { active = false; tooltip.hidden = true; clearManualHighlight(); });
+  el.addEventListener("focus", () => { active = true; refresh(); refreshDeficitHighlight(); });
+  el.addEventListener("blur", () => { active = false; tooltip.hidden = true; clearManualHighlight(); });
   function refresh() {
     const satisfaction = getPopulationSatisfaction();
     const { items, target } = getHappinessBreakdown();
@@ -251,6 +255,9 @@ export function createHousingChip(id) {
   const el = document.createElement("button");
   el.type = "button";
   el.className = "housing-chip";
+  el.dataset.hlCost = "building:" + id;
+  el.dataset.hlWithPop = "1";
+  el.dataset.hlTargetHousing = "1";
   const icon = document.createElement("span");
   icon.className = "housing-chip-icon";
   icon.textContent = id === "baraka" ? "🛖" : "🏠";
@@ -424,6 +431,7 @@ export function createSeasonChip() {
   const el = document.createElement("div");
   el.className = "season-chip";
   el.tabIndex = 0;
+  el.dataset.hlSeason = "1";
   const icon = document.createElement("span");
   icon.className = "season-chip-icon";
   el.append(icon);
@@ -535,6 +543,7 @@ export function createPopBlock() {
   const el = document.createElement("div");
   el.className = "pop-block";
   el.tabIndex = 0;
+  el.dataset.hlTargetPop = "1";
   const count = document.createElement("span");
   count.className = "pop-count";
   const current = document.createElement("span");
@@ -586,11 +595,13 @@ export function createPopBlock() {
 const resourceTooltip = createTooltip("resource-tooltip");
 const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null };
 
-export function createResourceTile(id) {
+export function createResourceTile(id, options = {}) {
   const meta = RESOURCES[id];
   const sellable = isSellable(id);
+  const noBar = !!options.noBar;
   const element = document.createElement("div");
-  element.className = "resource-tile resource-" + id;
+  element.className = "resource-tile resource-" + id + (noBar ? " no-bar" : "");
+  element.dataset.resId = id;
   element.hidden = true;
   const head = document.createElement("div");
   head.className = "resource-tile-head";
@@ -613,15 +624,8 @@ export function createResourceTile(id) {
   const capLabel = document.createElement("span");
   capLabel.className = "resource-tile-cap";
   foot.append(capLabel);
-  let autoSellBtn = null;
   let sellOneBtn = null;
   if (sellable) {
-    autoSellBtn = document.createElement("button");
-    autoSellBtn.type = "button";
-    autoSellBtn.className = "auto-sell-btn";
-    autoSellBtn.textContent = "⟳";
-    autoSellBtn.title = "Otomatik satış";
-    autoSellBtn.addEventListener("click", () => toggleAutoSell(id));
     sellOneBtn = document.createElement("button");
     sellOneBtn.type = "button";
     sellOneBtn.className = "sell-one-btn";
@@ -633,9 +637,11 @@ export function createResourceTile(id) {
         setTimeout(() => sellOneBtn.classList.remove("sold-flash"), 300);
       }
     });
-    foot.append(autoSellBtn, sellOneBtn);
+    foot.append(sellOneBtn);
   }
-  element.append(head, bar, foot);
+  element.append(head);
+  if (!noBar) element.append(bar);
+  element.append(foot);
   element.addEventListener("mouseenter", () => { buildResourceTooltip(id); resourceTooltip.show(element); });
   element.addEventListener("mouseleave", () => { tooltipLive.id = null; resourceTooltip.hide(); });
   let lastCapText = null;
@@ -666,9 +672,9 @@ export function createResourceTile(id) {
     const prodText = net > 0 ? "+" + formatNumber(net) + "/s" : net < 0 ? "−" + formatNumber(-net) + "/s" : "";
     if (prodText !== lastProdText) { lastProdText = prodText; production.textContent = prodText; }
     if (sellable) {
-      autoSellBtn.classList.toggle("auto-on", getAutoSell(id));
-      autoSellBtn.title = getAutoSell(id) ? "Otomatik satış: AÇIK" : "Otomatik satış: KAPALI";
+      sellOneBtn.disabled = getResource(id) < 1;
     }
+    if (tooltipLive.id === id) { refreshResourceTooltip(snapshot); }
   }
   function drain(duration) {
     return new Promise((resolve) => {
@@ -807,10 +813,21 @@ function refreshResourceTooltip(snapshot) {
   }
   const net = snapshot ? snapshot.derived[id].net : getNetRate(id);
   const remaining = capacity - current;
-  if (Number.isFinite(capacity) && remaining > 0.5 && net > 0.0001) {
-    tooltipLive.timeEl.textContent = formatDuration(remaining / net);
+  if (!Number.isFinite(capacity)) {
+    tooltipLive.timeEl.hidden = true;
+  } else if (net > 0.0001) {
+    if (isResourceFull(id)) {
+      tooltipLive.timeEl.textContent = "Depo Dolu";
+    } else {
+      tooltipLive.timeEl.textContent = formatDuration(remaining / net);
+    }
     tooltipLive.timeEl.hidden = false;
-  } else { tooltipLive.timeEl.hidden = true; }
+  } else if (net < -0.0001 && current > 0) {
+    tooltipLive.timeEl.textContent = formatDuration(current / -net);
+    tooltipLive.timeEl.hidden = false;
+  } else {
+    tooltipLive.timeEl.hidden = true;
+  }
 }
 
 function getBarColor(id, pct) {

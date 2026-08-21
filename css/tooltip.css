@@ -68,6 +68,10 @@
     font-size: 0.85em;
 }
 
+.tooltip-title .badge {
+    margin-right: 0.35em;
+}
+
 .tt-total {
     margin-top: 0.375rem;
     font-size: clamp(0.8rem, 1.6vw, 0.9375rem);

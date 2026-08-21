@@ -642,7 +642,21 @@ export const PACKS_DATA = {
         tradeBonusPerLevel: 0.50,
         unlock: { type: "building", id: "theatre", count: 3 },
     },
+    otoSatis: {
+        name: "Ticaret Senedi",
+        emoji: "💰",
+        description: "Sanayi ürünleri için otomatik satış yüzdesi açar (seviye başına +%10)",
+        baseCost: { bilgi: 78 },
+        costMultiplier: 1.50,
+        maxLevel: 10,
+        autoSellPerLevel: 0.10,
+        unlock: { type: "building", id: "academy", count: 3 },
+    },
 };
+
+export const AUTO_SELL_PACK_ID = "otoSatis";
+export const AUTO_SELL_STEP_PCT = 10;
+export const AUTO_SELL_MAX_LEVEL = 10;
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          SANAYİ                                           */
@@ -656,7 +670,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 425, su: 17, yiyecek: 42 },
         input: { yiyecek: 0.080, su: 0.020 },
         output: { ekmek: 0.060 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "building", id: "farm", count: 5 },
     },
     blacksmith: {
@@ -666,7 +680,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 1700, yiyecek: 100, tas: 30 },
         input: { maden: 0.080 },
         output: { demir: 0.010 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "building", id: "mine", count: 3 },
     },
     celikFirini: {
@@ -676,7 +690,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 51000, tas: 638, yiyecek: 340 },
         input: { maden: 0.020, demir: 0.020 },
         output: { celik: 0.005 },
-        maxWorkers: 4,
+        maxWorkers: 5,
         unlock: {
             type: "all",
             conditions: [
@@ -692,7 +706,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 68000, tas: 850, yiyecek: 255 },
         input: { tas: 0.050 },
         output: { mermer: 0.010 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "building", id: "temple", count: 5 },
     },
     kumasAtolyesi: {
@@ -702,7 +716,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 25500, su: 128, yiyecek: 68 },
         input: { ipek: 0.010 },
         output: { kumas: 0.005 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "building", id: "silkWorkshop", count: 3 },
     },
     sifaOcagi: {
@@ -712,7 +726,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 6800, bilgi: 180, inanc: 128 },
         input: { inanc: 0.020, bilgi: 0.010 },
         output: { ilac: 0.010 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "building", id: "temple", count: 1 },
     },
     mobilyaAtolyesi: {
@@ -722,7 +736,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 85000, yiyecek: 340, maden: 425 },
         input: { tas: 0.010, celik: 0.010 },
         output: { mobilya: 0.005 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "industry", id: "celikFirini" },
     },
     heykelAtolyesi: {
@@ -732,7 +746,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 127500, tas: 21, yiyecek: 10 },
         input: { mermer: 0.020, celik: 0.010 },
         output: { heykel: 0.005 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "industry", id: "mermerAtolyesi" },
     },
     mucevherAtolyesi: {
@@ -742,7 +756,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 102000, su: 213, yiyecek: 13 },
         input: { kumas: 0.020, celik: 0.010, mermer: 0.010 },
         output: { mucevher: 0.002 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: { type: "industry", id: "kumasAtolyesi" },
     },
     darphane: {
@@ -752,7 +766,7 @@ export const INDUSTRY_DATA = {
         baseCost: { power: 51000, bilgi: 17, yiyecek: 7 },
         input: { bilgi: 0.010, ipek: 0.005 },
         output: { altin: 0.015 },
-        maxWorkers: 3,
+        maxWorkers: 5,
         unlock: {
             type: "all",
             conditions: [

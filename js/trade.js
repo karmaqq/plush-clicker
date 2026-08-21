@@ -20,6 +20,7 @@ import {
 } from "./game-core.js";
 import { formatCount, formatDuration, triggerShake } from "./utils.js";
 import { getResourceName, getResourceEmoji } from "./era.js";
+import { refreshHighlight } from "./highlight.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          YARDIMCI FONKSİYONLAR                              */
@@ -753,6 +754,7 @@ export function createTradeSection() {
       : "";
 
     statusBar.textContent = "Toplam i\u015flem: " + state.trade.count;
+    refreshHighlight();
   }
 
   onChange(update);

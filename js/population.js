@@ -12,20 +12,19 @@ import {
   ARRIVAL_DURATION,
   WORKER_WAGE_SEASONAL,
   SEASON_DURATION,
-  RESOURCES,
   HOUSING_DATA,
   INDUSTRY_DATA,
 } from "./game-data.js";
 import {
   state,
   getResource,
+  getResourceCapacity,
   getBuildingCount,
   getPopulationAlive,
   getTotalProduction,
   getWorkerCount,
   getIndustryMaxWorkers,
-  isSellable,
-  getAutoSell,
+  getAutoSellPct,
   getSellPrice,
 } from "./game-core.js";
 
@@ -107,7 +106,7 @@ function computeHappinessBreakdown() {
   }
   items.push({
     emoji: "💧", label: "Temiz Su",
-    delta: suMet ? 0 : -15, met: suMet,
+    delta: suMet ? 0 : -15, met: suMet, resId: "su",
   });
 
   const foodNeed = (alive * POP_YIYECEK_RATE) / ticks;
@@ -118,7 +117,7 @@ function computeHappinessBreakdown() {
   }
   items.push({
     emoji: "🌾", label: "Yiyecek",
-    delta: foodMet ? 0 : -12, met: foodMet,
+    delta: foodMet ? 0 : -12, met: foodMet, resId: "yiyecek",
   });
 
   /* ═══ SAĞLIK — Üretim zinciri varsa değerlendirilir ═══ */
@@ -132,7 +131,7 @@ function computeHappinessBreakdown() {
     }
     items.push({
       emoji: "💊", label: "İlaç",
-      delta: ilacMet ? 0 : -7, met: ilacMet,
+      delta: ilacMet ? 0 : -7, met: ilacMet, resId: "ilac",
     });
   }
 
@@ -147,7 +146,7 @@ function computeHappinessBreakdown() {
     }
     items.push({
       emoji: "🍞", label: "Ekmek",
-      delta: ekmekMet ? 0 : -5, met: ekmekMet,
+      delta: ekmekMet ? 0 : -5, met: ekmekMet, resId: "ekmek",
     });
   }
 
@@ -162,7 +161,7 @@ function computeHappinessBreakdown() {
     }
     items.push({
       emoji: "🎭", label: "Kültür",
-      delta: kulturMet ? 0 : -5, met: kulturMet,
+      delta: kulturMet ? 0 : -5, met: kulturMet, resId: "kultur",
     });
   }
 
@@ -176,7 +175,7 @@ function computeHappinessBreakdown() {
     }
     items.push({
       emoji: "🕯️", label: "İnanç",
-      delta: inancMet ? 0 : -4, met: inancMet,
+      delta: inancMet ? 0 : -4, met: inancMet, resId: "inanc",
     });
   }
 
@@ -188,7 +187,7 @@ function computeHappinessBreakdown() {
     }
     items.push({
       emoji: "🧵", label: "İpek",
-      delta: ipekMet ? 0 : -5, met: ipekMet,
+      delta: ipekMet ? 0 : -5, met: ipekMet, resId: "ipek",
     });
   }
 
@@ -456,17 +455,23 @@ function trimWorkers() {
 export function autoSellSurplus() {
   let changed = false;
 
-  for (const id of Object.keys(RESOURCES)) {
-    if (!isSellable(id)) continue;
-    if (!getAutoSell(id)) continue;
+  for (const id of Object.keys(INDUSTRY_DATA)) {
+    for (const outRes of Object.keys(INDUSTRY_DATA[id].output)) {
+      const pct = getAutoSellPct(outRes);
+      if (pct <= 0) continue;
 
-    const current = getResource(id);
-    if (current < 1) continue;
+      const capacity = getResourceCapacity(outRes);
+      if (!Number.isFinite(capacity)) continue;
 
-    const amount = Math.floor(current);
-    state.resources[id] -= amount;
-    state.resources.altin += amount * getSellPrice(id);
-    changed = true;
+      const threshold = capacity * (1 - pct / 100);
+      const surplus = getResource(outRes) - threshold;
+      if (surplus < 1) continue;
+
+      const amount = Math.floor(surplus);
+      state.resources[outRes] -= amount;
+      state.resources.altin += amount * getSellPrice(outRes);
+      changed = true;
+    }
   }
 
   return changed;
