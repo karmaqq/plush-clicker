@@ -1056,6 +1056,8 @@ export function createPackCard(id, data) {
   });
   const ttLive = { id: null, rows: [], effectEl: null, totalEl: null };
   let lastEra = null;
+  const AFFORD_TOLERANCE = 0.02;
+  let stableOk = {};
 
   function buildPackTooltip(packId, packData) {
     const packCost = getPackCost(packId);
@@ -1146,11 +1148,17 @@ export function createPackCard(id, data) {
     let affordable = true;
     for (const [resource, amount] of Object.entries(cost)) {
       const span = costSpans[resource];
-      const ok = getResource(resource) >= amount;
+      const value = getResource(resource);
+      if (value >= amount) {
+        stableOk[resource] = true;
+      } else if (value < amount * (1 - AFFORD_TOLERANCE)) {
+        stableOk[resource] = false;
+      }
+      const ok = stableOk[resource];
+      if (!ok) affordable = false;
       span.textContent = getEraResourceEmoji(resource) + " " + formatCount(amount);
       span.classList.toggle("cost-ok", ok);
       span.classList.toggle("cost-missing", !ok);
-      if (!ok) affordable = false;
     }
     btn.classList.toggle("disabled", !affordable || packMaxed);
     if (tooltipActive) { refreshPackTooltip(); }

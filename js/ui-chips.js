@@ -30,12 +30,9 @@ import {
   getBuildingCost,
   getSellPrice,
   isSellable,
-  getAutoSellPct,
   sellOne,
   getNetRate,
   getSeasonMultiplier,
-  getPower,
-  getPackCount,
   getWorkerCount,
   getIndustryOutput,
   getSeason,
@@ -45,7 +42,6 @@ import {
   getAltin,
   getPopulationAlive,
   getEra,
-  isEraTransitioning,
   onChange,
 } from "./game-core.js";
 import {
@@ -58,13 +54,14 @@ import {
   getPopulationDeficiency,
   getHappinessBreakdown,
   getMigrationInterval,
+  getWageRate,
+  getAutoSellBreakdown,
 } from "./population.js";
 import {
   getResourceName as getEraResourceName,
   getResourceEmoji as getEraResourceEmoji,
   getBuildingName as getEraBuildingName,
   ERA_DATA,
-  getGoldLabel,
 } from "./era.js";
 import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingTooltip } from "./ui-cards.js";
 import { setManualHighlight, clearManualHighlight } from "./highlight.js";
@@ -80,57 +77,83 @@ export function createGoldChip() {
   const icon = document.createElement("span");
   icon.textContent = "🪙";
   const value = document.createElement("span");
-  value.className = "header-stat-value";
   el.append(icon, value);
   const tooltip = document.createElement("div");
   tooltip.className = "gold-tooltip";
   tooltip.hidden = true;
-  const title = document.createElement("div");
-  title.className = "gold-tooltip-title";
-  const industryRow = createGoldRow("Sanayi üretimi");
   const sellRow = createGoldRow("Otomatik satış");
+  const sellDetail = document.createElement("div");
+  sellDetail.className = "gold-tooltip-subs";
+  const sellDivider = document.createElement("div");
+  sellDivider.className = "tt-divider";
+  const industryRow = createGoldRow("Darphane");
+  const wageDivider = document.createElement("div");
+  wageDivider.className = "tt-divider";
+  const wageRow = createGoldRow("İşçi maaşları");
   const divider = document.createElement("div");
   divider.className = "tt-divider";
   const netRow = createGoldRow("Net");
-  tooltip.append(title, industryRow.row, sellRow.row, divider, netRow.row);
+  tooltip.append(
+    sellRow.row,
+    sellDetail,
+    sellDivider,
+    industryRow.row,
+    wageDivider,
+    wageRow.row,
+    divider,
+    netRow.row,
+  );
   el.appendChild(tooltip);
   let active = false;
   el.addEventListener("mouseenter", () => { active = true; refresh(); });
   el.addEventListener("mouseleave", () => { active = false; tooltip.hidden = true; });
   el.addEventListener("focus", () => { active = true; refresh(); });
   el.addEventListener("blur", () => { active = false; tooltip.hidden = true; });
-  function refresh() {
-    const gold = getAltin();
-    const goldLabel = getGoldLabel();
-    title.textContent = " " + goldLabel + " " + formatCount(gold);
-    const industryGold = getIndustryOutput("altin");
-    if (industryGold > 0) {
-      industryRow.row.hidden = false;
-      industryRow.value.textContent = "+" + formatNumber(industryGold) + "/s";
-      industryRow.value.style.color = "#7ee2a8";
-    } else { industryRow.row.hidden = true; }
-    const netRate = getNetRate("altin");
-    let autoSellGold = 0;
-    for (const rid of Object.keys(RESOURCES)) {
-      if (getAutoSellPct(rid) <= 0) continue;
-      const prod = getTotalProduction(rid);
-      if (prod > 0) { autoSellGold += prod * getSellPriceCore(rid); }
+  function setRow(row, rate) {
+    const visible = Math.abs(rate) > 0.0001;
+    row.row.hidden = !visible;
+    if (!visible) return;
+    row.value.textContent = (rate >= 0 ? "+" : "−") + formatNumber(Math.abs(rate)) + "/s";
+    row.value.classList.toggle("tt-pos", rate >= 0);
+    row.value.classList.toggle("tt-neg", rate < 0);
+  }
+  function renderSellDetail(breakdown) {
+    sellDetail.textContent = "";
+    const ids = Object.keys(breakdown);
+    sellDetail.hidden = ids.length === 0;
+    for (const rid of ids) {
+      const row = document.createElement("div");
+      row.className = "gold-tooltip-subrow";
+      const label = document.createElement("span");
+      label.textContent = "↳ " + getEraResourceEmoji(rid) + " " + getEraResourceName(rid);
+      const value = document.createElement("span");
+      value.className = "tt-pos";
+      value.textContent = "+" + formatNumber(breakdown[rid]) + "/s";
+      row.append(label, value);
+      sellDetail.appendChild(row);
     }
-    if (autoSellGold > 0.001) {
-      sellRow.row.hidden = false;
-      sellRow.value.textContent = "+" + formatNumber(autoSellGold) + "/s";
-      sellRow.value.style.color = "#7ee2a8";
-    } else { sellRow.row.hidden = true; }
-    divider.hidden = industryRow.row.hidden && sellRow.row.hidden;
-    netRow.value.textContent = (netRate >= 0 ? "+" : "") + formatNumber(netRate) + "/s";
-    netRow.value.style.color = netRate >= 0 ? "#7ee2a8" : "#ff8a8a";
+  }
+  function refresh() {
+    const industryGold = getIndustryOutput("altin");
+    const { breakdown, total: autoSellGold } = getAutoSellBreakdown();
+    const wageRate = getWageRate();
+    setRow(industryRow, industryGold);
+    setRow(sellRow, autoSellGold);
+    renderSellDetail(breakdown);
+    setRow(wageRow, -wageRate);
+    sellDivider.hidden = sellRow.row.hidden && industryRow.row.hidden;
+    wageDivider.hidden = industryRow.row.hidden;
+    const netRate = industryGold + autoSellGold - wageRate;
+    netRow.value.textContent = (netRate >= 0 ? "+" : "−") + formatNumber(Math.abs(netRate)) + "/s";
+    netRow.value.classList.toggle("tt-pos", netRate >= 0);
+    netRow.value.classList.toggle("tt-neg", netRate < 0);
     tooltip.hidden = false;
   }
   function update() {
     value.textContent = formatCount(getAltin());
     if (active) refresh();
   }
-  onChange(update);
+  setInterval(update, 1000);
   update();
   return { el, update };
 }
@@ -159,7 +182,6 @@ export function createHappinessChip() {
   icon.className = "happiness-chip-icon";
   icon.textContent = "🥳";
   const value = document.createElement("span");
-  value.className = "header-stat-value";
   el.append(icon, value);
   const tooltip = document.createElement("div");
   tooltip.className = "happiness-tooltip";
@@ -365,10 +387,8 @@ export function createEraChip() {
       progressFill.style.width = (overallPct * 100) + "%";
       if (overallPct >= 1) {
         progressFill.classList.add("era-bar-ready");
-        progressFill.classList.remove("era-bar-fill");
       } else {
         progressFill.classList.remove("era-bar-ready");
-        progressFill.classList.add("era-bar-fill");
       }
       if (tooltipActive) refreshTooltip();
     } else { progressArea.hidden = true; }
@@ -699,7 +719,6 @@ export function createResourceTile(id, options = {}) {
 
 function buildResourceTooltip(id) {
   const meta = RESOURCES[id];
-  const sellable = isSellable(id);
   resetResourceClass(resourceTooltip.element, id);
   resourceTooltip.element.textContent = "";
   const title = document.createElement("div");
@@ -764,12 +783,6 @@ function buildResourceTooltip(id) {
   divider.className = "tt-divider";
   divider.hidden = !hasBuildingRows;
   resourceTooltip.element.appendChild(divider);
-  const sellRow = document.createElement("div");
-  sellRow.className = "tt-total";
-  const sellStrong = strong("");
-  sellRow.append("Satış Fiyatı: ", sellStrong);
-  sellRow.hidden = !sellable;
-  resourceTooltip.element.appendChild(sellRow);
   const totalRow = document.createElement("div");
   totalRow.className = "tt-total";
   const totalStrong = strong("");
@@ -780,6 +793,19 @@ function buildResourceTooltip(id) {
   const consStrong = strong("");
   consRow.append("Tüketim: ", consStrong);
   resourceTooltip.element.appendChild(consRow);
+  const sellDivider = document.createElement("div");
+  sellDivider.className = "tt-divider";
+  resourceTooltip.element.appendChild(sellDivider);
+  const sellRow = document.createElement("div");
+  sellRow.className = "tt-total";
+  const sellLabel = document.createElement("span");
+  sellLabel.className = "tt-unsellable";
+  sellLabel.textContent = "Satılamaz";
+  sellLabel.hidden = true;
+  const sellStrong = strong("");
+  sellStrong.classList.add("tt-gold");
+  sellRow.append(sellLabel, sellStrong);
+  resourceTooltip.element.appendChild(sellRow);
   tooltipLive.id = id;
   tooltipLive.capEl = capStrong;
   tooltipLive.timeEl = timeEl;
@@ -787,6 +813,8 @@ function buildResourceTooltip(id) {
   tooltipLive.consEl = consStrong;
   tooltipLive.sellEl = sellStrong;
   tooltipLive.sellRow = sellRow;
+  tooltipLive.sellDivider = sellDivider;
+  tooltipLive.sellLabel = sellLabel;
   tooltipLive.seasonRow = seasonRow;
   tooltipLive.seasonEl = seasonEl;
   refreshResourceTooltip();
@@ -802,8 +830,10 @@ function refreshResourceTooltip(snapshot) {
   tooltipLive.capEl.textContent = formatCount(current) + " / " + formatCount(capacity);
   tooltipLive.totalEl.textContent = "+" + formatNumber(productionValue) + "/s";
   tooltipLive.consEl.textContent = consumptionValue > 0 ? "−" + formatNumber(consumptionValue) + "/s" : "−";
-  tooltipLive.sellRow.hidden = !isSellable(id);
-  tooltipLive.sellEl.textContent = formatCount(getSellPrice(id)) + " ";
+  const sellable = isSellable(id);
+  tooltipLive.sellLabel.hidden = sellable;
+  tooltipLive.sellEl.hidden = !sellable;
+  tooltipLive.sellEl.textContent = sellable ? "🪙 " + formatCount(getSellPrice(id)) : "";
   const seasonMult = getSeasonMultiplier(id);
   tooltipLive.seasonRow.hidden = seasonMult === 1;
   if (seasonMult !== 1) {

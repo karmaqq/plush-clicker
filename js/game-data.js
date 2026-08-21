@@ -48,27 +48,24 @@ export const TRADE_ITEM_POOL = {
   su:        { basePrice: 3,   minQty: 200, maxQty: 500, tier: 1 },
   yiyecek:   { basePrice: 4,   minQty: 150, maxQty: 400, tier: 1 },
   ekmek:     { basePrice: 6,   minQty: 80,  maxQty: 200, tier: 1 },
-  bilgi:     { basePrice: 7,   minQty: 50,  maxQty: 150, tier: 2 },
   tas:       { basePrice: 4,   minQty: 100, maxQty: 300, tier: 2 },
   maden:     { basePrice: 8,   minQty: 40,  maxQty: 120, tier: 2 },
   demir:     { basePrice: 10,  minQty: 30,  maxQty: 80,  tier: 2 },
-  kultur:    { basePrice: 12,  minQty: 20,  maxQty: 60,  tier: 3 },
-  inanc:     { basePrice: 15,  minQty: 15,  maxQty: 50,  tier: 3 },
   ipek:      { basePrice: 20,  minQty: 5,   maxQty: 20,  tier: 3 },
   mermer:    { basePrice: 15,  minQty: 10,  maxQty: 30,  tier: 3 },
   celik:     { basePrice: 18,  minQty: 8,   maxQty: 25,  tier: 3 },
-  kumas:     { basePrice: 22,  minQty: 5,   maxQty: 15,  tier: 3 },
-  ilac:      { basePrice: 25,  minQty: 5,   maxQty: 15,  tier: 3 },
-  mobilya:   { basePrice: 30,  minQty: 3,   maxQty: 10,  tier: 3 },
-  heykel:    { basePrice: 40,  minQty: 2,   maxQty: 6,   tier: 3 },
-  mucevher:  { basePrice: 60,  minQty: 1,   maxQty: 4,   tier: 3 },
+  kumas:     { basePrice: 22,  minQty: 5,   maxQty: 15, tier: 3 },
+  ilac:      { basePrice: 25,  minQty: 5,   maxQty: 15, tier: 3 },
+  mobilya:   { basePrice: 30,  minQty: 3,   maxQty: 10, tier: 3 },
+  heykel:    { basePrice: 40,  minQty: 2,   maxQty: 6,  tier: 3 },
+  mucevher:  { basePrice: 60,  minQty: 1,   maxQty: 4,  tier: 3 },
 };
 
 /* ─────────────────── Ticaret Ürün Sıralaması ─────────────────── */
 export const TRADE_ITEMS_ORDER = [
   "su", "yiyecek", "ekmek",
-  "bilgi", "tas", "maden", "demir",
-  "kultur", "inanc", "ipek", "mermer", "celik", "kumas",
+  "tas", "maden", "demir",
+  "ipek", "mermer", "celik", "kumas",
   "ilac", "mobilya", "heykel", "mucevher",
 ];
 
@@ -81,7 +78,6 @@ export const POP_YIYECEK_RATE = 0.030;
 export const POP_EKMEK_RATE = 0.010;
 export const POP_ILAC_RATE = 0.005;
 export const POP_KULTUR_RATE = 0.002;
-export const POP_GOLD_RATE = 0;
 export const WORKER_WAGE_SEASONAL = 2;
 
 export const TICKS_PER_SECOND = 5;
@@ -136,7 +132,6 @@ export const RESOURCES = {
         baseCapacity: 500,
         storagePerDepo: 100,
         storagePerAmbar: 0,
-        satisFiyati: [2, 4],
         colorBright: "#9cc9ff",
         colorDark: "#4e7ea8",
     },
@@ -169,7 +164,6 @@ export const RESOURCES = {
         baseCapacity: 200,
         storagePerDepo: 40,
         storagePerAmbar: 0,
-        satisFiyati: [5, 8],
         colorBright: "#f5d0a0",
         colorDark: "#a87840",
     },
@@ -180,7 +174,6 @@ export const RESOURCES = {
         baseCapacity: 150,
         storagePerDepo: 30,
         storagePerAmbar: 0,
-        satisFiyati: [6, 10],
         colorBright: "#e0aaff",
         colorDark: "#8a45b8",
     },
@@ -656,7 +649,6 @@ export const PACKS_DATA = {
 
 export const AUTO_SELL_PACK_ID = "otoSatis";
 export const AUTO_SELL_STEP_PCT = 10;
-export const AUTO_SELL_MAX_LEVEL = 10;
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          SANAYİ                                           */

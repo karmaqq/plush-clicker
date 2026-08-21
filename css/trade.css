@@ -329,12 +329,6 @@
     color: #ff8a8a;
 }
 
-/* ─────────────────── MAX Butonları ─────────────────── */
-
-.trade-max-btn {
-    display: none;
-}
-
 /* ─────────────────── Miktar Rozetleri ─────────────────── */
 
 .trade-badge {

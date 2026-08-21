@@ -19,6 +19,7 @@ import {
   state,
   getResource,
   getResourceCapacity,
+  getResourceConsumption,
   getBuildingCount,
   getPopulationAlive,
   getTotalProduction,
@@ -317,8 +318,7 @@ export function consumePopulation() {
 
   /* ═══ MAAŞ ÖDEMESİ ═══ */
 
-  const workerCount = getWorkerCount();
-  const wageCostPerTick = (workerCount * WORKER_WAGE_SEASONAL) / SEASON_DURATION / TICKS_PER_SECOND;
+  const wageCostPerTick = getWageRate() / TICKS_PER_SECOND;
   if (wageCostPerTick > 0) {
     const goldAvailable = getResource("altin");
     if (goldAvailable >= wageCostPerTick) {
@@ -444,6 +444,45 @@ function trimWorkers() {
   }
 
   return changed;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          ALTIN AKIŞI                                      */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── İşçi Maaşı Hızı Getter'ı ─────────────────── */
+
+export function getWageRate() {
+  return (getWorkerCount() * WORKER_WAGE_SEASONAL) / SEASON_DURATION;
+}
+
+/* ─────────────────── Otomatik Satış Geliri Dağılımı Hesaplayıcı ─────────────────── */
+
+export function getAutoSellBreakdown() {
+  const breakdown = {};
+  let total = 0;
+
+  for (const id of Object.keys(INDUSTRY_DATA)) {
+    for (const outRes of Object.keys(INDUSTRY_DATA[id].output)) {
+      const pct = getAutoSellPct(outRes);
+      if (pct <= 0) continue;
+
+      const capacity = getResourceCapacity(outRes);
+      if (!Number.isFinite(capacity)) continue;
+
+      const threshold = capacity * (1 - pct / 100);
+      if (getResource(outRes) < threshold) continue;
+
+      const netFlow = getTotalProduction(outRes) - getResourceConsumption(outRes);
+      if (netFlow <= 0) continue;
+
+      const income = netFlow * getSellPrice(outRes);
+      breakdown[outRes] = (breakdown[outRes] || 0) + income;
+      total += income;
+    }
+  }
+
+  return { breakdown, total };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */

@@ -136,7 +136,7 @@ export function createLeftPanel() {
     buildingGrid.appendChild(createBuildingCard(id, data).element);
   }
   const packList = document.createElement("div");
-  packList.className = "upgrade-list pack-list";
+  packList.className = "upgrade-list";
   packList.hidden = true;
   for (const id of Object.keys(PACKS_DATA)) {
     packList.appendChild(createPackCard(id, PACKS_DATA[id]));
@@ -261,7 +261,6 @@ export function createHeaderPanel() {
     popBlock.update(alive, capacity, workers, Math.max(0, alive - workers), migrants);
     happinessChip.update();
     seasonChip.update();
-    goldChip.update();
     eraChip.update();
   }
   onChange(update);

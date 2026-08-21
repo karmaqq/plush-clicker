@@ -7,7 +7,6 @@ import {
   listeners,
   getPopulationAlive,
   getAltin,
-  getResource,
   isEraTransitioning,
   getEra,
 } from "./game-core.js";
@@ -424,35 +423,6 @@ export function canAdvanceEra() {
   );
 }
 
-/* ─────────────────── Çağ Geçiş İşlemcisi ─────────────────── */
-
-export function advanceEra() {
-  const currentEra = state.era.current;
-  const eraData = ERA_DATA[currentEra];
-  if (!eraData || !eraData.next) return false;
-  if (!canAdvanceEra()) return false;
-
-  state.era.transitioning = true;
-
-  const altinAmount = getResource("altin");
-  const korunanAltin = Math.floor(altinAmount * 0.5);
-
-  for (const id of Object.keys(state.buildings)) {
-    state.buildings[id] = 0;
-  }
-
-  for (const id of Object.keys(state.resources)) {
-    state.resources[id] = 0;
-  }
-  state.resources.altin = korunanAltin;
-  state.resources.power = 40;
-
-  state.era.current = eraData.next;
-  state.era.transitioning = false;
-
-  return true;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                        ÇAĞ GEÇİŞ KONTROLÜ                                */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -535,17 +505,8 @@ function showEraAdvanceConfirm(currentEra, data) {
   document.body.appendChild(overlay);
 }
 
-/* ─────────────────── Era Prompt Sıfırlayıcı ─────────────────── */
-export function resetEraPrompt() {
-  eraPromptShown = false;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*                     ÇAĞ GEÇİŞ ANİMASYONU                                  */
-/* ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
-/*                    ÇAĞ GEÇİŞ ANİMASYON AKIŞI                               */
+/*                     ÇAĞ GEÇİŞ ANİMASYON AKIŞI                              */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────── Geçiş Tetikleyicisi ─────────────────── */
@@ -753,7 +714,7 @@ const BADGE_CLASSES = {
 
 /* ─────────────────── Tema Uygulayıcı ─────────────────── */
 
-export function setTheme(era) {
+function setTheme(era) {
   const body = document.body;
   for (const cls of Object.values(THEME_CLASSES)) {
     if (cls) body.classList.remove(cls);
@@ -764,7 +725,7 @@ export function setTheme(era) {
 
 /* ─────────────────── Flash Gösterici ─────────────────── */
 
-export function showFlash(era, duration) {
+function showFlash(era, duration) {
   return new Promise((resolve) => {
     const flash = document.createElement("div");
     flash.className = "era-flash " + (FLASH_CLASSES[era] || "");
@@ -786,7 +747,7 @@ export function showFlash(era, duration) {
 
 /* ─────────────────── Çağ Etiketi Gösterici ─────────────────── */
 
-export function showBadge(text, era) {
+function showBadge(text, era) {
   return new Promise((resolve) => {
     const badge = document.createElement("div");
     badge.className = "era-badge-anim " + (BADGE_CLASSES[era] || "");
@@ -810,7 +771,7 @@ export function showBadge(text, era) {
 
 /* ─────────────────── Parçacık Oluşturucu ─────────────────── */
 
-export function createSparkles(era, count) {
+function createSparkles(era, count) {
   const container = document.createElement("div");
   container.className = "era-sparkle-container";
   const themeClass = BADGE_CLASSES[era] || "";
@@ -835,7 +796,7 @@ export function createSparkles(era, count) {
 
 /* ─────────────────── Toast Bildirim Gösterici ─────────────────── */
 
-export function showToast(text, icon) {
+function showToast(text, icon) {
   return new Promise((resolve) => {
     const toast = document.createElement("div");
     toast.className = "era-toast";

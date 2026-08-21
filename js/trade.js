@@ -58,8 +58,10 @@ function getQtyBadgeClass(qty) {
 /* ─────────────────── Fiyat Hesaplayıcı ─────────────────── */
 function getFinalPrice(resourceId, merchant) {
   const pool = TRADE_ITEM_POOL[resourceId];
-  const mod = merchant.priceModifiers[resourceId] || 0;
-  return pool.basePrice * (1 + mod);
+  if (!pool) return 0;
+  const deltas = merchant.priceDeltas;
+  const delta = deltas ? deltas[resourceId] || 0 : 0;
+  return Math.max(1, pool.basePrice + delta);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -73,13 +75,13 @@ function createMerchant(id) {
 
   const candidates = shuffle(TRADE_ITEMS_ORDER.slice());
   const stock = {};
-  const priceModifiers = {};
+  const priceDeltas = {};
   let spent = 0;
   let itemCount = 0;
 
   for (const resId of candidates) {
     const pool = TRADE_ITEM_POOL[resId];
-    priceModifiers[resId] = randomFloat(-0.30, 0.40);
+    priceDeltas[resId] = Math.round(pool.basePrice * randomFloat(-0.60, 0.40));
 
     if (itemCount >= TRADE_MERCHANT_MAX_ITEMS) {
       stock[resId] = 0;
@@ -101,8 +103,8 @@ function createMerchant(id) {
     if (!(resId in stock)) {
       stock[resId] = 0;
     }
-    if (!(resId in priceModifiers)) {
-      priceModifiers[resId] = randomFloat(-0.30, 0.40);
+    if (!(resId in priceDeltas)) {
+      priceDeltas[resId] = Math.round(TRADE_ITEM_POOL[resId].basePrice * randomFloat(-0.60, 0.40));
     }
   }
 
@@ -110,7 +112,7 @@ function createMerchant(id) {
     id,
     budget,
     stock,
-    priceModifiers,
+    priceDeltas,
     stayDuration,
     stayRemaining: stayDuration,
   };
@@ -187,7 +189,7 @@ export function buyFromMerchant(merchantId, resourceId, quantity) {
   if (quantity <= 0 || quantity > merchantStock) return false;
 
   const finalPrice = getFinalPrice(resourceId, merchant);
-  const cost = Math.floor(quantity * finalPrice);
+  const cost = quantity * finalPrice;
   if (getResource("altin") < cost) return false;
 
   const cap = getResourceCapacity(resourceId);
@@ -212,7 +214,7 @@ export function sellToMerchant(merchantId, resourceId, quantity) {
   if (quantity <= 0 || getResource(resourceId) < quantity) return false;
 
   const finalPrice = getFinalPrice(resourceId, merchant);
-  const payment = Math.floor(quantity * finalPrice);
+  const payment = quantity * finalPrice;
   const goldCap = getResourceCapacity("altin");
 
   state.resources[resourceId] -= quantity;
@@ -304,12 +306,10 @@ function createTradeRow(resourceId, merchant) {
   const colMod = document.createElement("div");
   colMod.className = "trade-col trade-col-modifier";
 
-  const pct = pool.basePrice > 0
-    ? Math.round(((finalPrice - pool.basePrice) / pool.basePrice) * 100)
-    : 0;
+  const delta = finalPrice - pool.basePrice;
   const mod = document.createElement("span");
-  mod.className = "trade-price-modifier " + (pct > 0 ? "trade-modifier-up" : pct < 0 ? "trade-modifier-down" : "");
-  mod.textContent = pct !== 0 ? (pct > 0 ? "+" : "") + pct + "%" : "\u2014";
+  mod.className = "trade-price-modifier " + (delta > 0 ? "trade-modifier-up" : delta < 0 ? "trade-modifier-down" : "");
+  mod.textContent = delta > 0 ? "\u25B2 +" + delta : delta < 0 ? "\u25BC \u2212" + Math.abs(delta) : "\u2014";
   colMod.appendChild(mod);
 
   /* Sütun 4: Benim stoğum */
@@ -347,17 +347,7 @@ function createTradeRow(resourceId, merchant) {
   btnRight.className = "trade-qty-arrow";
   btnRight.textContent = "\u25B6";
 
-  const maxSellBtn = document.createElement("button");
-  maxSellBtn.type = "button";
-  maxSellBtn.className = "trade-max-btn trade-max-sell";
-  maxSellBtn.textContent = "Ver";
-
-  const maxBuyBtn = document.createElement("button");
-  maxBuyBtn.type = "button";
-  maxBuyBtn.className = "trade-max-btn trade-max-buy";
-  maxBuyBtn.textContent = "Al";
-
-  qtyGroup.append(maxSellBtn, btnLeft, qtyInput, btnRight, maxBuyBtn);
+  qtyGroup.append(btnLeft, qtyInput, btnRight);
   colQty.appendChild(qtyGroup);
 
   function clampInput(val) {
@@ -391,22 +381,6 @@ function createTradeRow(resourceId, merchant) {
       refreshBtn();
     } else {
       triggerShake(qtyInput);
-    }
-  });
-
-  maxSellBtn.addEventListener("click", () => {
-    const maxSell = getMaxSellQty(resourceId, merchant);
-    if (maxSell > 0) {
-      qtyInput.value = String(-maxSell);
-      refreshBtn();
-    }
-  });
-
-  maxBuyBtn.addEventListener("click", () => {
-    const maxBuy = getMaxBuyQty(resourceId, merchant);
-    if (maxBuy > 0) {
-      qtyInput.value = String(maxBuy);
-      refreshBtn();
     }
   });
 
@@ -455,8 +429,6 @@ function createTradeRow(resourceId, merchant) {
 
     btnLeft.disabled = maxBuy <= 0;
     btnRight.disabled = maxSell <= 0;
-    maxSellBtn.disabled = maxSell <= 0;
-    maxBuyBtn.disabled = maxBuy <= 0;
   }
   refreshBtn();
 
@@ -505,11 +477,9 @@ function updateTradeRow(row, resourceId, merchant) {
   if (mod) {
     const pool = TRADE_ITEM_POOL[resourceId];
     const fp = getFinalPrice(resourceId, merchant);
-    const pct = pool.basePrice > 0
-      ? Math.round(((fp - pool.basePrice) / pool.basePrice) * 100)
-      : 0;
-    mod.className = "trade-price-modifier " + (pct > 0 ? "trade-modifier-up" : pct < 0 ? "trade-modifier-down" : "");
-    mod.textContent = pct !== 0 ? (pct > 0 ? "+" : "") + pct + "%" : "\u2014";
+    const delta = fp - pool.basePrice;
+    mod.className = "trade-price-modifier " + (delta > 0 ? "trade-modifier-up" : delta < 0 ? "trade-modifier-down" : "");
+    mod.textContent = delta > 0 ? "\u25B2 +" + delta : delta < 0 ? "\u25BC \u2212" + Math.abs(delta) : "\u2014";
   }
 
   const name = row.querySelector(".trade-col-name");
@@ -521,8 +491,6 @@ function updateTradeRow(row, resourceId, merchant) {
   const qtyInput = row.querySelector(".trade-qty-input");
   const btnLeft = row.querySelector(".trade-qty-arrow:first-of-type");
   const btnRight = row.querySelector(".trade-qty-arrow:last-of-type");
-  const maxSellBtn = row.querySelector(".trade-max-sell");
-  const maxBuyBtn = row.querySelector(".trade-max-buy");
   const btn = row.querySelector(".trade-btn");
 
   if (qtyInput) {
@@ -534,8 +502,6 @@ function updateTradeRow(row, resourceId, merchant) {
 
     if (btnLeft) btnLeft.disabled = maxBuy <= 0;
     if (btnRight) btnRight.disabled = maxSell <= 0;
-    if (maxSellBtn) maxSellBtn.disabled = maxSell <= 0;
-    if (maxBuyBtn) maxBuyBtn.disabled = maxBuy <= 0;
 
     if (btn) {
       const qty = parseInt(qtyInput.value, 10) || 0;

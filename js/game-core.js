@@ -19,7 +19,6 @@ import {
   POP_EKMEK_RATE,
   POP_ILAC_RATE,
   POP_KULTUR_RATE,
-  WORKER_WAGE_SEASONAL,
   RESOURCES,
   BUILDINGS_DATA,
   STORAGE_DATA,
@@ -27,6 +26,7 @@ import {
   PACKS_DATA,
   INDUSTRY_DATA,
   AUTO_SELL_PACK_ID,
+  TRADE_ITEM_POOL,
 } from "./game-data.js";
 import { canAfford } from "./utils.js";
 import { checkEraAdvance, getResourceName, getBuildingName, getPackName } from "./era.js";
@@ -120,12 +120,6 @@ export const listeners = new Set();
 
 export function getResource(resource) {
   return state.resources[resource] || 0;
-}
-
-/* ─────────────────── Guclu Getter'i ─────────────────── */
-
-export function getPower() {
-  return getResource("power");
 }
 
 /* ─────────────────── Altin Getter'i ─────────────────── */
@@ -509,14 +503,18 @@ export function hasInfoProduction() {
 
 export function getSellPrice(resource) {
   const meta = RESOURCES[resource];
-  return meta && meta.satisFiyati ? meta.satisFiyati : 0;
+  const listed = meta && meta.satisFiyati;
+  if (listed) {
+    return Array.isArray(listed) ? Math.round((listed[0] + listed[1]) / 2) : listed;
+  }
+  const pool = TRADE_ITEM_POOL[resource];
+  return pool ? pool.basePrice : 0;
 }
 
 /* ─────────────────── Satilabilirlik Kontrolu ─────────────────── */
 
 export function isSellable(resource) {
-  const meta = RESOURCES[resource];
-  return !!meta && Number.isFinite(meta.satisFiyati) && meta.satisFiyati > 0;
+  return getSellPrice(resource) > 0;
 }
 
 /* ─────────────────── Otomatik Satis Yuzdesi Getter'i ─────────────────── */
@@ -1174,7 +1172,8 @@ function loadTrade(saved) {
     state.trade.merchants = saved.merchants.filter(m =>
       m && typeof m === "object" &&
       m.stock && typeof m.stock === "object" &&
-      m.priceModifiers && typeof m.priceModifiers === "object"
+      ((m.priceDeltas && typeof m.priceDeltas === "object") ||
+        (m.priceModifiers && typeof m.priceModifiers === "object"))
     );
   }
 
