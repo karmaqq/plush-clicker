@@ -468,7 +468,7 @@ body.era-theme-space {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*                    BİNA SÖKÜM ANİMASYON STİLLERİ                          */
+/*                  BİNA & SANAYİ SÖKÜM ANİMASYON STİLLERİ                    */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 .building-card.demolishing {
@@ -477,6 +477,15 @@ body.era-theme-space {
 }
 
 .building-card.demolished {
+    display: none !important;
+}
+
+.industry-card.demolishing {
+    animation: building-demolish 0.4s ease forwards;
+    pointer-events: none;
+}
+
+.industry-card.demolished {
     display: none !important;
 }
 

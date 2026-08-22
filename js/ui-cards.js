@@ -607,11 +607,7 @@ export function createIndustryCard(id, data) {
   outputLabel.textContent = "Çıktı:";
   const outputValue = document.createElement("span");
   outputValue.className = "industry-flow-value output-value";
-  const storageFullBadge = document.createElement("span");
-  storageFullBadge.className = "storage-full-badge";
-  storageFullBadge.textContent = "Depo Dolu";
-  storageFullBadge.hidden = true;
-  outputRow.append(outputLabel, outputValue, storageFullBadge);
+  outputRow.append(outputLabel, outputValue);
   flow.append(inputRow, outputRow);
   const warning = document.createElement("div");
   warning.className = "industry-warning";
@@ -793,6 +789,7 @@ export function createIndustryCard(id, data) {
   card.append(head, desc, flow, warning, buildRow, lockOverlay.element);
 
   let tooltipActive = false;
+  let lastEra = state.era.current;
   card.addEventListener("mouseenter", () => {
     if (!autosellMenu.hidden) return;
     tooltipActive = true;
@@ -805,6 +802,11 @@ export function createIndustryCard(id, data) {
   });
 
   function update() {
+    const currentEra = state.era.current;
+    if (currentEra !== lastEra) {
+      lastEra = currentEra;
+      card.classList.remove("demolished");
+    }
     const unlocked = getUnlock(data);
     card.classList.toggle("locked", !unlocked);
     if (!unlocked) {
@@ -903,7 +905,6 @@ export function createIndustryCard(id, data) {
     } else {
       warning.hidden = true;
     }
-    storageFullBadge.hidden = !entry.outputFull;
     if (autoSellSupported) {
       autoSellBtn.hidden = false;
       const pct = getAutoSellPct(outputResource);

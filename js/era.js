@@ -9,12 +9,22 @@ import {
   getAltin,
   isEraTransitioning,
   getEra,
+  freshIndustryEntry,
 } from "./game-core.js";
-import { RESOURCES } from "./game-data.js";
+import {
+  RESOURCES,
+  SEASON_DURATION,
+  TRADE_MERCHANT_INTERVAL_MIN,
+  TRADE_MERCHANT_INTERVAL_MAX,
+} from "./game-data.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          EVRE TANIMLARI                                    */
 /* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Çağ Çipi Nüfus Eşiği ─────────────────── */
+
+export const ERA_CHIP_POP_THRESHOLD = 20;
 
 export const ERA_DATA = {
   1: {
@@ -527,20 +537,18 @@ export function triggerEraTransition(targetEra) {
 
   state.era.transitioning = true;
 
-  const altinAmount = state.resources.altin || 0;
-  const korunanAltin = Math.floor(altinAmount * 0.5);
-
-  runTransition(currentEra, nextEra, tData, korunanAltin);
+  runTransition(currentEra, nextEra, tData);
 
   return true;
 }
 
 /* ─────────────────── Geçiş Akışı Orkestratörü ─────────────────── */
 
-async function runTransition(fromEra, toEra, tData, korunanAltin) {
+async function runTransition(fromEra, toEra, tData) {
   showToast("Çağ değişiyor...", "⏳");
 
   await demolishAllBuildings();
+  await demolishAllIndustries();
 
   const buildingIds = Object.keys(state.buildings);
   for (const id of buildingIds) {
@@ -552,10 +560,13 @@ async function runTransition(fromEra, toEra, tData, korunanAltin) {
     performThemeTransition(toEra, tData),
   ]);
 
-  for (const id of Object.keys(state.resources)) {
-    state.resources[id] = 0;
-  }
-  state.resources.altin = korunanAltin;
+  resetResources();
+  resetIndustryState();
+  resetPackState();
+  resetPopulationState();
+  resetSeasonState();
+  resetTradeState();
+
   state.resources.power = 40;
   state.era.current = toEra;
   state.era.transitioning = false;
@@ -564,16 +575,84 @@ async function runTransition(fromEra, toEra, tData, korunanAltin) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      GEÇİŞ SONRASI SIFIRLAMA                               */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── Kaynak Sıfırlayıcı ─────────────────── */
+
+function resetResources() {
+  for (const id of Object.keys(state.resources)) {
+    state.resources[id] = 0;
+  }
+}
+
+/* ─────────────────── Sanayi Sıfırlayıcı ─────────────────── */
+
+function resetIndustryState() {
+  for (const id of Object.keys(state.industry)) {
+    state.industry[id] = freshIndustryEntry();
+  }
+
+  for (const id of Object.keys(state.settings.autoSellPct)) {
+    state.settings.autoSellPct[id] = 0;
+  }
+}
+
+/* ─────────────────── Paket Sıfırlayıcı ─────────────────── */
+
+function resetPackState() {
+  for (const id of Object.keys(state.packs)) {
+    state.packs[id] = 0;
+  }
+}
+
+/* ─────────────────── Nüfus Sıfırlayıcı ─────────────────── */
+
+function resetPopulationState() {
+  state.population = {
+    current: 0,
+    migrants: 0,
+    satisfaction: 50,
+    migrationTimer: 0,
+    migrantQueue: [],
+    deficiency: 0,
+    ilacOk: false,
+    wagesPaid: true,
+  };
+}
+
+/* ─────────────────── Mevsim Sıfırlayıcı ─────────────────── */
+
+function resetSeasonState() {
+  state.season = {
+    id: "ilkbahar",
+    timer: SEASON_DURATION,
+  };
+}
+
+/* ─────────────────── Ticaret Sıfırlayıcı ─────────────────── */
+
+function resetTradeState() {
+  state.trade = {
+    merchants: [],
+    spawnTimer:
+      Math.random() *
+        (TRADE_MERCHANT_INTERVAL_MAX - TRADE_MERCHANT_INTERVAL_MIN) +
+      TRADE_MERCHANT_INTERVAL_MIN,
+    nextId: 1,
+    count: 0,
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
 /*                    FAZE 1: BİNA SÖKÜM ANİMASYONU                           */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─────────────────── Toplu Bina Sökümü ─────────────────── */
+/* ─────────────────── Kart Söküm Animasyonu ─────────────────── */
 
-function demolishAllBuildings() {
+function runDemolishAnimation(selector) {
   return new Promise((resolve) => {
-    const cards = document.querySelectorAll(
-      ".building-card:not(.demolished):not(.locked)",
-    );
+    const cards = document.querySelectorAll(selector);
     if (cards.length === 0) {
       resolve();
       return;
@@ -606,6 +685,20 @@ function demolishAllBuildings() {
       total * step + 500,
     );
   });
+}
+
+/* ─────────────────── Toplu Bina Sökümü ─────────────────── */
+
+function demolishAllBuildings() {
+  return runDemolishAnimation(
+    ".building-card:not(.demolished):not(.locked)",
+  );
+}
+
+/* ─────────────────── Toplu Sanayi Sökümü ─────────────────── */
+
+function demolishAllIndustries() {
+  return runDemolishAnimation(".industry-card.built:not(.demolished)");
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */

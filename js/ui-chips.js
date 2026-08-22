@@ -63,6 +63,7 @@ import {
   getBuildingName as getEraBuildingName,
   getGoldLabel,
   ERA_DATA,
+  ERA_CHIP_POP_THRESHOLD,
 } from "./era.js";
 import { buildBuildingTooltip, refreshBuildingTooltip, tooltip as buildingTooltip } from "./ui-cards.js";
 import { setManualHighlight, clearManualHighlight } from "./highlight.js";
@@ -221,6 +222,8 @@ export function createHappinessChip() {
     infoText.textContent = parts.join("  ·  ");
   }
   function update() {
+    const alive = getPopulationAlive();
+    el.hidden = alive <= 0;
     const satisfaction = getPopulationSatisfaction();
     value.textContent = String(Math.round(satisfaction));
     el.classList.toggle("warn", satisfaction < 50);
@@ -368,6 +371,7 @@ export function createEraChip() {
   el.addEventListener("blur", () => { tooltipActive = false; tooltip.hide(); });
 
   function update() {
+    el.hidden = getPopulationAlive() < ERA_CHIP_POP_THRESHOLD;
     const currentEra = getEra();
     const data = ERA_DATA[currentEra];
     const hasTarget = data && data.next !== null;
@@ -681,6 +685,9 @@ export function createResourceTile(id, options = {}) {
     name.textContent = getEraResourceName(id);
     const active = productionValue > 0 || current > 0;
     if (element.hidden === active) { element.hidden = !active; }
+    if (active && element.classList.contains("drain-done")) {
+      element.classList.remove("drain-done");
+    }
     if (!active) {
       lastCapText = null; lastFillPct = null; lastProdText = null; lastNetNegative = null;
       return;

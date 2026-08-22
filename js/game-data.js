@@ -45,11 +45,11 @@ export const TRADE_MERCHANT_INTERVAL_MAX = 60;
 
 /* ─────────────────── Ticaret Ürün Havuzu ─────────────────── */
 export const TRADE_ITEM_POOL = {
-  su:        { basePrice: 3,   minQty: 200, maxQty: 500, tier: 1 },
-  yiyecek:   { basePrice: 4,   minQty: 150, maxQty: 400, tier: 1 },
+  su:        { basePrice: 2,   minQty: 200, maxQty: 500, tier: 1 },
+  yiyecek:   { basePrice: 2,   minQty: 150, maxQty: 400, tier: 1 },
   ekmek:     { basePrice: 6,   minQty: 80,  maxQty: 200, tier: 1 },
-  tas:       { basePrice: 4,   minQty: 100, maxQty: 300, tier: 2 },
-  maden:     { basePrice: 8,   minQty: 40,  maxQty: 120, tier: 2 },
+  tas:       { basePrice: 2,   minQty: 100, maxQty: 300, tier: 2 },
+  maden:     { basePrice: 4,   minQty: 40,  maxQty: 120, tier: 2 },
   demir:     { basePrice: 10,  minQty: 30,  maxQty: 80,  tier: 2 },
   ipek:      { basePrice: 20,  minQty: 5,   maxQty: 20,  tier: 3 },
   mermer:    { basePrice: 15,  minQty: 10,  maxQty: 30,  tier: 3 },

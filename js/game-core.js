@@ -99,7 +99,6 @@ export function freshIndustryEntry() {
     built: false,
     workers: 0,
     stalled: false,
-    outputFull: false,
     level: 1,
   };
 }
@@ -974,19 +973,11 @@ export function produce(silent) {
     }
 
     if (!outputsOk) {
-      if (!entry.outputFull) {
-        entry.outputFull = true;
-        changed = true;
-      }
       continue;
     }
 
     if (entry.stalled) {
       entry.stalled = false;
-      changed = true;
-    }
-    if (entry.outputFull) {
-      entry.outputFull = false;
       changed = true;
     }
 
@@ -1090,7 +1081,6 @@ function loadIndustry(saved) {
       state.industry[id].workers = Math.max(0, Math.floor(entry.workers));
     }
     if (entry.stalled === true) state.industry[id].stalled = true;
-    if (entry.outputFull === true) state.industry[id].outputFull = true;
     if (Number.isFinite(entry.level)) {
       state.industry[id].level = Math.min(
         INDUSTRY_MAX_LEVEL,
