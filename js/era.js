@@ -16,6 +16,7 @@ import {
   SEASON_DURATION,
   TRADE_MERCHANT_INTERVAL_MIN,
   TRADE_MERCHANT_INTERVAL_MAX,
+  PACKS_DATA,
 } from "./game-data.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -306,53 +307,6 @@ export const BUILDING_NAMES = {
   },
 };
 
-/* ─────────────────── Paket İsim Haritası ─────────────────── */
-
-export const PACK_NAMES = {
-  1: {
-    clickPower: "Başlangıç Paketi",
-    critClick: "Çiftlik Paketi",
-    autoClick: "Madenci Paketi",
-    powerPatronage: "Bilge Paketi",
-    metalIsleme: "Savaşçı Paketi",
-    eritme: "Ticaret Paketi",
-    yazi: "İnanç Paketi",
-    isciBilimi: "İpek Yolu Paketi",
-    depoBilimi: "İmparatorluk",
-    maliyetBilimi: "Efsane Paketi",
-    craftAtolyesi: "Kutsal Paket",
-    ticaretBilimi: "Son Paket",
-  },
-  2: {
-    clickPower: "Sanayi Başlangıç",
-    critClick: "Enerji Paketi",
-    autoClick: "Çip Paketi",
-    powerPatronage: "Veri Paketi",
-    metalIsleme: "Robot Paketi",
-    eritme: "Kripto Paketi",
-    yazi: "Nano Paket",
-    isciBilimi: "Medya Paketi",
-    depoBilimi: "Mega Fabrika",
-    maliyetBilimi: "Singülerlik",
-    craftAtolyesi: "Transendans",
-    ticaretBilimi: "Çağ Geçiş Paketi",
-  },
-  3: {
-    clickPower: "Uzay Başlangıç",
-    critClick: "Yıldız Paketi",
-    autoClick: "Kuantum Paketi",
-    powerPatronage: "Yapay Zeka Paketi",
-    metalIsleme: "Nano Paket",
-    eritme: "Galaktik Paket",
-    yazi: "Holodeck Paketi",
-    isciBilimi: "Kozmik Paket",
-    depoBilimi: "Yörünge İstasyonu",
-    maliyetBilimi: "Sonsuzluk",
-    craftAtolyesi: "Evrensel Bilinç",
-    ticaretBilimi: "Final Paket",
-  },
-};
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          EVRE FONKSİYONLARI                                */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -401,8 +355,7 @@ export function getBuildingName(buildingId) {
 /* ─────────────────── Paket İsmi Getter'ı ─────────────────── */
 
 export function getPackName(packId) {
-  const era = state.era.current;
-  return PACK_NAMES[era]?.[packId] || PACK_NAMES[1][packId];
+  return PACKS_DATA[packId]?.name || packId;
 }
 
 /* ─────────────────── Altın Etiketi Getter'ı ─────────────────── */

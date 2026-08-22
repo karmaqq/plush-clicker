@@ -27,6 +27,7 @@ import {
   getTotalProduction,
   getResourceConsumption,
   getBuildingCount,
+  getBuildingProduction,
   getBuildingCost,
   getSellPrice,
   isSellable,
@@ -147,6 +148,7 @@ export function createGoldChip() {
     setRow(wageRow, -wageRate);
     sellDivider.hidden = sellRow.row.hidden && industryRow.row.hidden;
     wageDivider.hidden = industryRow.row.hidden;
+    divider.hidden = sellRow.row.hidden && industryRow.row.hidden && wageRow.row.hidden;
     const netRate = industryGold + autoSellGold - wageRate;
     netRow.value.textContent = (netRate >= 0 ? "+" : "−") + formatNumber(Math.abs(netRate)) + "/s";
     netRow.value.classList.toggle("tt-pos", netRate >= 0);
@@ -620,7 +622,7 @@ export function createPopBlock() {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 const resourceTooltip = createTooltip("resource-tooltip");
-const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null };
+const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null, prodRows: [] };
 
 export function createResourceTile(id, options = {}) {
   const meta = RESOURCES[id];
@@ -754,19 +756,23 @@ function buildResourceTooltip(id) {
   seasonRow.append("Mevsim: ", seasonEl);
   resourceTooltip.element.appendChild(seasonRow);
   const buildingRows = [];
+  tooltipLive.prodRows = [];
   for (const bid of Object.keys(BUILDINGS_DATA)) {
     const b = BUILDINGS_DATA[bid];
     if (b.type !== "producer" || b.outputResource !== id) continue;
     const count = getBuildingCount(bid);
     if (count <= 0) continue;
-    buildingRows.push({ bid, b, count, total: count * b.production });
+    buildingRows.push({ bid, count });
   }
   if (buildingRows.length) {
     for (const r of buildingRows) {
       const row = document.createElement("div");
       row.className = "tt-row";
-      row.append(badge(r.count), getEraBuildingName(r.bid) + ":", strong("+" + formatNumber(r.total) + "/s"));
+      const rateStrong = strong("");
+      rateStrong.textContent = "+" + formatNumber(getBuildingProduction(r.bid) * getSeasonMultiplier(id)) + "/s";
+      row.append(badge(r.count), getEraBuildingName(r.bid) + ":", rateStrong);
       resourceTooltip.element.appendChild(row);
+      tooltipLive.prodRows.push({ bid: r.bid, strong: rateStrong });
     }
   }
   const bonusRows = [];
@@ -838,6 +844,9 @@ function refreshResourceTooltip(snapshot) {
   const productionValue = snapshot ? snapshot.derived[id].production : getTotalProduction(id);
   const consumptionValue = snapshot ? snapshot.derived[id].consumption : getResourceConsumption(id);
   tooltipLive.capEl.textContent = formatCount(current) + " / " + formatCount(capacity);
+  for (const pr of tooltipLive.prodRows) {
+    pr.strong.textContent = "+" + formatNumber(getBuildingProduction(pr.bid) * getSeasonMultiplier(id)) + "/s";
+  }
   tooltipLive.totalEl.textContent = "+" + formatNumber(productionValue) + "/s";
   tooltipLive.consEl.textContent = consumptionValue > 0 ? "−" + formatNumber(consumptionValue) + "/s" : "−";
   const sellable = isSellable(id);

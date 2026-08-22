@@ -381,7 +381,7 @@ export const BUILDINGS_DATA = {
         costMultiplier: 1.17,
         production: 0.100,
         outputResource: "tas",
-        unlock: { type: "building", id: "academy", count: 1 },
+        unlock: { type: "building", id: "academy", count: 5 },
     },
     stoneAtelier: {
         name: "Taş Atölyesi",
@@ -390,7 +390,7 @@ export const BUILDINGS_DATA = {
         costMultiplier: 1.17,
         targetResource: "tas",
         bonusPerLevel: 0.02,
-        unlock: { type: "building", id: "quarry", count: 1 },
+        unlock: { type: "building", id: "quarry", count: 3 },
     },
     mine: {
         name: "Maden",
@@ -419,7 +419,7 @@ export const BUILDINGS_DATA = {
         costMultiplier: 1.18,
         production: 0.050,
         outputResource: "kultur",
-        unlock: { type: "building", id: "academy", count: 5 },
+        unlock: { type: "building", id: "mine", count: 5 },
     },
     amphitheatre: {
         name: "Amfitiyatro",
@@ -437,7 +437,7 @@ export const BUILDINGS_DATA = {
         costMultiplier: 1.18,
         production: 0.040,
         outputResource: "inanc",
-        unlock: { type: "building", id: "academy", count: 5 },
+        unlock: { type: "building", id: "theatre", count: 5 },
     },
     altar: {
         name: "Sunak",
@@ -455,7 +455,7 @@ export const BUILDINGS_DATA = {
         costMultiplier: 1.18,
         production: 0.030,
         outputResource: "ipek",
-        unlock: { type: "building", id: "theatre", count: 3 },
+        unlock: { type: "building", id: "temple", count: 3 },
     },
     loom: {
         name: "Dokuma Tezgahı",
@@ -477,7 +477,13 @@ export const HOUSING_DATA = {
         baseCost: { power: 90, su: 18 },
         costMultiplier: 1.28,
         housingCapacity: 5,
-        unlock: { type: "building", id: "fountain", count: 6 },
+        unlock: {
+            type: "all",
+            conditions: [
+                { type: "building", id: "fountain", count: 6 },
+                { type: "pack", id: "barinma", level: 1 },
+            ],
+        },
     },
     ev: {
         name: "Ev",
@@ -511,7 +517,7 @@ export const STORAGE_DATA = {
         baseCost: { power: 210, yiyecek: 30, tas: 15 },
         costMultiplier: 1.20,
         capacityBonusPerLevel: 0.05,
-        unlock: { type: "building", id: "farm", count: 6 },
+        unlock: { type: "building", id: "farm", count: 5 },
     },
 };
 
@@ -528,127 +534,115 @@ export const ALL_BUILDINGS_DATA = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 export const PACKS_DATA = {
-    clickPower: {
-        name: "Başlangıç Paketi",
+    /* Tek seferlik zincir — maxLevel: 1 */
+    barinma: {
+        name: "Barınma",
+        emoji: "🏠",
+        description: "Nüfusun barınma ihtiyacı karşılanır",
+        maxLevel: 1,
+        baseCost: { bilgi: 50 },
+    },
+    takvim: {
+        name: "Takvim",
+        emoji: "📆",
+        description: "Kaynaklara mevsimsel etkiler uygulanır",
+        maxLevel: 1,
+        baseCost: { bilgi: 100 },
+        unlock: { type: "pack", id: "barinma", level: 1 },
+    },
+    ticaret: {
+        name: "Ticaret",
+        emoji: "🏪",
+        description: "Kaynaklar ile ticaret yapılabilir",
+        maxLevel: 1,
+        baseCost: { bilgi: 150 },
+        unlock: { type: "pack", id: "takvim", level: 1 },
+    },
+
+    /* Yükseltme zinciri — maxLevel: 10, çarpan: 1.20 */
+    uretim: {
+        name: "Üretim",
         emoji: "🛠️",
-        description: "Tüm binaların üretimini %5 artırır",
-        baseCost: { bilgi: 30 },
+        description: "Binaların üretimini %10 artırır",
+        maxLevel: 10,
         costMultiplier: 1.20,
-        productionBonusPerLevel: 0.05,
+        baseCost: { bilgi: 30, power: 15 },
+        productionBonusPerLevel: 0.10,
+        unlock: { type: "building", id: "academy", count: 1 },
     },
-    critClick: {
-        name: "Çiftlik Paketi",
-        emoji: "💥",
-        description: "Güç üretimini %8 artırır",
-        baseCost: { bilgi: 70 },
-        costMultiplier: 1.20,
-        powerBonusPerLevel: 0.08,
-        unlock: { type: "pack", id: "clickPower", level: 1 },
-    },
-    autoClick: {
-        name: "Madenci Paketi",
-        emoji: "🔧",
-        description: "İşlenmiş ve craft ürün üretimini %6 artırır",
-        baseCost: { bilgi: 160 },
-        costMultiplier: 1.20,
-        productBonusPerLevel: 0.06,
-        unlock: { type: "pack", id: "critClick", level: 1 },
-    },
-    powerPatronage: {
-        name: "Bilge Paketi",
-        emoji: "⚔️",
+    guc: {
+        name: "Güç",
+        emoji: "⚡",
         description: "Güç üretimini %10 artırır",
-        baseCost: { bilgi: 380 },
+        maxLevel: 10,
         costMultiplier: 1.20,
+        baseCost: { bilgi: 70, power: 35 },
         powerBonusPerLevel: 0.10,
-        unlock: { type: "pack", id: "autoClick", level: 1 },
+        unlock: { type: "pack", id: "uretim", level: 1 },
     },
-    metalIsleme: {
-        name: "Savaşçı Paketi",
-        emoji: "⚙️",
-        description: "İşlenmiş ve craft ürün üretimini %8 artırır",
-        baseCost: { bilgi: 850 },
+    sanayi: {
+        name: "Sanayi",
+        emoji: "🏭",
+        description: "Sanayi binalarının üretimini %20 artırır",
+        maxLevel: 10,
         costMultiplier: 1.20,
-        productBonusPerLevel: 0.08,
-        unlock: { type: "pack", id: "powerPatronage", level: 1 },
+        baseCost: { bilgi: 160, tas: 80 },
+        industryBonusPerLevel: 0.20,
+        unlock: {
+            type: "all",
+            conditions: [
+                { type: "pack", id: "guc", level: 1 },
+                { type: "building", id: "quarry", count: 1 },
+            ],
+        },
     },
-    eritme: {
-        name: "Ticaret Paketi",
-        emoji: "🔨",
-        description: "Tüm bina maliyetlerini %2 azaltır",
-        baseCost: { bilgi: 1200 },
+    depolama: {
+        name: "Depolama",
+        emoji: "📦",
+        description: "Depolama kapasitesini %10 artırır",
+        maxLevel: 10,
         costMultiplier: 1.20,
-        costDiscountPerLevel: 0.02,
-        unlock: { type: "pack", id: "metalIsleme", level: 1 },
+        baseCost: { bilgi: 300, maden: 150 },
+        storageBonusPerLevel: 0.10,
+        unlock: { type: "pack", id: "sanayi", level: 1 },
     },
-    yazi: {
-        name: "İnanç Paketi",
-        emoji: "📖",
-        description: "Tüm binaların üretimini %5 artırır",
-        baseCost: { bilgi: 2800 },
-        costMultiplier: 1.20,
-        productionBonusPerLevel: 0.05,
-        unlock: { type: "pack", id: "metalIsleme", level: 1 },
-    },
-    isciBilimi: {
-        name: "İpek Yolu Paketi",
+    isGucu: {
+        name: "İş Gücü",
         emoji: "👷",
-        description: "Sanayi işçilerinin üretimini %10 artırır",
-        baseCost: { bilgi: 240 },
+        description: "Sanayideki işçilerin üretim gücünü %10 artırır",
+        maxLevel: 10,
         costMultiplier: 1.20,
+        baseCost: { bilgi: 450, demir: 100 },
         workerBonusPerLevel: 0.10,
-        unlock: { type: "building", id: "academy", count: 3 },
-    },
-    depoBilimi: {
-        name: "İmparatorluk",
-        emoji: "🏗️",
-        description: "Tüm kaynak depo kapasitelerini %5 artırır",
-        baseCost: { bilgi: 500 },
-        costMultiplier: 1.20,
-        storageBonusPerLevel: 0.05,
-        unlock: { type: "building", id: "academy", count: 3 },
-    },
-    maliyetBilimi: {
-        name: "Efsane Paketi",
-        emoji: "📐",
-        description: "Tüm bina maliyetlerini %2 azaltır",
-        baseCost: { bilgi: 800 },
-        costMultiplier: 1.20,
-        costDiscountPerLevel: 0.02,
-        unlock: { type: "building", id: "silkWorkshop", count: 1 },
-    },
-    craftAtolyesi: {
-        name: "Kutsal Paket",
-        emoji: "🔨",
-        description: "İşlenmiş ve craft ürün üretimini %8 artırır",
-        baseCost: { bilgi: 640 },
-        costMultiplier: 1.20,
-        productBonusPerLevel: 0.08,
-        unlock: { type: "pack", id: "autoClick", level: 1 },
-    },
-    ticaretBilimi: {
-        name: "Son Paket",
-        emoji: "📈",
-        description: "Tüccar sıklığını ve teklif boyutunu %50 artırır",
-        baseCost: { bilgi: 500, ipek: 5 },
-        costMultiplier: 1.20,
-        tradeBonusPerLevel: 0.50,
-        unlock: { type: "building", id: "theatre", count: 3 },
+        unlock: { type: "pack", id: "depolama", level: 1 },
     },
     otoSatis: {
-        name: "Ticaret Senedi",
+        name: "Otomatik Satış",
         emoji: "💰",
-        description: "Sanayi ürünleri için otomatik satış yüzdesi açar (seviye başına +%10)",
-        baseCost: { bilgi: 78 },
-        costMultiplier: 1.50,
+        description: "Otomatik satış sistemini aktif eder (seviye başına +%10 limit)",
         maxLevel: 10,
+        costMultiplier: 1.20,
+        baseCost: { bilgi: 600, altin: 200 },
         autoSellPerLevel: 0.10,
-        unlock: { type: "building", id: "academy", count: 3 },
+        unlock: { type: "pack", id: "isGucu", level: 1 },
+    },
+    mimari: {
+        name: "Mimari",
+        emoji: "💸",
+        description: "Tüm binaların maliyetini %2 azaltır",
+        maxLevel: 10,
+        costMultiplier: 1.20,
+        baseCost: { bilgi: 800, altin: 150 },
+        costDiscountPerLevel: 0.02,
+        unlock: { type: "pack", id: "otoSatis", level: 1 },
     },
 };
 
 export const AUTO_SELL_PACK_ID = "otoSatis";
 export const AUTO_SELL_STEP_PCT = 10;
+export const CALENDAR_PACK_ID = "takvim";
+export const HOUSING_PACK_ID = "barinma";
+export const TRADE_PACK_ID = "ticaret";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          SANAYİ                                           */
@@ -687,7 +681,7 @@ export const INDUSTRY_DATA = {
             type: "all",
             conditions: [
                 { type: "industry", id: "blacksmith" },
-                { type: "pack", id: "metalIsleme", level: 1 },
+                { type: "pack", id: "sanayi", level: 1 },
             ],
         },
     },
@@ -763,7 +757,7 @@ export const INDUSTRY_DATA = {
             type: "all",
             conditions: [
                 { type: "industry", id: "kumasAtolyesi" },
-                { type: "pack", id: "yazi", level: 1 },
+                { type: "pack", id: "ticaret", level: 1 },
             ],
         },
     },

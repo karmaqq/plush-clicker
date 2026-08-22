@@ -2,17 +2,20 @@
 /*                          PANEL ARAYUZLERI                                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-import { triggerShake } from "./utils.js";
 import {
   BUILDINGS_DATA,
   PACKS_DATA,
   INDUSTRY_DATA,
   STORAGE_DATA,
+  CALENDAR_PACK_ID,
+  HOUSING_PACK_ID,
+  TRADE_PACK_ID,
 } from "./game-data.js";
 import {
   state,
   getWorkerCount,
   hasInfoProduction,
+  getPackCount,
   resetGame,
   onChange,
 } from "./game-core.js";
@@ -93,7 +96,10 @@ export function createCenterPanel() {
     for (const id of Object.keys(tileMap)) {
       tileMap[id].update(snapshot);
     }
-    const themes = SEASON_TILE_THEMES[state.season.id] || {};
+    const themes =
+      getPackCount(CALENDAR_PACK_ID) > 0
+        ? SEASON_TILE_THEMES[state.season.id] || {}
+        : {};
     for (const id of Object.keys(tileMap)) {
       const el = tileMap[id].element;
       const active = Object.keys(themes).find((name) => themes[name].has(id));
@@ -135,47 +141,87 @@ export function createLeftPanel() {
   for (const [id, data] of Object.entries(BUILDINGS_DATA)) {
     buildingGrid.appendChild(createBuildingCard(id, data).element);
   }
+  const packPage = document.createElement("div");
+  packPage.className = "pack-page";
+  packPage.hidden = true;
   const packList = document.createElement("div");
   packList.className = "upgrade-list";
-  packList.hidden = true;
   for (const id of Object.keys(PACKS_DATA)) {
     packList.appendChild(createPackCard(id, PACKS_DATA[id]));
   }
-  panel.append(tabBar, buildingGrid, packList);
+  const packEmptyNote = document.createElement("div");
+  packEmptyNote.className = "pack-empty-note";
+  packEmptyNote.textContent = "Henüz biten paket yok";
+  const packToggleBtn = document.createElement("button");
+  packToggleBtn.type = "button";
+  packToggleBtn.className = "pack-toggle-btn";
+  packPage.append(packList, packEmptyNote, packToggleBtn);
+  panel.append(tabBar, buildingGrid, packPage);
+  let showFinished = false;
+  const finishRank = new Map();
+  let finishCounter = 0;
+  function syncFinishRanks() {
+    for (const id of Object.keys(PACKS_DATA)) {
+      if (!finishRank.has(id) && getPackCount(id) >= PACKS_DATA[id].maxLevel) {
+        finishRank.set(id, ++finishCounter);
+      }
+    }
+  }
+  function reorderPacks() {
+    syncFinishRanks();
+    const sorted = [...packList.children].sort((a, b) => {
+      const aRank = finishRank.get(a.dataset.packId);
+      const bRank = finishRank.get(b.dataset.packId);
+      if (aRank !== undefined && bRank !== undefined) return bRank - aRank;
+      if (aRank !== undefined) return -1;
+      if (bRank !== undefined) return 1;
+      return 0;
+    });
+    for (const el of sorted) packList.appendChild(el);
+  }
+  function applyPackView() {
+    packList.classList.toggle("finished-view", showFinished);
+    packToggleBtn.textContent = showFinished ? "Devam Edenler" : "Bitenler";
+    reorderPacks();
+    const anyFinished = Object.keys(PACKS_DATA).some(
+      (id) => getPackCount(id) >= PACKS_DATA[id].maxLevel
+    );
+    packEmptyNote.hidden = !(showFinished && !anyFinished);
+  }
+  packToggleBtn.addEventListener("click", () => {
+    showFinished = !showFinished;
+    applyPackView();
+  });
   let activeTab = "buildings";
   buildingTab.addEventListener("click", () => {
     activeTab = "buildings";
     buildingTab.classList.add("active");
     packTab.classList.remove("active");
     buildingGrid.hidden = false;
-    packList.hidden = true;
+    packPage.hidden = true;
   });
   packTab.addEventListener("click", () => {
-    if (!hasInfoProduction()) {
-      triggerShake(packTab);
-      return;
-    }
     activeTab = "packs";
     packTab.classList.add("active");
     buildingTab.classList.remove("active");
     buildingGrid.hidden = true;
-    packList.hidden = false;
+    packPage.hidden = false;
   });
   function updateTabs() {
     const infoReady = hasInfoProduction();
-    packTab.classList.toggle("locked", !infoReady);
-    packTab.textContent = infoReady ? "Paketler" : " Paketler";
-    packTab.title = infoReady ? "" : "Bilgi üretimiyle açılır (ilk Akademi)";
+    packTab.hidden = !infoReady;
     if (!infoReady && activeTab === "packs") {
       activeTab = "buildings";
       buildingTab.classList.add("active");
       packTab.classList.remove("active");
       buildingGrid.hidden = false;
-      packList.hidden = true;
+      packPage.hidden = true;
     }
   }
   onChange(updateTabs);
+  onChange(applyPackView);
   updateTabs();
+  applyPackView();
   return panel;
 }
 
@@ -214,6 +260,16 @@ export function createRightPanel() {
   }
   industryTab.addEventListener("click", () => showTab("industry"));
   tradeTab.addEventListener("click", () => showTab("trade"));
+  function updatePackGates() {
+    const unlocked = getPackCount(TRADE_PACK_ID) > 0;
+    tradeTab.hidden = !unlocked;
+    if (!unlocked) {
+      if (activeTab === "trade") showTab("industry");
+      else tradeSection.section.hidden = true;
+    }
+  }
+  onChange(updatePackGates);
+  updatePackGates();
   return panel;
 }
 
@@ -235,6 +291,8 @@ export function createHeaderPanel() {
   const seasonChip = createSeasonChip();
   const goldChip = createGoldChip();
   const eraChip = createEraChip();
+  const barakaChip = createHousingChip("baraka");
+  const evChip = createHousingChip("ev");
   const resetBtn = document.createElement("button");
   resetBtn.className = "reset-btn";
   resetBtn.textContent = "Sıfırla";
@@ -245,14 +303,22 @@ export function createHeaderPanel() {
     }
   });
   right.append(
-    createHousingChip("baraka"),
-    createHousingChip("ev"),
+    barakaChip,
+    evChip,
     seasonChip.el,
     goldChip.el,
     eraChip.el,
     resetBtn
   );
   panel.append(strip.el, center, right);
+  function updatePackGates() {
+    const hasCalendar = getPackCount(CALENDAR_PACK_ID) > 0;
+    const hasHousing = getPackCount(HOUSING_PACK_ID) > 0;
+    seasonChip.el.hidden = !hasCalendar;
+    barakaChip.hidden = !hasHousing;
+    evChip.hidden = !hasHousing;
+    popBlock.el.hidden = !hasHousing;
+  }
   function update() {
     const alive = Math.floor(getPopulationCurrent());
     const capacity = getPopulationCapacity();
@@ -263,7 +329,9 @@ export function createHeaderPanel() {
     seasonChip.update();
     eraChip.update();
   }
+  onChange(updatePackGates);
   onChange(update);
+  updatePackGates();
   update();
   return panel;
 }

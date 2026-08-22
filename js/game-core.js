@@ -26,6 +26,8 @@ import {
   PACKS_DATA,
   INDUSTRY_DATA,
   AUTO_SELL_PACK_ID,
+  CALENDAR_PACK_ID,
+  TRADE_PACK_ID,
   TRADE_ITEM_POOL,
 } from "./game-data.js";
 import { canAfford } from "./utils.js";
@@ -196,27 +198,40 @@ export function getOutputMultiplier(resource) {
     }
   }
 
-  const meta = RESOURCES[resource];
-
   for (const id of Object.keys(PACKS_DATA)) {
     const pack = PACKS_DATA[id];
-    if (pack.productionBonusPerLevel) {
-      sum += getPackCount(id) * pack.productionBonusPerLevel;
-    }
     if (resource === "power" && pack.powerBonusPerLevel) {
       sum += getPackCount(id) * pack.powerBonusPerLevel;
-    }
-    if (
-      meta &&
-      meta.tier !== 0 &&
-      meta.tier !== -1 &&
-      pack.productBonusPerLevel
-    ) {
-      sum += getPackCount(id) * pack.productBonusPerLevel;
     }
   }
 
   return 1 + sum;
+}
+
+/* ─────────────────── Bina Paket Carpani Hesaplayici ─────────────────── */
+
+export function getBuildingPackMultiplier() {
+  let bonus = 0;
+  for (const id of Object.keys(PACKS_DATA)) {
+    const pack = PACKS_DATA[id];
+    if (pack.productionBonusPerLevel) {
+      bonus += getPackCount(id) * pack.productionBonusPerLevel;
+    }
+  }
+  return 1 + bonus;
+}
+
+/* ─────────────────── Sanayi Paket Carpani Hesaplayici ─────────────────── */
+
+export function getIndustryPackMultiplier() {
+  let bonus = 0;
+  for (const id of Object.keys(PACKS_DATA)) {
+    const pack = PACKS_DATA[id];
+    if (pack.industryBonusPerLevel) {
+      bonus += getPackCount(id) * pack.industryBonusPerLevel;
+    }
+  }
+  return 1 + bonus;
 }
 
 /* ─────────────────── Maliyet Indirimi Hesaplayici ─────────────────── */
@@ -313,12 +328,18 @@ export function getResourceProduction(resource) {
   }
 
   if (base === 0) return 0;
-  return base * getOutputMultiplier(resource) * getSeasonMultiplier(resource);
+  return (
+    base *
+    getOutputMultiplier(resource) *
+    getBuildingPackMultiplier() *
+    getSeasonMultiplier(resource)
+  );
 }
 
 /* ─────────────────── Mevsim Carpani Hesaplayici ─────────────────── */
 
 export function getSeasonMultiplier(resource) {
+  if (getPackCount(CALENDAR_PACK_ID) < 1) return 1;
   const season = SEASONS_DATA[state.season.id];
   if (!season || !season.modifiers) return 1;
   const value = season.modifiers[resource];
@@ -388,7 +409,11 @@ export function getIndustryOutput(resource) {
   }
 
   if (total === 0) return 0;
-  return total * getOutputMultiplier(resource) * getWorkerMultiplier();
+  return (
+    total *
+    getIndustryPackMultiplier() *
+    getWorkerMultiplier()
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -463,7 +488,7 @@ export function getBuildingProduction(id) {
   const base = getBuildingCount(id) * building.production;
   if (base === 0) return 0;
 
-  return base * getOutputMultiplier(building.outputResource);
+  return base * getOutputMultiplier(building.outputResource) * getBuildingPackMultiplier();
 }
 
 /* ─────────────────── Bina Bonus Orani Hesaplayici ─────────────────── */
@@ -703,7 +728,7 @@ export function getBuildingCost(id) {
 
 export function getPackCost(id) {
   const pack = PACKS_DATA[id];
-  const multiplier = Math.pow(pack.costMultiplier, getPackCount(id));
+  const multiplier = Math.pow(pack.costMultiplier ?? 1, getPackCount(id));
   const cost = {};
 
   for (const [resource, amount] of Object.entries(pack.baseCost)) {
@@ -955,7 +980,7 @@ export function produce(silent) {
         (entry.workers *
           rate *
           levelMult *
-          getOutputMultiplier(resource) *
+          getIndustryPackMultiplier() *
           getWorkerMultiplier()) /
         TICKS_PER_SECOND;
       if (capacity - getResource(resource) < produced - 1e-9) {
@@ -992,7 +1017,7 @@ export function produce(silent) {
         (entry.workers *
           rate *
           levelMult *
-          getOutputMultiplier(resource) *
+          getIndustryPackMultiplier() *
           getWorkerMultiplier()) /
         TICKS_PER_SECOND;
       state.resources[resource] = Number.isFinite(capacity)
@@ -1028,7 +1053,9 @@ export function produce(silent) {
     changed = true;
   }
 
-  updateMerchants(1 / TICKS_PER_SECOND);
+  if (getPackCount(TRADE_PACK_ID) > 0) {
+    updateMerchants(1 / TICKS_PER_SECOND);
+  }
 
   if (changed && !silent) {
     emit(snapshot);

@@ -199,3 +199,50 @@
 .left-panel .upgrade-list {
     width: 100%;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      PAKET GORUNTULEME SAYFASI                            */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.pack-page {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.pack-empty-note {
+    flex: none;
+    padding: 0.5rem 0.5rem 0;
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: clamp(0.75rem, 1.4vw, 0.9rem);
+    color: #6b7683;
+}
+
+.pack-toggle-btn {
+    flex: none;
+    width: 100%;
+    margin-top: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+    font-weight: 700;
+    color: #8895a3;
+    background: #232b35;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.625rem;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.pack-toggle-btn:hover {
+    background: #2b343f;
+    color: #d7dde4;
+}
+
+.left-panel .upgrade-list.finished-view .upgrade-card:not(.finished),
+.left-panel .upgrade-list:not(.finished-view) .upgrade-card.finished {
+    display: none;
+}

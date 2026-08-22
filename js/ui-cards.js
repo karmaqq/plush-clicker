@@ -28,9 +28,12 @@ import {
   getBuildingCost,
   getBuildingProduction,
   getBuildingBonus,
+  getBuildingPackMultiplier,
   getCapacityBonus,
   getOutputMultiplier,
   getSeasonMultiplier,
+  getIndustryPackMultiplier,
+  getWorkerMultiplier,
   getResource,
   getPackCount,
   getTotalProduction,
@@ -452,11 +455,12 @@ export function buildBuildingTooltip(id, data) {
     tooltipLive.bonusTotalEl = prodValue;
   } else {
     const seasonMult = getSeasonMultiplier(data.outputResource);
-    const outputMult = getOutputMultiplier(data.outputResource);
+    const packMult = getBuildingPackMultiplier();
+    const outputMult = getOutputMultiplier(data.outputResource) * packMult;
     effectLabel.textContent = getEraResourceName(data.outputResource) + " Üretimi:";
     const prodValue = document.createElement("span");
     prodValue.className = "effect-value";
-    prodValue.append("+", formatNumber(data.production * getBuildingCount(id) * outputMult * seasonMult), "/s");
+    prodValue.append("+", formatNumber(getBuildingProduction(id) * seasonMult), "/s");
     effectLine.append(effectLabel, " ", prodValue);
     effect.appendChild(effectLine);
     const seviyeLine = document.createElement("div");
@@ -510,9 +514,9 @@ export function refreshBuildingTooltip() {
   const cost = getBuildingCost(id);
   if (tooltipLive.effectValue) {
     const seasonMult = getSeasonMultiplier(data.outputResource);
-    const outputMult = getOutputMultiplier(data.outputResource);
+    const outputMult = getOutputMultiplier(data.outputResource) * getBuildingPackMultiplier();
     tooltipLive.effectValue.textContent = "";
-    tooltipLive.effectValue.append("+", formatNumber(data.production * getBuildingCount(id) * outputMult * seasonMult), "/s");
+    tooltipLive.effectValue.append("+", formatNumber(getBuildingProduction(id) * seasonMult), "/s");
     if (tooltipLive.seviyeEl) {
       tooltipLive.seviyeEl.textContent = "";
       tooltipLive.seviyeEl.append("+", formatNumber(data.production * outputMult * seasonMult), "/s");
@@ -552,8 +556,7 @@ function getBonusSources(resourceId) {
     if (count <= 0) continue;
     let bonusPerLevel = 0;
     if (p.productionBonusPerLevel) bonusPerLevel += p.productionBonusPerLevel;
-    if (p.powerBonusPerLevel) bonusPerLevel += p.powerBonusPerLevel;
-    if (p.productBonusPerLevel) bonusPerLevel += p.productBonusPerLevel;
+    if (resourceId === "power" && p.powerBonusPerLevel) bonusPerLevel += p.powerBonusPerLevel;
     if (bonusPerLevel <= 0) continue;
     sources.push({ name: getEraPackName(pid), value: Math.round(count * bonusPerLevel * 100) });
   }
@@ -566,7 +569,7 @@ function getBonusSources(resourceId) {
 
 export const industryTooltip = createTooltip("industry-tooltip");
 
-const industryTooltipLive = { id: null, rows: [], costsEl: null, costDividerEl: null };
+const industryTooltipLive = { id: null, rows: [], effOutEl: null, costsEl: null, costDividerEl: null };
 
 /* ─────────────────── Sanayi Kart Bileseni ─────────────────── */
 export function createIndustryCard(id, data) {
@@ -952,9 +955,7 @@ function buildIndustryTooltip(id) {
   effectLabel.textContent = "Üretim:";
   const effectValue = document.createElement("span");
   effectValue.className = "effect-value";
-  effectValue.textContent = Object.entries(data.output)
-    .map(([r, rate]) => getEraResourceEmoji(r) + " +" + formatNumber(rate) + "/s · işçi")
-    .join("  ");
+  effectValue.textContent = industryEffectiveOutputText(id);
   effectLine.append(effectLabel, " ", effectValue);
   effect.appendChild(effectLine);
   industryTooltip.element.appendChild(effect);
@@ -964,6 +965,7 @@ function buildIndustryTooltip(id) {
   const costs = document.createElement("div");
   costs.className = "tooltip-costs";
   industryTooltipLive.id = id;
+  industryTooltipLive.effOutEl = effectValue;
   industryTooltipLive.costsEl = costs;
   industryTooltipLive.costDividerEl = costDivider;
   if (cost) {
@@ -982,6 +984,9 @@ function buildIndustryTooltip(id) {
 function refreshIndustryTooltip() {
   if (industryTooltipLive.id == null) return;
   const id = industryTooltipLive.id;
+  if (industryTooltipLive.effOutEl) {
+    industryTooltipLive.effOutEl.textContent = industryEffectiveOutputText(id);
+  }
   const cost = getCurrentIndustryCost(id);
   if (!cost) {
     industryTooltipLive.costDividerEl.hidden = true;
@@ -991,6 +996,16 @@ function refreshIndustryTooltip() {
   industryTooltipLive.costDividerEl.hidden = false;
   industryTooltipLive.costsEl.hidden = false;
   refreshCostRows(industryTooltipLive.rows, cost, getResource, getNetRate);
+}
+
+/* ─────────────────── Sanayi Etkin Cikti Metni ─────────────────── */
+function industryEffectiveOutputText(id) {
+  const levelMult = getIndustryLevelMultiplier(id);
+  const packMult = getIndustryPackMultiplier();
+  const workerMult = getWorkerMultiplier();
+  return Object.entries(INDUSTRY_DATA[id].output)
+    .map(([r, rate]) => getEraResourceEmoji(r) + " +" + formatNumber(rate * levelMult * packMult * workerMult) + "/s · işçi")
+    .join("  ");
 }
 
 /* ─────────────────── Guncel Sanayi Maliyeti ─────────────────── */
@@ -1012,6 +1027,7 @@ export function createPackCard(id, data) {
   const resourceId = Object.keys(data.baseCost)[0];
   const card = document.createElement("div");
   card.className = "upgrade-card resource-" + resourceId;
+  card.dataset.packId = id;
   const lockOverlay = createLockOverlay();
   const head = document.createElement("div");
   head.className = "upgrade-head";
@@ -1043,6 +1059,11 @@ export function createPackCard(id, data) {
     btn.appendChild(span);
     costSpans[resource] = span;
   }
+  const doneText = document.createElement("span");
+  doneText.className = "upgrade-done-text";
+  doneText.textContent = "Tamamlandı";
+  doneText.hidden = true;
+  btn.appendChild(doneText);
   const packTooltip = createTooltip("pack-tooltip");
   let tooltipActive = false;
   btn.addEventListener("mouseenter", () => {
@@ -1073,25 +1094,31 @@ export function createPackCard(id, data) {
     descLine.className = "tooltip-effect-line";
     descLine.textContent = packData.description;
     effectDiv.appendChild(descLine);
-    const effectLine = document.createElement("div");
-    effectLine.className = "tooltip-effect-line";
-    const effectLabel = document.createElement("span");
-    effectLabel.className = "effect-label";
-    effectLabel.textContent = "Toplam etki:";
-    const effectValue = document.createElement("span");
-    effectValue.className = "effect-value";
-    effectLine.append(effectLabel, " ", effectValue);
-    effectDiv.appendChild(effectLine);
-    const perLine = document.createElement("div");
-    perLine.className = "tooltip-effect-line";
-    const perLabel = document.createElement("span");
-    perLabel.className = "effect-label";
-    perLabel.textContent = "Seviye bonusu:";
-    const perValue = document.createElement("span");
-    perValue.className = "effect-value";
-    perValue.textContent = getPerLevelText(packData);
-    perLine.append(perLabel, " ", perValue);
-    effectDiv.appendChild(perLine);
+    const hasPerLevel = Object.keys(packData).some((k) => k.endsWith("PerLevel"));
+    if (hasPerLevel) {
+      const effectLine = document.createElement("div");
+      effectLine.className = "tooltip-effect-line";
+      const effectLabel = document.createElement("span");
+      effectLabel.className = "effect-label";
+      effectLabel.textContent = "Toplam etki:";
+      const effectValue = document.createElement("span");
+      effectValue.className = "effect-value";
+      effectLine.append(effectLabel, " ", effectValue);
+      effectDiv.appendChild(effectLine);
+      const perLine = document.createElement("div");
+      perLine.className = "tooltip-effect-line";
+      const perLabel = document.createElement("span");
+      perLabel.className = "effect-label";
+      perLabel.textContent = "Seviye bonusu:";
+      const perValue = document.createElement("span");
+      perValue.className = "effect-value";
+      perValue.textContent = getPerLevelText(packData);
+      perLine.append(perLabel, " ", perValue);
+      effectDiv.appendChild(perLine);
+      ttLive.totalEl = effectValue;
+    } else {
+      ttLive.totalEl = null;
+    }
     packTooltip.element.appendChild(effectDiv);
     const divider = document.createElement("div");
     divider.className = "tt-divider";
@@ -1133,22 +1160,25 @@ export function createPackCard(id, data) {
     }
     card.hidden = false;
     const count = getPackCount(id);
-    level.textContent = "Seviye " + count;
+    level.textContent = count + "/" + data.maxLevel;
     let effectText = "";
-    if (data.productionBonusPerLevel) { effectText = "Tüm üretim: +%" + Math.round(count * data.productionBonusPerLevel * 100); }
+    if (data.productionBonusPerLevel) { effectText = "Bina üretimi: +%" + Math.round(count * data.productionBonusPerLevel * 100); }
     else if (data.powerBonusPerLevel) { effectText = "Güç üretimi: +%" + Math.round(count * data.powerBonusPerLevel * 100); }
+    else if (data.industryBonusPerLevel) { effectText = "Sanayi üretimi: +%" + Math.round(count * data.industryBonusPerLevel * 100); }
     else if (data.costDiscountPerLevel) { effectText = "Bina maliyeti: −%" + Math.round(count * data.costDiscountPerLevel * 100); }
-    else if (data.productBonusPerLevel) { effectText = "Ürün Üretimi: +%" + Math.round(count * data.productBonusPerLevel * 100); }
     else if (data.workerBonusPerLevel) { effectText = "İşçi üretimi: +%" + Math.round(count * data.workerBonusPerLevel * 100); }
     else if (data.storageBonusPerLevel) { effectText = "Kapasite: +%" + Math.round(count * data.storageBonusPerLevel * 100); }
-    else if (data.tradeBonusPerLevel) { effectText = "Ticaret: +%" + Math.round(count * data.tradeBonusPerLevel * 100); }
     else if (data.autoSellPerLevel) { effectText = "Otomatik satış limiti: %" + count * AUTO_SELL_STEP_PCT; }
     effect.textContent = effectText;
     const cost = getPackCost(id);
     const packMaxed = data.maxLevel && count >= data.maxLevel;
+    card.classList.toggle("finished", Boolean(packMaxed));
+    doneText.hidden = !packMaxed;
     let affordable = true;
     for (const [resource, amount] of Object.entries(cost)) {
       const span = costSpans[resource];
+      if (packMaxed) { span.hidden = true; continue; }
+      span.hidden = false;
       const value = getResource(resource);
       if (value >= amount) {
         stableOk[resource] = true;
@@ -1173,11 +1203,10 @@ export function createPackCard(id, data) {
 function getPerLevelText(data) {
   if (data.productionBonusPerLevel) return "%" + Math.round(data.productionBonusPerLevel * 100);
   if (data.powerBonusPerLevel) return "%" + Math.round(data.powerBonusPerLevel * 100);
+  if (data.industryBonusPerLevel) return "%" + Math.round(data.industryBonusPerLevel * 100);
   if (data.costDiscountPerLevel) return "%" + Math.round(data.costDiscountPerLevel * 100);
-  if (data.productBonusPerLevel) return "%" + Math.round(data.productBonusPerLevel * 100);
   if (data.workerBonusPerLevel) return "%" + Math.round(data.workerBonusPerLevel * 100);
   if (data.storageBonusPerLevel) return "%" + Math.round(data.storageBonusPerLevel * 100);
-  if (data.tradeBonusPerLevel) return "%" + Math.round(data.tradeBonusPerLevel * 100);
   if (data.autoSellPerLevel) return "+" + AUTO_SELL_STEP_PCT + "% limit";
   return "%0";
 }
@@ -1185,11 +1214,10 @@ function getPerLevelText(data) {
 function getTotalEffectText(data, count) {
   if (data.productionBonusPerLevel) return "+" + Math.round(count * data.productionBonusPerLevel * 100) + "%";
   if (data.powerBonusPerLevel) return "+" + Math.round(count * data.powerBonusPerLevel * 100) + "%";
+  if (data.industryBonusPerLevel) return "+" + Math.round(count * data.industryBonusPerLevel * 100) + "%";
   if (data.costDiscountPerLevel) return "−" + Math.round(count * data.costDiscountPerLevel * 100) + "%";
-  if (data.productBonusPerLevel) return "+" + Math.round(count * data.productBonusPerLevel * 100) + "%";
   if (data.workerBonusPerLevel) return "+" + Math.round(count * data.workerBonusPerLevel * 100) + "%";
   if (data.storageBonusPerLevel) return "+" + Math.round(count * data.storageBonusPerLevel * 100) + "%";
-  if (data.tradeBonusPerLevel) return "+" + Math.round(count * data.tradeBonusPerLevel * 100) + "%";
   if (data.autoSellPerLevel) return "%" + count * AUTO_SELL_STEP_PCT + " limit";
   return "+0%";
 }
