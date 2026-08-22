@@ -18,6 +18,7 @@ import {
   RESOURCES,
   BUILDINGS_DATA,
   HOUSING_DATA,
+  INDUSTRY_DATA,
 } from "./game-data.js";
 import {
   state,
@@ -35,7 +36,10 @@ import {
   getNetRate,
   getSeasonMultiplier,
   getWorkerCount,
-  getIndustryOutput,
+  getIndustryOutputById,
+  getIndustryBuilt,
+  getIndustryWorkers,
+  getIndustryLevelMultiplier,
   getSeason,
   getSeasonTimer,
   getUnlock,
@@ -44,6 +48,7 @@ import {
   getPopulationAlive,
   getEra,
   onChange,
+  TICK_MS,
 } from "./game-core.js";
 import {
   getPopulationCurrent,
@@ -62,6 +67,8 @@ import {
   getResourceName as getEraResourceName,
   getResourceEmoji as getEraResourceEmoji,
   getBuildingName as getEraBuildingName,
+  getBuildingEmoji as getEraBuildingEmoji,
+  getEraName,
   getGoldLabel,
   ERA_DATA,
   ERA_CHIP_POP_THRESHOLD,
@@ -90,7 +97,15 @@ export function createGoldChip() {
   sellDetail.className = "tt-subs";
   const sellDivider = document.createElement("div");
   sellDivider.className = "tt-divider";
-  const industryRow = createGoldRow("Darphane:");
+  const goldProducers = Object.keys(INDUSTRY_DATA).filter(
+    (id) => INDUSTRY_DATA[id].output.altin
+  );
+  const industryRows = new Map(
+    goldProducers.map((id) => [
+      id,
+      createGoldRow(INDUSTRY_DATA[id].emoji + " " + INDUSTRY_DATA[id].name + ":"),
+    ])
+  );
   const wageDivider = document.createElement("div");
   wageDivider.className = "tt-divider";
   const wageRow = createGoldRow("İşçi maaşları:");
@@ -102,7 +117,7 @@ export function createGoldChip() {
     sellRow.row,
     sellDetail,
     sellDivider,
-    industryRow.row,
+    ...[...industryRows.values()].map((row) => row.row),
     wageDivider,
     wageRow.row,
     divider,
@@ -139,16 +154,22 @@ export function createGoldChip() {
   }
   function refresh() {
     title.textContent = getGoldLabel() + " Akışı";
-    const industryGold = getIndustryOutput("altin");
+    let industryGold = 0;
+    let anyIndustry = false;
+    for (const [id, row] of industryRows) {
+      const rate = getIndustryOutputById(id, "altin");
+      industryGold += rate;
+      setRow(row, rate);
+      if (Math.abs(rate) > 0.0001) anyIndustry = true;
+    }
     const { breakdown, total: autoSellGold } = getAutoSellBreakdown();
     const wageRate = getWageRate();
-    setRow(industryRow, industryGold);
     setRow(sellRow, autoSellGold);
     renderSellDetail(breakdown);
     setRow(wageRow, -wageRate);
-    sellDivider.hidden = sellRow.row.hidden && industryRow.row.hidden;
-    wageDivider.hidden = industryRow.row.hidden;
-    divider.hidden = sellRow.row.hidden && industryRow.row.hidden && wageRow.row.hidden;
+    sellDivider.hidden = sellRow.row.hidden && !anyIndustry;
+    wageDivider.hidden = !anyIndustry;
+    divider.hidden = sellRow.row.hidden && !anyIndustry && wageRow.row.hidden;
     const netRate = industryGold + autoSellGold - wageRate;
     netRow.value.textContent = (netRate >= 0 ? "+" : "−") + formatNumber(Math.abs(netRate)) + "/s";
     netRow.value.classList.toggle("tt-pos", netRate >= 0);
@@ -158,7 +179,7 @@ export function createGoldChip() {
     value.textContent = formatCount(getAltin());
     if (active) refresh();
   }
-  setInterval(update, 1000);
+  setInterval(update, TICK_MS);
   update();
   return { el, update };
 }
@@ -444,11 +465,6 @@ function createEraTooltipRow(labelText) {
   return { row, value };
 }
 
-function getEraName(era) {
-  const data = ERA_DATA[era];
-  return data ? data.name : "Bilinmiyor";
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                       MEVSIM CIP ARAYUZU                                  */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -622,7 +638,7 @@ export function createPopBlock() {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 const resourceTooltip = createTooltip("resource-tooltip");
-const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null, prodRows: [] };
+const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null, seasonLabelEl: null, prodRows: [], industryProdRows: [], industryConsRows: [] };
 
 export function createResourceTile(id, options = {}) {
   const meta = RESOURCES[id];
@@ -751,12 +767,16 @@ function buildResourceTooltip(id) {
   const seasonRow = document.createElement("div");
   seasonRow.className = "tt-row tt-season";
   seasonRow.hidden = true;
+  const seasonLabelEl = document.createElement("span");
+  seasonLabelEl.textContent = "Mevsim: ";
   const seasonEl = document.createElement("strong");
   seasonEl.className = "season-up";
-  seasonRow.append("Mevsim: ", seasonEl);
+  seasonRow.append(seasonLabelEl, seasonEl);
   resourceTooltip.element.appendChild(seasonRow);
   const buildingRows = [];
   tooltipLive.prodRows = [];
+  tooltipLive.industryProdRows = [];
+  tooltipLive.industryConsRows = [];
   for (const bid of Object.keys(BUILDINGS_DATA)) {
     const b = BUILDINGS_DATA[bid];
     if (b.type !== "producer" || b.outputResource !== id) continue;
@@ -770,10 +790,27 @@ function buildResourceTooltip(id) {
       row.className = "tt-row";
       const rateStrong = strong("");
       rateStrong.textContent = "+" + formatNumber(getBuildingProduction(r.bid) * getSeasonMultiplier(id)) + "/s";
-      row.append(badge(r.count), getEraBuildingName(r.bid) + ":", rateStrong);
+      row.append(badge(r.count), getEraBuildingEmoji(r.bid) + " " + getEraBuildingName(r.bid) + ":", rateStrong);
       resourceTooltip.element.appendChild(row);
       tooltipLive.prodRows.push({ bid: r.bid, strong: rateStrong });
     }
+  }
+  const industryProdIds = [];
+  for (const iid of Object.keys(INDUSTRY_DATA)) {
+    if (!INDUSTRY_DATA[iid].output[id]) continue;
+    if (getIndustryOutputById(iid, id) <= 0.0001) continue;
+    industryProdIds.push(iid);
+  }
+  for (const iid of industryProdIds) {
+    const ind = INDUSTRY_DATA[iid];
+    const row = document.createElement("div");
+    row.className = "tt-row";
+    const rateStrong = strong("");
+    rateStrong.textContent = "+" + formatNumber(getIndustryOutputById(iid, id)) + "/s";
+    const workerBadge = badge(getIndustryWorkers(iid));
+    row.append(workerBadge, ind.emoji + " " + ind.name + ":", rateStrong);
+    resourceTooltip.element.appendChild(row);
+    tooltipLive.industryProdRows.push({ iid, badgeEl: workerBadge, strong: rateStrong });
   }
   const bonusRows = [];
   for (const bid of Object.keys(BUILDINGS_DATA)) {
@@ -787,11 +824,11 @@ function buildResourceTooltip(id) {
     for (const r of bonusRows) {
       const row = document.createElement("div");
       row.className = "tt-row";
-      row.append(badge(r.count), getEraBuildingName(r.bid) + " ", strong(r.info));
+      row.append(badge(r.count), getEraBuildingEmoji(r.bid) + " " + getEraBuildingName(r.bid) + " ", strong(r.info));
       resourceTooltip.element.appendChild(row);
     }
   }
-  const hasBuildingRows = buildingRows.length > 0 || bonusRows.length > 0;
+  const hasBuildingRows = buildingRows.length > 0 || industryProdIds.length > 0 || bonusRows.length > 0;
   const seasonMult = getSeasonMultiplier(id);
   const hasSeasonRow = seasonMult !== 1;
   capDivider.hidden = false;
@@ -804,6 +841,25 @@ function buildResourceTooltip(id) {
   const totalStrong = strong("");
   totalRow.append("Üretim: ", totalStrong);
   resourceTooltip.element.appendChild(totalRow);
+  const industryConsIds = [];
+  for (const iid of Object.keys(INDUSTRY_DATA)) {
+    if (!INDUSTRY_DATA[iid].input[id]) continue;
+    if (!getIndustryBuilt(iid) || getIndustryWorkers(iid) <= 0) continue;
+    industryConsIds.push(iid);
+  }
+  for (const iid of industryConsIds) {
+    const ind = INDUSTRY_DATA[iid];
+    const workers = getIndustryWorkers(iid);
+    const row = document.createElement("div");
+    row.className = "tt-row";
+    const rateStrong = strong("");
+    rateStrong.textContent = "−" + formatNumber(workers * ind.input[id] * getIndustryLevelMultiplier(iid)) + "/s";
+    rateStrong.style.color = "#ff8a8a";
+    const workerBadge = badge(workers);
+    row.append(workerBadge, ind.emoji + " " + ind.name + ":", rateStrong);
+    resourceTooltip.element.appendChild(row);
+    tooltipLive.industryConsRows.push({ iid, rate: ind.input[id], badgeEl: workerBadge, strong: rateStrong });
+  }
   const consRow = document.createElement("div");
   consRow.className = "tt-total";
   const consStrong = strong("");
@@ -833,6 +889,7 @@ function buildResourceTooltip(id) {
   tooltipLive.sellLabel = sellLabel;
   tooltipLive.seasonRow = seasonRow;
   tooltipLive.seasonEl = seasonEl;
+  tooltipLive.seasonLabelEl = seasonLabelEl;
   refreshResourceTooltip();
 }
 
@@ -847,6 +904,15 @@ function refreshResourceTooltip(snapshot) {
   for (const pr of tooltipLive.prodRows) {
     pr.strong.textContent = "+" + formatNumber(getBuildingProduction(pr.bid) * getSeasonMultiplier(id)) + "/s";
   }
+  for (const ir of tooltipLive.industryProdRows) {
+    ir.strong.textContent = "+" + formatNumber(getIndustryOutputById(ir.iid, id)) + "/s";
+    ir.badgeEl.textContent = String(getIndustryWorkers(ir.iid));
+  }
+  for (const ic of tooltipLive.industryConsRows) {
+    const workers = getIndustryWorkers(ic.iid);
+    ic.strong.textContent = "−" + formatNumber(workers * ic.rate * getIndustryLevelMultiplier(ic.iid)) + "/s";
+    ic.badgeEl.textContent = String(workers);
+  }
   tooltipLive.totalEl.textContent = "+" + formatNumber(productionValue) + "/s";
   tooltipLive.consEl.textContent = consumptionValue > 0 ? "−" + formatNumber(consumptionValue) + "/s" : "−";
   const sellable = isSellable(id);
@@ -856,6 +922,7 @@ function refreshResourceTooltip(snapshot) {
   const seasonMult = getSeasonMultiplier(id);
   tooltipLive.seasonRow.hidden = seasonMult === 1;
   if (seasonMult !== 1) {
+    tooltipLive.seasonLabelEl.textContent = "Mevsim " + getSeason().emoji + ":";
     const pct = (seasonMult - 1) * 100;
     tooltipLive.seasonEl.textContent = (pct >= 0 ? "+" : "−") + Math.round(Math.abs(pct)) + "%";
     tooltipLive.seasonEl.className = pct >= 0 ? "season-up" : "season-down";

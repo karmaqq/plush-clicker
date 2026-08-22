@@ -192,6 +192,44 @@ function computeHappinessBreakdown() {
     });
   }
 
+  /* ═══ LÜKS TIER 4 — Kompozit ürünler ═══ */
+
+  if (alive >= 70 && state.industry.mobilyaAtolyesi?.built) {
+    const mobilyaMet = getResource("mobilya") > 0;
+    if (!mobilyaMet) {
+      const penalty = 4;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "🛋️", label: "Mobilya",
+      delta: mobilyaMet ? 0 : -4, met: mobilyaMet, resId: "mobilya",
+    });
+  }
+
+  if (alive >= 85 && state.industry.heykelAtolyesi?.built) {
+    const heykelMet = getResource("heykel") > 0;
+    if (!heykelMet) {
+      const penalty = 5;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "🏛️", label: "Heykel",
+      delta: heykelMet ? 0 : -5, met: heykelMet, resId: "heykel",
+    });
+  }
+
+  if (alive >= 100 && state.industry.mucevherAtolyesi?.built) {
+    const mucevherMet = getResource("mucevher") > 0;
+    if (!mucevherMet) {
+      const penalty = 6;
+      target -= penalty;
+    }
+    items.push({
+      emoji: "💍", label: "Mücevher",
+      delta: mucevherMet ? 0 : -6, met: mucevherMet, resId: "mucevher",
+    });
+  }
+
   /* ═══ KONUT KONFORU ═══ */
 
   const evCap = getBuildingCount("ev") * HOUSING_DATA.ev.housingCapacity;

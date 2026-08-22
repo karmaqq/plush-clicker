@@ -125,7 +125,7 @@ function createMerchant(id) {
 let activeMerchantId = null;
 
 /* ─────────────────── Aktif Tüccar Getter'ı ─────────────────── */
-export function getActiveMerchant() {
+function getActiveMerchant() {
   if (activeMerchantId !== null) {
     const found = state.trade.merchants.find(m => m.id === activeMerchantId);
     if (found) return found;
@@ -135,13 +135,8 @@ export function getActiveMerchant() {
 }
 
 /* ─────────────────── Aktif Tüccar Değiştirici ─────────────────── */
-export function setActiveMerchant(id) {
+function setActiveMerchant(id) {
   activeMerchantId = id;
-}
-
-/* ─────────────────── Tüccar Sayısı Getter'ı ─────────────────── */
-export function getMerchantCount() {
-  return state.trade.merchants.length;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -181,7 +176,7 @@ export function updateMerchants(delta) {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────── Tüccardan Satın Alma ─────────────────── */
-export function buyFromMerchant(merchantId, resourceId, quantity) {
+function buyFromMerchant(merchantId, resourceId, quantity) {
   const merchant = state.trade.merchants.find(m => m.id === merchantId);
   if (!merchant) return false;
 
@@ -207,7 +202,7 @@ export function buyFromMerchant(merchantId, resourceId, quantity) {
 }
 
 /* ─────────────────── Tüccara Satış ─────────────────── */
-export function sellToMerchant(merchantId, resourceId, quantity) {
+function sellToMerchant(merchantId, resourceId, quantity) {
   const merchant = state.trade.merchants.find(m => m.id === merchantId);
   if (!merchant) return false;
 

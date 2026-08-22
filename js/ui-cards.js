@@ -49,6 +49,7 @@ import {
   getIndustryLevel,
   getIndustryMaxWorkers,
   getIndustryLevelMultiplier,
+  getIndustryOutputById,
   getIndustryCost,
   buildIndustry,
   getIndustryUpgradeCost,
@@ -66,7 +67,7 @@ import {
   UNLOCK_STRATEGIES,
   onChange,
 } from "./game-core.js";
-import { getBuildingName as getEraBuildingName, getResourceEmoji as getEraResourceEmoji, getResourceName as getEraResourceName, getPackName as getEraPackName, getGoldLabel } from "./era.js";
+import { getBuildingName as getEraBuildingName, getBuildingEmoji as getEraBuildingEmoji, getResourceEmoji as getEraResourceEmoji, getResourceName as getEraResourceName, getPackName as getEraPackName, getGoldLabel } from "./era.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                         BINA KARTI ARAYUZU                                 */
@@ -148,7 +149,7 @@ export function createBuildingCard(id, data) {
   if (isHousing) emojiEl.textContent = "👥";
   else if (isStorage) emojiEl.textContent = "📦";
   else if (isCapacityBonus) emojiEl.textContent = "📦";
-  else if (isBonus) emojiEl.textContent = getEraResourceEmoji(data.targetResource);
+  else if (isBonus) emojiEl.textContent = getEraBuildingEmoji(id);
   else emojiEl.textContent = getEraResourceEmoji(resourceId);
   const nameTextEl = buildingNameText();
   name.append(emojiEl, nameTextEl);
@@ -483,7 +484,7 @@ export function buildBuildingTooltip(id, data) {
         bonusLine.className = "tooltip-effect-line";
         const bonusLabel = document.createElement("span");
         bonusLabel.className = "effect-label";
-        bonusLabel.textContent = src.name;
+        bonusLabel.textContent = src.emoji + " " + src.name;
         const bonusValue = document.createElement("span");
         bonusValue.className = "effect-value";
         bonusValue.textContent = "%" + src.value;
@@ -548,7 +549,7 @@ function getBonusSources(resourceId) {
     if (b.type !== "bonus" || b.targetResource !== resourceId) continue;
     const count = getBuildingCount(bid);
     if (count <= 0) continue;
-    sources.push({ name: getEraBuildingName(bid), value: Math.round(count * b.bonusPerLevel * 100) });
+    sources.push({ name: getEraBuildingName(bid), value: Math.round(count * b.bonusPerLevel * 100), emoji: getEraBuildingEmoji(bid) });
   }
   for (const pid of Object.keys(PACKS_DATA)) {
     const p = PACKS_DATA[pid];
@@ -558,7 +559,7 @@ function getBonusSources(resourceId) {
     if (p.productionBonusPerLevel) bonusPerLevel += p.productionBonusPerLevel;
     if (resourceId === "power" && p.powerBonusPerLevel) bonusPerLevel += p.powerBonusPerLevel;
     if (bonusPerLevel <= 0) continue;
-    sources.push({ name: getEraPackName(pid), value: Math.round(count * bonusPerLevel * 100) });
+    sources.push({ name: getEraPackName(pid), value: Math.round(count * bonusPerLevel * 100), emoji: p.emoji });
   }
   return sources;
 }
@@ -567,9 +568,22 @@ function getBonusSources(resourceId) {
 /*                       SANAYI KARTI ARAYUZU                                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-export const industryTooltip = createTooltip("industry-tooltip");
+const industryTooltip = createTooltip("industry-tooltip");
 
-const industryTooltipLive = { id: null, rows: [], effOutEl: null, costsEl: null, costDividerEl: null };
+const industryTooltipLive = {
+  id: null,
+  rows: [],
+  totalOutEl: null,
+  perWorkerEl: null,
+  inEl: null,
+  inRowEl: null,
+  workerEl: null,
+  bonusDividerEl: null,
+  bonusListEl: null,
+  warnEl: null,
+  costsEl: null,
+  costDividerEl: null,
+};
 
 /* ─────────────────── Sanayi Kart Bileseni ─────────────────── */
 export function createIndustryCard(id, data) {
@@ -891,13 +905,13 @@ export function createIndustryCard(id, data) {
     const inputParts = [];
     for (const [resource, rate] of Object.entries(data.input)) {
       const amount = workers * rate * levelMult;
-      inputParts.push(getEraResourceEmoji(resource) + " -" + formatNumber(amount) + "/s");
+      inputParts.push(getEraResourceEmoji(resource) + " −" + formatNumber(amount) + "/s");
     }
     inputValue.textContent = inputParts.join("  ");
     inputValue.classList.toggle("idle", workers === 0);
     const outputParts = [];
-    for (const [resource, rate] of Object.entries(data.output)) {
-      const amount = workers * rate * levelMult;
+    for (const resource of Object.keys(data.output)) {
+      const amount = getIndustryOutputById(id, resource);
       outputParts.push(getEraResourceEmoji(resource) + " +" + formatNumber(amount) + "/s");
     }
     outputValue.textContent = outputParts.join("  ");
@@ -946,28 +960,94 @@ function buildIndustryTooltip(id) {
   title.className = "tooltip-title";
   title.textContent = data.emoji + " " + data.name;
   industryTooltip.element.appendChild(title);
+
   const effect = document.createElement("div");
   effect.className = "tooltip-effect";
-  const effectLine = document.createElement("div");
-  effectLine.className = "tooltip-effect-line";
-  const effectLabel = document.createElement("span");
-  effectLabel.className = "effect-label";
-  effectLabel.textContent = "Üretim:";
-  const effectValue = document.createElement("span");
-  effectValue.className = "effect-value";
-  effectValue.textContent = industryEffectiveOutputText(id);
-  effectLine.append(effectLabel, " ", effectValue);
-  effect.appendChild(effectLine);
+
+  const inLine = document.createElement("div");
+  inLine.className = "tooltip-effect-line";
+  const inLabel = document.createElement("span");
+  inLabel.className = "effect-label";
+  inLabel.textContent = "Girdi:";
+  const inValue = document.createElement("span");
+  inValue.className = "tt-neg";
+  inLine.append(inLabel, " ", inValue);
+  effect.appendChild(inLine);
+
+  const totalOutLine = document.createElement("div");
+  totalOutLine.className = "tooltip-effect-line";
+  const totalOutLabel = document.createElement("span");
+  totalOutLabel.className = "effect-label";
+  totalOutLabel.textContent = "Çıktı:";
+  const totalOutValue = document.createElement("span");
+  totalOutValue.className = "effect-value";
+  totalOutValue.textContent = industryTotalOutputText(id);
+  totalOutLine.append(totalOutLabel, " ", totalOutValue);
+  effect.appendChild(totalOutLine);
+
   industryTooltip.element.appendChild(effect);
+
+  const flowDivider = document.createElement("div");
+  flowDivider.className = "tt-divider";
+  industryTooltip.element.appendChild(flowDivider);
+
+  const perWorkerEffect = document.createElement("div");
+  perWorkerEffect.className = "tooltip-effect";
+
+  const perWorkerLine = document.createElement("div");
+  perWorkerLine.className = "tooltip-effect-line";
+  const perWorkerLabel = document.createElement("span");
+  perWorkerLabel.className = "effect-label";
+  perWorkerLabel.textContent = "İşçi başına:";
+  const perWorkerValue = document.createElement("span");
+  perWorkerValue.className = "effect-value";
+  perWorkerValue.textContent = industryEffectiveOutputText(id);
+  perWorkerLine.append(perWorkerLabel, " ", perWorkerValue);
+  perWorkerEffect.appendChild(perWorkerLine);
+
+  const workerLine = document.createElement("div");
+  workerLine.className = "tooltip-effect-line";
+  const workerLabel = document.createElement("span");
+  workerLabel.className = "effect-label";
+  workerLabel.textContent = "İşçi:";
+  const workerValue = document.createElement("span");
+  workerValue.style.color = "#ffffff";
+  workerLine.append(workerLabel, " ", workerValue);
+  perWorkerEffect.appendChild(workerLine);
+
+  industryTooltip.element.appendChild(perWorkerEffect);
+
+  const bonusDivider = document.createElement("div");
+  bonusDivider.className = "tt-divider";
+  industryTooltip.element.appendChild(bonusDivider);
+  const bonusList = document.createElement("div");
+  bonusList.className = "tooltip-effect";
+  industryTooltip.element.appendChild(bonusList);
+
+  const warn = document.createElement("div");
+  warn.className = "tt-note";
+  warn.hidden = true;
+  industryTooltip.element.appendChild(warn);
+
   const costDivider = document.createElement("div");
   costDivider.className = "tt-divider";
   industryTooltip.element.appendChild(costDivider);
   const costs = document.createElement("div");
   costs.className = "tooltip-costs";
+  industryTooltip.element.appendChild(costs);
+
   industryTooltipLive.id = id;
-  industryTooltipLive.effOutEl = effectValue;
+  industryTooltipLive.totalOutEl = totalOutValue;
+  industryTooltipLive.perWorkerEl = perWorkerValue;
+  industryTooltipLive.inEl = inValue;
+  industryTooltipLive.inRowEl = inLine;
+  industryTooltipLive.workerEl = workerValue;
+  industryTooltipLive.bonusDividerEl = bonusDivider;
+  industryTooltipLive.bonusListEl = bonusList;
+  industryTooltipLive.warnEl = warn;
   industryTooltipLive.costsEl = costs;
   industryTooltipLive.costDividerEl = costDivider;
+
   if (cost) {
     industryTooltipLive.rows = createCostRows(costs, cost);
     costDivider.hidden = false;
@@ -977,15 +1057,33 @@ function buildIndustryTooltip(id) {
     costDivider.hidden = true;
     costs.hidden = true;
   }
-  industryTooltip.element.appendChild(costs);
   refreshIndustryTooltip();
 }
 
 function refreshIndustryTooltip() {
   if (industryTooltipLive.id == null) return;
   const id = industryTooltipLive.id;
-  if (industryTooltipLive.effOutEl) {
-    industryTooltipLive.effOutEl.textContent = industryEffectiveOutputText(id);
+  if (industryTooltipLive.totalOutEl) {
+    industryTooltipLive.totalOutEl.textContent = industryTotalOutputText(id);
+  }
+  if (industryTooltipLive.perWorkerEl) {
+    industryTooltipLive.perWorkerEl.textContent = industryEffectiveOutputText(id);
+  }
+  if (industryTooltipLive.inEl && industryTooltipLive.inRowEl) {
+    const inputText = industryInputText(id);
+    industryTooltipLive.inEl.textContent = inputText;
+    industryTooltipLive.inRowEl.hidden = inputText === "";
+  }
+  if (industryTooltipLive.workerEl) {
+    const workers = getIndustryWorkers(id);
+    industryTooltipLive.workerEl.textContent =
+      workers + " / " + getIndustryMaxWorkers(id);
+  }
+  fillIndustryBonusRows(id);
+  if (industryTooltipLive.warnEl) {
+    const entry = getIndustry(id);
+    industryTooltipLive.warnEl.hidden = !(entry && entry.stalled);
+    industryTooltipLive.warnEl.textContent = "⚠️ Yetersiz girdi";
   }
   const cost = getCurrentIndustryCost(id);
   if (!cost) {
@@ -998,6 +1096,53 @@ function refreshIndustryTooltip() {
   refreshCostRows(industryTooltipLive.rows, cost, getResource, getNetRate);
 }
 
+/* ─────────────────── Sanayi Bonus Satirlari Doldurucu ─────────────────── */
+function fillIndustryBonusRows(id) {
+  const listEl = industryTooltipLive.bonusListEl;
+  if (!listEl) return;
+  listEl.textContent = "";
+
+  const levelPct = Math.round((getIndustryLevelMultiplier(id) - 1) * 100);
+  if (levelPct > 0) {
+    const levelLine = document.createElement("div");
+    levelLine.className = "tooltip-effect-line";
+    const levelLabel = document.createElement("span");
+    levelLabel.className = "effect-label";
+    levelLabel.textContent = "Seviye:";
+    const levelValue = document.createElement("span");
+    levelValue.className = "effect-value";
+    levelValue.textContent = "%" + levelPct;
+    levelLine.append(levelLabel, " ", levelValue);
+    listEl.appendChild(levelLine);
+  }
+
+  for (const pid of Object.keys(PACKS_DATA)) {
+    const pack = PACKS_DATA[pid];
+    const count = getPackCount(pid);
+    if (count <= 0) continue;
+    let pct = 0;
+    if (pack.industryBonusPerLevel) pct += count * pack.industryBonusPerLevel * 100;
+    if (pack.workerBonusPerLevel) pct += count * pack.workerBonusPerLevel * 100;
+    if (pct <= 0) continue;
+    const line = document.createElement("div");
+    line.className = "tooltip-effect-line";
+    const label = document.createElement("span");
+    label.className = "effect-label";
+    label.textContent = pack.emoji + " " + getEraPackName(pid) + ":";
+    const value = document.createElement("span");
+    value.className = "effect-value";
+    value.textContent = "%" + Math.round(pct);
+    line.append(label, " ", value);
+    listEl.appendChild(line);
+  }
+
+  const hasRows = listEl.childElementCount > 0;
+  listEl.hidden = !hasRows;
+  if (industryTooltipLive.bonusDividerEl) {
+    industryTooltipLive.bonusDividerEl.hidden = !hasRows;
+  }
+}
+
 /* ─────────────────── Sanayi Etkin Cikti Metni ─────────────────── */
 function industryEffectiveOutputText(id) {
   const levelMult = getIndustryLevelMultiplier(id);
@@ -1005,6 +1150,28 @@ function industryEffectiveOutputText(id) {
   const workerMult = getWorkerMultiplier();
   return Object.entries(INDUSTRY_DATA[id].output)
     .map(([r, rate]) => getEraResourceEmoji(r) + " +" + formatNumber(rate * levelMult * packMult * workerMult) + "/s · işçi")
+    .join("  ");
+}
+
+/* ─────────────────── Sanayi Toplam Cikti Metni ─────────────────── */
+function industryTotalOutputText(id) {
+  const workers = getIndustryWorkers(id);
+  const levelMult = getIndustryLevelMultiplier(id);
+  const packMult = getIndustryPackMultiplier();
+  const workerMult = getWorkerMultiplier();
+  return Object.entries(INDUSTRY_DATA[id].output)
+    .map(([r, rate]) => getEraResourceEmoji(r) + " +" + formatNumber(rate * levelMult * packMult * workerMult * workers) + "/s")
+    .join("  ");
+}
+
+/* ─────────────────── Sanayi Girdi Metni ─────────────────── */
+function industryInputText(id) {
+  const entries = Object.entries(INDUSTRY_DATA[id].input);
+  if (entries.length === 0) return "";
+  const workers = getIndustryWorkers(id);
+  const levelMult = getIndustryLevelMultiplier(id);
+  return entries
+    .map(([r, rate]) => getEraResourceEmoji(r) + " −" + formatNumber(rate * levelMult * workers) + "/s")
     .join("  ");
 }
 
@@ -1076,13 +1243,15 @@ export function createPackCard(id, data) {
     tooltipActive = false;
     packTooltip.hide();
   });
-  const ttLive = { id: null, rows: [], effectEl: null, totalEl: null };
+  const ttLive = { id: null, rows: [], effectEl: null, totalEl: null, dividerEl: null, costsWrapEl: null };
   let lastEra = null;
   const AFFORD_TOLERANCE = 0.02;
   let stableOk = {};
 
   function buildPackTooltip(packId, packData) {
+    const count = getPackCount(packId);
     const packCost = getPackCost(packId);
+    const packMaxed = Boolean(packData.maxLevel && count >= packData.maxLevel);
     packTooltip.element.textContent = "";
     const title = document.createElement("div");
     title.className = "tooltip-title";
@@ -1123,9 +1292,17 @@ export function createPackCard(id, data) {
     const divider = document.createElement("div");
     divider.className = "tt-divider";
     packTooltip.element.appendChild(divider);
+    const costsWrap = document.createElement("div");
+    costsWrap.className = "tooltip-costs";
     ttLive.id = packId;
-    ttLive.totalEl = effectValue;
-    ttLive.rows = createCostRows(packTooltip.element, packCost);
+    ttLive.dividerEl = divider;
+    ttLive.costsWrapEl = costsWrap;
+    ttLive.rows = createCostRows(costsWrap, packCost);
+    if (packMaxed) {
+      divider.hidden = true;
+      costsWrap.hidden = true;
+    }
+    packTooltip.element.appendChild(costsWrap);
     refreshPackTooltip();
   }
 
@@ -1135,7 +1312,14 @@ export function createPackCard(id, data) {
     const count = getPackCount(ttLive.id);
     const packCost = getPackCost(ttLive.id);
     if (ttLive.totalEl) { ttLive.totalEl.textContent = getTotalEffectText(packData, count); }
-    refreshCostRows(ttLive.rows, packCost, getResource, getNetRate);
+    const packMaxed = Boolean(packData.maxLevel && count >= packData.maxLevel);
+    if (ttLive.dividerEl && ttLive.costsWrapEl) {
+      ttLive.dividerEl.hidden = packMaxed;
+      ttLive.costsWrapEl.hidden = packMaxed;
+    }
+    if (!packMaxed) {
+      refreshCostRows(ttLive.rows, packCost, getResource, getNetRate);
+    }
   }
 
   function update() {

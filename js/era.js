@@ -17,6 +17,7 @@ import {
   TRADE_MERCHANT_INTERVAL_MIN,
   TRADE_MERCHANT_INTERVAL_MAX,
   PACKS_DATA,
+  ALL_BUILDINGS_DATA,
 } from "./game-data.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -50,53 +51,53 @@ export const ERA_DATA = {
 
 /* ─────────────────── Geçiş Verileri ─────────────────── */
 
-export const TRANSITION_DATA = {
+const TRANSITION_DATA = {
   1: {
     title: "TEKNOLOJİ ÇAĞI BAŞLADI",
     narrative:
       "Kasaban sessizce büyüdü, ama artık daha büyük bir vizyon gerekiyor. Fabrikalar yükseliyor, çarklar dönüyor, veri akıyor.",
     duration: 3000,
-    themeClass: "era-transition-to-tech",
+    flash: true,
   },
   2: {
     title: "UZAY ÇAĞI AÇILDI",
     narrative:
       "Fabrikalar artık yetmiyor. İnsanlık yıldızlara uzanıyor. Plazma enerjisi, kuantum hesaplama, yapay zeka...",
     duration: 4000,
-    themeClass: "era-transition-to-space",
+    flash: true,
   },
   3: {
     title: "KASABA ÇAĞINA DÖNÜŞ",
     narrative:
       "Sonsuzluk yorucu oldu. Yıldızlar söndü, çarklar durdu. Toprağa dönüş, basitliğin gücünü hatırla...",
     duration: 3500,
-    themeClass: "",
+    flash: false,
   },
   "2_1": {
     title: "KASABA ÇAĞINA DÖNÜŞ",
     narrative: "Teknoloji yükü ağır geldi. Doğaya dönüş, huzurun başlangıcı...",
     duration: 3000,
-    themeClass: "",
+    flash: false,
   },
   "3_1": {
     title: "KASABA ÇAĞINA DÖNÜŞ",
     narrative:
       "Yıldızlar sönüyor, toprak çağırıyor. Sıfıla dönüş, yeniden başlangıç...",
     duration: 3500,
-    themeClass: "",
+    flash: false,
   },
   "3_2": {
     title: "SANAYİ ÇAĞINA DÖNÜŞ",
     narrative:
       "Uzayın soğuğundan kaçış. Çarklar tekrar dönüyor, fabrikalar yeniden alevleniyor...",
     duration: 3000,
-    themeClass: "era-transition-to-tech",
+    flash: true,
   },
 };
 
 /* ─────────────────── Kaynak İsim Haritası ─────────────────── */
 
-export const RESOURCE_NAMES = {
+const RESOURCE_NAMES = {
   1: {
     power: "Güç",
     su: "Su",
@@ -164,7 +165,7 @@ export const RESOURCE_NAMES = {
 
 /* ─────────────────── Kaynak Emoji Haritası ─────────────────── */
 
-export const RESOURCE_EMOJIS = {
+const RESOURCE_EMOJIS = {
   1: {
     power: "⚡",
     su: "💧",
@@ -232,7 +233,7 @@ export const RESOURCE_EMOJIS = {
 
 /* ─────────────────── Bina İsim Haritası ─────────────────── */
 
-export const BUILDING_NAMES = {
+const BUILDING_NAMES = {
   1: {
     fountain: "Güç Ocağı",
     well: "Kuyu",
@@ -352,6 +353,12 @@ export function getBuildingName(buildingId) {
   );
 }
 
+/* ─────────────────── Bina Emoji Getter'ı ─────────────────── */
+
+export function getBuildingEmoji(buildingId) {
+  return ALL_BUILDINGS_DATA[buildingId]?.emoji || "";
+}
+
 /* ─────────────────── Paket İsmi Getter'ı ─────────────────── */
 
 export function getPackName(packId) {
@@ -365,17 +372,9 @@ export function getGoldLabel() {
   return era >= 2 ? "Kredi" : "Altın";
 }
 
-/* ─────────────────── Güç Etiketi Getter'ı ─────────────────── */
-
-export function getPowerLabel() {
-  const era = state.era.current;
-  const names = RESOURCE_NAMES[era];
-  return names?.power || "Güç";
-}
-
 /* ─────────────────── Çağ Hedefleri Kontrolü ─────────────────── */
 
-export function canAdvanceEra() {
+function canAdvanceEra() {
   const currentEra = state.era.current;
   const eraData = ERA_DATA[currentEra];
   if (!eraData || !eraData.next) return false;
@@ -474,7 +473,7 @@ function showEraAdvanceConfirm(currentEra, data) {
 
 /* ─────────────────── Geçiş Tetikleyicisi ─────────────────── */
 
-export function triggerEraTransition(targetEra) {
+function triggerEraTransition(targetEra) {
   if (state.era.transitioning) return false;
 
   const currentEra = state.era.current;
@@ -726,7 +725,7 @@ function findTileObject(element) {
 /* ─────────────────── Tema Geçiş Orkestratörü ─────────────────── */
 
 async function performThemeTransition(toEra, tData) {
-  if (tData.themeClass) {
+  if (tData.flash) {
     createSparkles(toEra, 18);
     await showFlash(toEra, 600);
   }

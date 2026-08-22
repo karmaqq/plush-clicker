@@ -5,23 +5,58 @@
 import { formatCount, formatDuration } from "./utils.js";
 import { getResourceName, getResourceEmoji } from "./era.js";
 
+/* ─────────────────── Aktif Tooltip Kümesi ─────────────────── */
+const activeTooltips = new Set();
+
 /* ─────────────────── Tooltip Oluşturucu ─────────────────── */
 export function createTooltip(extraClass) {
     const element = document.createElement("div");
     element.className = "tooltip" + (extraClass ? " " + extraClass : "");
     document.body.appendChild(element);
 
-    return {
+    const api = {
         element,
+        _anchor: null,
         show(anchor) {
+            api._anchor = anchor;
             positionTooltip(element, anchor);
             element.classList.add("visible");
+            activeTooltips.add(api);
         },
         hide() {
+            api._anchor = null;
             element.classList.remove("visible");
+            activeTooltips.delete(api);
         },
     };
+    return api;
 }
+
+/* ─────────────────── Guard Dongusu ─────────────────── */
+setInterval(() => {
+    if (activeTooltips.size === 0) return;
+    for (const tt of [...activeTooltips]) {
+        const anchor = tt._anchor;
+        const focused = document.activeElement === anchor;
+        if (
+            !anchor ||
+            !anchor.isConnected ||
+            anchor.hidden ||
+            (!anchor.matches(":hover") && !focused)
+        ) {
+            tt.hide();
+        }
+    }
+}, 200);
+
+/* ─────────────────── Scroll/Resize Takibi ─────────────────── */
+function repositionActive() {
+    for (const tt of activeTooltips) {
+        if (tt._anchor) positionTooltip(tt.element, tt._anchor);
+    }
+}
+window.addEventListener("scroll", repositionActive, true);
+window.addEventListener("resize", repositionActive);
 
 /* ─────────────────── Maliyet Satırları Oluşturucu ─────────────────── */
 export function createCostRows(container, cost) {

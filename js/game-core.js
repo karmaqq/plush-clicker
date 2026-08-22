@@ -236,7 +236,7 @@ export function getIndustryPackMultiplier() {
 
 /* ─────────────────── Maliyet Indirimi Hesaplayici ─────────────────── */
 
-export function getCostDiscount() {
+function getCostDiscount() {
   let discount = 0;
   for (const id of Object.keys(PACKS_DATA)) {
     const pack = PACKS_DATA[id];
@@ -391,29 +391,33 @@ export function getIndustryLevelMultiplier(id) {
 /*                          SANAYI URETIMI                                   */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─────────────────── Sanayi Cikti Hizi Hesaplayici ─────────────────── */
+/* ─────────────────── Sanayi Bina Cikti Hizi Hesaplayici ─────────────────── */
 
-export function getIndustryOutput(resource) {
-  let total = 0;
+export function getIndustryOutputById(id, resource) {
+  const industry = INDUSTRY_DATA[id];
+  const entry = state.industry[id];
+  if (!entry.built || entry.workers <= 0) return 0;
+  if (!industry.output[resource]) return 0;
 
-  for (const id of Object.keys(INDUSTRY_DATA)) {
-    const industry = INDUSTRY_DATA[id];
-    const entry = state.industry[id];
-    if (!entry.built || entry.workers <= 0) continue;
-    if (industry.output[resource]) {
-      total +=
-        entry.workers *
-        industry.output[resource] *
-        getIndustryLevelMultiplier(id);
-    }
-  }
-
-  if (total === 0) return 0;
   return (
-    total *
+    entry.workers *
+    industry.output[resource] *
+    getIndustryLevelMultiplier(id) *
     getIndustryPackMultiplier() *
     getWorkerMultiplier()
   );
+}
+
+/* ─────────────────── Sanayi Cikti Hizi Hesaplayici ─────────────────── */
+
+function getIndustryOutput(resource) {
+  let total = 0;
+
+  for (const id of Object.keys(INDUSTRY_DATA)) {
+    total += getIndustryOutputById(id, resource);
+  }
+
+  return total;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -471,7 +475,7 @@ export function getResourceConsumption(resource) {
 
 /* ─────────────────── Net Guclu Uretimi Hesaplayici ─────────────────── */
 
-export function getPowerProduction() {
+function getPowerProduction() {
   return Math.max(0, getResourceProduction("power"));
 }
 
@@ -509,7 +513,7 @@ export function getBuildingBonus(id) {
 
 /* ─────────────────── Bilgi Uretim Hizi Getter'i ─────────────────── */
 
-export function getInfoProduction() {
+function getInfoProduction() {
   return getResourceProduction("bilgi");
 }
 
@@ -919,7 +923,7 @@ function computeDerivedState() {
 
 /* ─────────────────── Emit ─────────────────── */
 
-export function emit(snapshot) {
+function emit(snapshot) {
   scheduleSave();
 
   if (!snapshot) snapshot = computeDerivedState();
@@ -1246,7 +1250,7 @@ let suppressSave = false;
 
 /* ─────────────────── Durum Kaydedici ─────────────────── */
 
-export function saveState() {
+function saveState() {
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
@@ -1271,7 +1275,7 @@ export function saveState() {
 
 /* ─────────────────── Kayit Zamanlayici ─────────────────── */
 
-export function scheduleSave() {
+function scheduleSave() {
   if (suppressSave) return;
   if (savePending) return;
 
@@ -1359,7 +1363,7 @@ function emitReset() {
 
 /* ─────────────────── Eski Kayit Temizleyici ─────────────────── */
 
-export function clearLegacyStorage() {
+function clearLegacyStorage() {
   const legacyKeys = [
     "plush-clicker:state-v11",
     "plush-clicker:state-v10",

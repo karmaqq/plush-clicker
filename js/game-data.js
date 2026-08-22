@@ -300,6 +300,7 @@ export const BUILDINGS_DATA = {
     /* Tier 0 — Güç */
     fountain: {
         name: "Güç Ocağı",
+        emoji: "⚡",
         type: "producer",
         baseCost: { power: 10 },
         costMultiplier: 1.13,
@@ -309,6 +310,7 @@ export const BUILDINGS_DATA = {
     },
     mansion: {
         name: "Kumandanlık",
+        emoji: "🏛️",
         type: "bonus",
         baseCost: { power: 75 },
         costMultiplier: 1.16,
@@ -320,6 +322,7 @@ export const BUILDINGS_DATA = {
     /* Tier 1 — Su & Yiyecek */
     well: {
         name: "Kuyu",
+        emoji: "💧",
         type: "producer",
         baseCost: { power: 100 },
         costMultiplier: 1.13,
@@ -329,6 +332,7 @@ export const BUILDINGS_DATA = {
     },
     aqueduct: {
         name: "Çeşme",
+        emoji: "🚰",
         type: "bonus",
         baseCost: { power: 250, su: 30 },
         costMultiplier: 1.16,
@@ -338,6 +342,7 @@ export const BUILDINGS_DATA = {
     },
     farm: {
         name: "Tarla",
+        emoji: "🌾",
         type: "producer",
         baseCost: { power: 150, su: 20 },
         costMultiplier: 1.16,
@@ -347,6 +352,7 @@ export const BUILDINGS_DATA = {
     },
     mill: {
         name: "Değirmen",
+        emoji: "🌬️",
         type: "bonus",
         baseCost: { power: 400, yiyecek: 10 },
         costMultiplier: 1.16,
@@ -358,6 +364,7 @@ export const BUILDINGS_DATA = {
     /* Tier 2 — Bilgi, Taş, Mineral */
     academy: {
         name: "Akademi",
+        emoji: "🎓",
         type: "producer",
         baseCost: { power: 500, yiyecek: 80, su: 40 },
         costMultiplier: 1.17,
@@ -367,6 +374,7 @@ export const BUILDINGS_DATA = {
     },
     library: {
         name: "Kütüphane",
+        emoji: "📚",
         type: "bonus",
         baseCost: { power: 2500, bilgi: 40, tas: 20 },
         costMultiplier: 1.20,
@@ -376,6 +384,7 @@ export const BUILDINGS_DATA = {
     },
     quarry: {
         name: "Taş Ocağı",
+        emoji: "⛏️",
         type: "producer",
         baseCost: { power: 200, yiyecek: 30 },
         costMultiplier: 1.17,
@@ -385,6 +394,7 @@ export const BUILDINGS_DATA = {
     },
     stoneAtelier: {
         name: "Taş Atölyesi",
+        emoji: "🪨",
         type: "bonus",
         baseCost: { power: 600, tas: 15 },
         costMultiplier: 1.17,
@@ -394,6 +404,7 @@ export const BUILDINGS_DATA = {
     },
     mine: {
         name: "Maden",
+        emoji: "⚒️",
         type: "producer",
         baseCost: { power: 300, yiyecek: 40, tas: 10 },
         costMultiplier: 1.17,
@@ -403,6 +414,7 @@ export const BUILDINGS_DATA = {
     },
     minerCamp: {
         name: "Madenci Kampı",
+        emoji: "⛑️",
         type: "bonus",
         baseCost: { power: 1200, tas: 20, maden: 15 },
         costMultiplier: 1.17,
@@ -414,6 +426,7 @@ export const BUILDINGS_DATA = {
     /* Tier 3 — Kültür, İnanç, İpek */
     theatre: {
         name: "Tiyatro",
+        emoji: "🎭",
         type: "producer",
         baseCost: { power: 3000, bilgi: 80, tas: 50 },
         costMultiplier: 1.18,
@@ -423,6 +436,7 @@ export const BUILDINGS_DATA = {
     },
     amphitheatre: {
         name: "Amfitiyatro",
+        emoji: "🏟️",
         type: "bonus",
         baseCost: { power: 15000, kultur: 5, tas: 100 },
         costMultiplier: 1.20,
@@ -432,6 +446,7 @@ export const BUILDINGS_DATA = {
     },
     temple: {
         name: "Tapınak",
+        emoji: "🛕",
         type: "producer",
         baseCost: { power: 2000, bilgi: 80, maden: 40 },
         costMultiplier: 1.18,
@@ -441,6 +456,7 @@ export const BUILDINGS_DATA = {
     },
     altar: {
         name: "Sunak",
+        emoji: "✨",
         type: "bonus",
         baseCost: { power: 8000, inanc: 10, bilgi: 100 },
         costMultiplier: 1.18,
@@ -450,6 +466,7 @@ export const BUILDINGS_DATA = {
     },
     silkWorkshop: {
         name: "İpek Atölyesi",
+        emoji: "🧵",
         type: "producer",
         baseCost: { power: 20000, bilgi: 100, tas: 80 },
         costMultiplier: 1.18,
@@ -459,6 +476,7 @@ export const BUILDINGS_DATA = {
     },
     loom: {
         name: "Dokuma Tezgahı",
+        emoji: "🕸️",
         type: "bonus",
         baseCost: { power: 40000, ipek: 2, tas: 100 },
         costMultiplier: 1.22,
@@ -473,6 +491,7 @@ export const BUILDINGS_DATA = {
 export const HOUSING_DATA = {
     baraka: {
         name: "Baraka",
+        emoji: "🛖",
         type: "housing",
         baseCost: { power: 90, su: 18 },
         costMultiplier: 1.28,
@@ -487,6 +506,7 @@ export const HOUSING_DATA = {
     },
     ev: {
         name: "Ev",
+        emoji: "🏠",
         type: "housing",
         baseCost: { power: 750, yiyecek: 50, tas: 25 },
         costMultiplier: 2.60,
@@ -506,6 +526,7 @@ export const HOUSING_DATA = {
 export const STORAGE_DATA = {
     depo: {
         name: "Depo",
+        emoji: "📦",
         type: "storage",
         baseCost: { power: 90, su: 20 },
         costMultiplier: 1.85,
@@ -513,6 +534,7 @@ export const STORAGE_DATA = {
     },
     ambar: {
         name: "Ambar",
+        emoji: "🧺",
         type: "capacityBonus",
         baseCost: { power: 210, yiyecek: 30, tas: 15 },
         costMultiplier: 1.20,
@@ -667,13 +689,19 @@ export const INDUSTRY_DATA = {
         input: { maden: 0.080 },
         output: { demir: 0.010 },
         maxWorkers: 5,
-        unlock: { type: "building", id: "mine", count: 3 },
+        unlock: {
+            type: "all",
+            conditions: [
+                { type: "industry", id: "firin" },
+                { type: "building", id: "mine", count: 3 },
+            ],
+        },
     },
     celikFirini: {
         name: "Çelik Fırını",
         emoji: "🔥",
         description: "Maden ve demir çeliğe işlenir.",
-        baseCost: { power: 51000, tas: 638, yiyecek: 340 },
+        baseCost: { power: 25500, tas: 319, yiyecek: 170 },
         input: { maden: 0.020, demir: 0.020 },
         output: { celik: 0.005 },
         maxWorkers: 5,
@@ -685,35 +713,53 @@ export const INDUSTRY_DATA = {
             ],
         },
     },
+    sifaOcagi: {
+        name: "Şifa Ocağı",
+        emoji: "⚕️",
+        description: "İnanç ve bilgiden ilaç üretilir.",
+        baseCost: { power: 34000, bilgi: 900, inanc: 640 },
+        input: { inanc: 0.020, bilgi: 0.010 },
+        output: { ilac: 0.010 },
+        maxWorkers: 5,
+        unlock: {
+            type: "all",
+            conditions: [
+                { type: "industry", id: "celikFirini" },
+                { type: "building", id: "temple", count: 1 },
+            ],
+        },
+    },
     mermerAtolyesi: {
         name: "Mermer Atölyesi",
         emoji: "🗿",
         description: "Taş mermere işlenir.",
-        baseCost: { power: 68000, tas: 850, yiyecek: 255 },
+        baseCost: { power: 51000, tas: 638, yiyecek: 191 },
         input: { tas: 0.050 },
         output: { mermer: 0.010 },
         maxWorkers: 5,
-        unlock: { type: "building", id: "temple", count: 5 },
+        unlock: {
+            type: "all",
+            conditions: [
+                { type: "industry", id: "sifaOcagi" },
+                { type: "building", id: "stoneAtelier", count: 1 },
+            ],
+        },
     },
     kumasAtolyesi: {
         name: "Kumaş Atölyesi",
         emoji: "🧶",
         description: "İpek kumaşa işlenir.",
-        baseCost: { power: 25500, su: 128, yiyecek: 68 },
+        baseCost: { power: 68000, su: 340, yiyecek: 181 },
         input: { ipek: 0.010 },
         output: { kumas: 0.005 },
         maxWorkers: 5,
-        unlock: { type: "building", id: "silkWorkshop", count: 3 },
-    },
-    sifaOcagi: {
-        name: "Şifa Ocağı",
-        emoji: "⚕️",
-        description: "İnanç ve bilgiden ilaç üretilir.",
-        baseCost: { power: 6800, bilgi: 180, inanc: 128 },
-        input: { inanc: 0.020, bilgi: 0.010 },
-        output: { ilac: 0.010 },
-        maxWorkers: 5,
-        unlock: { type: "building", id: "temple", count: 1 },
+        unlock: {
+            type: "all",
+            conditions: [
+                { type: "industry", id: "mermerAtolyesi" },
+                { type: "building", id: "silkWorkshop", count: 1 },
+            ],
+        },
     },
     mobilyaAtolyesi: {
         name: "Mobilya Atölyesi",
@@ -723,42 +769,52 @@ export const INDUSTRY_DATA = {
         input: { tas: 0.010, celik: 0.010 },
         output: { mobilya: 0.005 },
         maxWorkers: 5,
-        unlock: { type: "industry", id: "celikFirini" },
+        unlock: { type: "industry", id: "kumasAtolyesi" },
     },
     heykelAtolyesi: {
         name: "Heykel Atölyesi",
         emoji: "🏛️",
-        description: "Mermer ve çelikten heykel üretilir.",
-        baseCost: { power: 127500, tas: 21, yiyecek: 10 },
-        input: { mermer: 0.020, celik: 0.010 },
+        description: "Mermer, çelik ve kültürden heykel üretilir.",
+        baseCost: { power: 102000, tas: 17, yiyecek: 8 },
+        input: { mermer: 0.020, celik: 0.010, kultur: 0.010 },
         output: { heykel: 0.005 },
         maxWorkers: 5,
-        unlock: { type: "industry", id: "mermerAtolyesi" },
+        unlock: { type: "industry", id: "mobilyaAtolyesi" },
     },
     mucevherAtolyesi: {
         name: "Mücevher Atölyesi",
         emoji: "💍",
         description: "Kumaş, çelik ve mermerden mücevher üretilir.",
-        baseCost: { power: 102000, su: 213, yiyecek: 13 },
+        baseCost: { power: 127500, su: 267, yiyecek: 16 },
         input: { kumas: 0.020, celik: 0.010, mermer: 0.010 },
         output: { mucevher: 0.002 },
         maxWorkers: 5,
-        unlock: { type: "industry", id: "kumasAtolyesi" },
+        unlock: { type: "industry", id: "heykelAtolyesi" },
     },
     darphane: {
         name: "Darphane",
         emoji: "🪙",
         description: "Bilgi ve ipekten altın basılır.",
-        baseCost: { power: 51000, bilgi: 17, yiyecek: 7 },
+        baseCost: { power: 170000, bilgi: 57, yiyecek: 23 },
         input: { bilgi: 0.010, ipek: 0.005 },
         output: { altin: 0.015 },
         maxWorkers: 5,
         unlock: {
             type: "all",
             conditions: [
+                { type: "industry", id: "mucevherAtolyesi" },
                 { type: "industry", id: "kumasAtolyesi" },
-                { type: "pack", id: "ticaret", level: 1 },
             ],
         },
+    },
+    sanatGalerisi: {
+        name: "Sanat Galerisi",
+        emoji: "🖼️",
+        description: "Heykeller kültürle sergilenip altına çevrilir.",
+        baseCost: { power: 255000, kultur: 75, bilgi: 115 },
+        input: { heykel: 0.010, kultur: 0.020 },
+        output: { altin: 0.025 },
+        maxWorkers: 5,
+        unlock: { type: "industry", id: "darphane" },
     },
 };
