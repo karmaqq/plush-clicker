@@ -317,7 +317,7 @@ export function getCapacityBonus(id) {
 
 /* ─────────────────── Kaynak Uretim Hizi Hesaplayici ─────────────────── */
 
-export function getResourceProduction(resource) {
+function getResourceProduction(resource) {
   let base = 0;
 
   for (const id of Object.keys(BUILDINGS_DATA)) {

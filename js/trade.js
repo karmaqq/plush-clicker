@@ -574,7 +574,27 @@ export function createTradeSection() {
 
   const list = document.createElement("div");
   list.className = "trade-list";
-  listWrap.append(header, list);
+
+  /* Boş durum — tüccar yokken veya stoğu bitince gösterilir */
+  const emptyState = document.createElement("div");
+  emptyState.className = "trade-empty";
+  emptyState.hidden = true;
+
+  const emptyIcon = document.createElement("div");
+  emptyIcon.className = "trade-empty-icon";
+
+  const emptyTitle = document.createElement("div");
+  emptyTitle.className = "trade-empty-title";
+
+  const emptySubtitle = document.createElement("div");
+  emptySubtitle.className = "trade-empty-subtitle";
+
+  const emptyTimer = document.createElement("strong");
+  emptyTimer.className = "trade-empty-timer";
+
+  emptyState.append(emptyIcon, emptyTitle, emptySubtitle);
+
+  listWrap.append(header, list, emptyState);
 
   /* Alt durum cubugu */
   const statusBar = document.createElement("div");
@@ -588,6 +608,22 @@ export function createTradeSection() {
   let prevMerchantIds = [];
   let lastMerchantId = null;
   let rowEls = [];
+
+  /* ─────────────────── Boş Durum Gösterici ─────────────────── */
+  function showEmptyState(mode) {
+    if (mode === "noMerchant") {
+      emptyIcon.textContent = "\uD83D\uDC2A";
+      emptyTitle.textContent = "Tüccar yolda";
+      emptySubtitle.textContent = "";
+      emptySubtitle.append("Bir sonraki tüccar ", emptyTimer, " içinde gelir");
+    } else {
+      emptyIcon.textContent = "\uD83D\uDCE6";
+      emptyTitle.textContent = "Stok tükendi";
+      emptySubtitle.textContent = "";
+      emptySubtitle.append("Bu tüccarda ticareti yapılacak ürün kalmadı");
+    }
+    emptyState.hidden = false;
+  }
 
   /* ─────────────────── Aktif Sekme Sınıfı Güncelle ─────────────────── */
   function refreshActiveTabClass() {
@@ -672,12 +708,19 @@ export function createTradeSection() {
     }
 
     if (!active) {
+      showEmptyState("noMerchant");
       list.innerHTML = "";
       rowEls = [];
       return;
     }
 
     const activeResIds = TRADE_ITEMS_ORDER.filter(resId => (active.stock[resId] || 0) > 0);
+
+    if (activeResIds.length === 0) {
+      showEmptyState("stockEmpty");
+    } else {
+      emptyState.hidden = true;
+    }
 
     while (rowEls.length > activeResIds.length) {
       list.removeChild(list.lastChild);
@@ -710,9 +753,14 @@ export function createTradeSection() {
     syncList();
 
     const active = getActiveMerchant();
+    balanceArea.hidden = !active;
     balanceArea.textContent = active
       ? getResourceEmoji("altin") + " " + active.budget.toLocaleString("tr-TR")
       : "";
+
+    if (!active) {
+      emptyTimer.textContent = formatDuration(state.trade.spawnTimer);
+    }
 
     statusBar.textContent = "Toplam i\u015flem: " + state.trade.count;
     refreshHighlight();

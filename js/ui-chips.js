@@ -35,11 +35,8 @@ import {
   sellOne,
   getNetRate,
   getSeasonMultiplier,
-  getWorkerCount,
   getIndustryOutputById,
-  getIndustryBuilt,
   getIndustryWorkers,
-  getIndustryLevelMultiplier,
   getSeason,
   getSeasonTimer,
   getUnlock,
@@ -51,9 +48,6 @@ import {
   TICK_MS,
 } from "./game-core.js";
 import {
-  getPopulationCurrent,
-  getPopulationCapacity,
-  getPopulationMigrants,
   getMigrantQueue,
   getArrivalDuration,
   getPopulationSatisfaction,
@@ -112,6 +106,11 @@ export function createGoldChip() {
   const divider = document.createElement("div");
   divider.className = "tt-divider";
   const netRow = createGoldRow("Net:");
+  netRow.row.classList.add("time-inline");
+  const netTime = document.createElement("span");
+  netTime.className = "tt-time";
+  netTime.hidden = true;
+  netRow.row.insertBefore(netTime, netRow.value);
   tooltip.element.append(
     title,
     sellRow.row,
@@ -174,6 +173,13 @@ export function createGoldChip() {
     netRow.value.textContent = (netRate >= 0 ? "+" : "−") + formatNumber(Math.abs(netRate)) + "/s";
     netRow.value.classList.toggle("tt-pos", netRate >= 0);
     netRow.value.classList.toggle("tt-neg", netRate < 0);
+    const goldStock = getAltin();
+    if (netRate < -0.0001 && goldStock > 0) {
+      netTime.textContent = formatDuration(goldStock / -netRate);
+      netTime.hidden = false;
+    } else {
+      netTime.hidden = true;
+    }
   }
   function update() {
     value.textContent = formatCount(getAltin());
@@ -638,7 +644,7 @@ export function createPopBlock() {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 const resourceTooltip = createTooltip("resource-tooltip");
-const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null, seasonLabelEl: null, prodRows: [], industryProdRows: [], industryConsRows: [] };
+const tooltipLive = { id: null, capEl: null, timeEl: null, totalEl: null, consEl: null, sellEl: null, sellRow: null, seasonRow: null, seasonEl: null, seasonLabelEl: null, prodRows: [], industryProdRows: [] };
 
 export function createResourceTile(id, options = {}) {
   const meta = RESOURCES[id];
@@ -776,7 +782,6 @@ function buildResourceTooltip(id) {
   const buildingRows = [];
   tooltipLive.prodRows = [];
   tooltipLive.industryProdRows = [];
-  tooltipLive.industryConsRows = [];
   for (const bid of Object.keys(BUILDINGS_DATA)) {
     const b = BUILDINGS_DATA[bid];
     if (b.type !== "producer" || b.outputResource !== id) continue;
@@ -841,25 +846,6 @@ function buildResourceTooltip(id) {
   const totalStrong = strong("");
   totalRow.append("Üretim: ", totalStrong);
   resourceTooltip.element.appendChild(totalRow);
-  const industryConsIds = [];
-  for (const iid of Object.keys(INDUSTRY_DATA)) {
-    if (!INDUSTRY_DATA[iid].input[id]) continue;
-    if (!getIndustryBuilt(iid) || getIndustryWorkers(iid) <= 0) continue;
-    industryConsIds.push(iid);
-  }
-  for (const iid of industryConsIds) {
-    const ind = INDUSTRY_DATA[iid];
-    const workers = getIndustryWorkers(iid);
-    const row = document.createElement("div");
-    row.className = "tt-row";
-    const rateStrong = strong("");
-    rateStrong.textContent = "−" + formatNumber(workers * ind.input[id] * getIndustryLevelMultiplier(iid)) + "/s";
-    rateStrong.style.color = "#ff8a8a";
-    const workerBadge = badge(workers);
-    row.append(workerBadge, ind.emoji + " " + ind.name + ":", rateStrong);
-    resourceTooltip.element.appendChild(row);
-    tooltipLive.industryConsRows.push({ iid, rate: ind.input[id], badgeEl: workerBadge, strong: rateStrong });
-  }
   const consRow = document.createElement("div");
   consRow.className = "tt-total";
   const consStrong = strong("");
@@ -907,11 +893,6 @@ function refreshResourceTooltip(snapshot) {
   for (const ir of tooltipLive.industryProdRows) {
     ir.strong.textContent = "+" + formatNumber(getIndustryOutputById(ir.iid, id)) + "/s";
     ir.badgeEl.textContent = String(getIndustryWorkers(ir.iid));
-  }
-  for (const ic of tooltipLive.industryConsRows) {
-    const workers = getIndustryWorkers(ic.iid);
-    ic.strong.textContent = "−" + formatNumber(workers * ic.rate * getIndustryLevelMultiplier(ic.iid)) + "/s";
-    ic.badgeEl.textContent = String(workers);
   }
   tooltipLive.totalEl.textContent = "+" + formatNumber(productionValue) + "/s";
   tooltipLive.consEl.textContent = consumptionValue > 0 ? "−" + formatNumber(consumptionValue) + "/s" : "−";

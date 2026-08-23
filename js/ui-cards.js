@@ -67,7 +67,7 @@ import {
   UNLOCK_STRATEGIES,
   onChange,
 } from "./game-core.js";
-import { getBuildingName as getEraBuildingName, getBuildingEmoji as getEraBuildingEmoji, getResourceEmoji as getEraResourceEmoji, getResourceName as getEraResourceName, getPackName as getEraPackName, getGoldLabel } from "./era.js";
+import { getBuildingName as getEraBuildingName, getBuildingEmoji as getEraBuildingEmoji, getResourceEmoji as getEraResourceEmoji, getResourceName as getEraResourceName, getPackName as getEraPackName } from "./era.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                         BINA KARTI ARAYUZU                                 */
@@ -784,6 +784,9 @@ export function createIndustryCard(id, data) {
   buildRow.append(autoSellBtn, buildBtn, upgradeBtn, levelLabel);
   const controls = document.createElement("div");
   controls.className = "industry-controls";
+  const workerAlertDot = document.createElement("span");
+  workerAlertDot.className = "alert-dot";
+  workerAlertDot.hidden = true;
   const minusBtn = document.createElement("button");
   minusBtn.type = "button";
   minusBtn.className = "worker-btn worker-minus";
@@ -801,7 +804,7 @@ export function createIndustryCard(id, data) {
   plusBtn.addEventListener("click", () => {
     if (!addWorker(id)) { triggerShake(plusBtn); }
   });
-  controls.append(minusBtn, workerCount, plusBtn);
+  controls.append(workerAlertDot, minusBtn, workerCount, plusBtn);
   head.append(controls);
   card.append(head, desc, flow, warning, buildRow, lockOverlay.element);
 
@@ -902,6 +905,7 @@ export function createIndustryCard(id, data) {
     levelLabel.textContent = String(level);
     levelLabel.className = "badge building-badge badge-tier-" + getBadgeTier(level);
     workerCount.textContent = workers + "/" + maxWorkers;
+    workerAlertDot.hidden = !(workers < maxWorkers);
     const inputParts = [];
     for (const [resource, rate] of Object.entries(data.input)) {
       const amount = workers * rate * levelMult;
@@ -1245,8 +1249,9 @@ export function createPackCard(id, data) {
   });
   const ttLive = { id: null, rows: [], effectEl: null, totalEl: null, dividerEl: null, costsWrapEl: null };
   let lastEra = null;
-  const AFFORD_TOLERANCE = 0.02;
-  let stableOk = {};
+  let lastCountText = "";
+  let lastEffectText = "";
+  let lastCostKey = "";
 
   function buildPackTooltip(packId, packData) {
     const count = getPackCount(packId);
@@ -1344,7 +1349,11 @@ export function createPackCard(id, data) {
     }
     card.hidden = false;
     const count = getPackCount(id);
-    level.textContent = count + "/" + data.maxLevel;
+    const countText = count + "/" + data.maxLevel;
+    if (countText !== lastCountText) {
+      lastCountText = countText;
+      level.textContent = countText;
+    }
     let effectText = "";
     if (data.productionBonusPerLevel) { effectText = "Bina üretimi: +%" + Math.round(count * data.productionBonusPerLevel * 100); }
     else if (data.powerBonusPerLevel) { effectText = "Güç üretimi: +%" + Math.round(count * data.powerBonusPerLevel * 100); }
@@ -1353,7 +1362,10 @@ export function createPackCard(id, data) {
     else if (data.workerBonusPerLevel) { effectText = "İşçi üretimi: +%" + Math.round(count * data.workerBonusPerLevel * 100); }
     else if (data.storageBonusPerLevel) { effectText = "Kapasite: +%" + Math.round(count * data.storageBonusPerLevel * 100); }
     else if (data.autoSellPerLevel) { effectText = "Otomatik satış limiti: %" + count * AUTO_SELL_STEP_PCT; }
-    effect.textContent = effectText;
+    if (effectText !== lastEffectText) {
+      lastEffectText = effectText;
+      effect.textContent = effectText;
+    }
     const cost = getPackCost(id);
     const packMaxed = data.maxLevel && count >= data.maxLevel;
     card.classList.toggle("finished", Boolean(packMaxed));
@@ -1363,19 +1375,24 @@ export function createPackCard(id, data) {
       const span = costSpans[resource];
       if (packMaxed) { span.hidden = true; continue; }
       span.hidden = false;
-      const value = getResource(resource);
-      if (value >= amount) {
-        stableOk[resource] = true;
-      } else if (value < amount * (1 - AFFORD_TOLERANCE)) {
-        stableOk[resource] = false;
-      }
-      const ok = stableOk[resource];
-      if (!ok) affordable = false;
-      span.textContent = getEraResourceEmoji(resource) + " " + formatCount(amount);
-      span.classList.toggle("cost-ok", ok);
-      span.classList.toggle("cost-missing", !ok);
+      const enough = getResource(resource) >= amount;
+      if (!enough) affordable = false;
+      span.classList.toggle("cost-ok", enough);
+      span.classList.toggle("cost-missing", !enough);
     }
     btn.classList.toggle("disabled", !affordable || packMaxed);
+    const costKey =
+      currentEra +
+      "#" + packMaxed +
+      "#" + Object.entries(cost).map(([r, a]) => r + ":" + a).join(",");
+    if (costKey !== lastCostKey) {
+      lastCostKey = costKey;
+      for (const [resource, amount] of Object.entries(cost)) {
+        const span = costSpans[resource];
+        if (packMaxed) continue;
+        span.textContent = getEraResourceEmoji(resource) + " " + formatCount(amount);
+      }
+    }
     if (tooltipActive) { refreshPackTooltip(); }
   }
 

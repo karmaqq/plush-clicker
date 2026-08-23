@@ -16,6 +16,9 @@ import {
   getWorkerCount,
   hasInfoProduction,
   getPackCount,
+  getIndustryBuilt,
+  getIndustryWorkers,
+  getIndustryMaxWorkers,
   resetGame,
   onChange,
 } from "./game-core.js";
@@ -160,6 +163,9 @@ export function createLeftPanel() {
   let showFinished = false;
   const finishRank = new Map();
   let finishCounter = 0;
+  let lastFinishedSignature = "";
+  let lastToggleText = "";
+  let lastEmptyNoteHidden = null;
   function syncFinishRanks() {
     for (const id of Object.keys(PACKS_DATA)) {
       if (!finishRank.has(id) && getPackCount(id) >= PACKS_DATA[id].maxLevel) {
@@ -167,9 +173,17 @@ export function createLeftPanel() {
       }
     }
   }
+  function finishedSignature() {
+    let sig = "";
+    for (const id of Object.keys(PACKS_DATA)) {
+      if (getPackCount(id) >= PACKS_DATA[id].maxLevel) sig += id + "|";
+    }
+    return sig;
+  }
   function reorderPacks() {
     syncFinishRanks();
-    const sorted = [...packList.children].sort((a, b) => {
+    const children = [...packList.children];
+    const sorted = [...children].sort((a, b) => {
       const aRank = finishRank.get(a.dataset.packId);
       const bRank = finishRank.get(b.dataset.packId);
       if (aRank !== undefined && bRank !== undefined) return bRank - aRank;
@@ -177,16 +191,44 @@ export function createLeftPanel() {
       if (bRank !== undefined) return 1;
       return 0;
     });
-    for (const el of sorted) packList.appendChild(el);
+    let needsReorder = false;
+    for (let i = 0; i < sorted.length; i++) {
+      if (sorted[i] !== children[i]) { needsReorder = true; break; }
+    }
+    if (!needsReorder) return;
+    const scrollTop = packList.scrollTop;
+    let ref = null;
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const el = sorted[i];
+      if (el.nextSibling !== ref) packList.insertBefore(el, ref);
+      ref = el;
+    }
+    packList.scrollTop = scrollTop;
   }
   function applyPackView() {
-    packList.classList.toggle("finished-view", showFinished);
-    packToggleBtn.textContent = showFinished ? "Devam Edenler" : "Bitenler";
+    if (packList.classList.contains("finished-view") !== showFinished) {
+      packList.classList.toggle("finished-view", showFinished);
+    }
+    const toggleText = showFinished ? "Devam Edenler" : "Bitenler";
+    if (toggleText !== lastToggleText) {
+      lastToggleText = toggleText;
+      packToggleBtn.textContent = toggleText;
+    }
     reorderPacks();
     const anyFinished = Object.keys(PACKS_DATA).some(
       (id) => getPackCount(id) >= PACKS_DATA[id].maxLevel
     );
-    packEmptyNote.hidden = !(showFinished && !anyFinished);
+    const noteHidden = !(showFinished && !anyFinished);
+    if (noteHidden !== lastEmptyNoteHidden) {
+      lastEmptyNoteHidden = noteHidden;
+      packEmptyNote.hidden = noteHidden;
+    }
+  }
+  function checkPacksDirty() {
+    const signature = finishedSignature();
+    if (signature === lastFinishedSignature) return;
+    lastFinishedSignature = signature;
+    applyPackView();
   }
   packToggleBtn.addEventListener("click", () => {
     showFinished = !showFinished;
@@ -219,9 +261,10 @@ export function createLeftPanel() {
     }
   }
   onChange(updateTabs);
-  onChange(applyPackView);
+  onChange(checkPacksDirty);
   updateTabs();
   applyPackView();
+  lastFinishedSignature = finishedSignature();
   return panel;
 }
 
@@ -236,8 +279,12 @@ export function createRightPanel() {
   tabBar.className = "tab-bar";
   const industryTab = document.createElement("button");
   industryTab.type = "button";
-  industryTab.className = "tab-btn active";
+  industryTab.className = "tab-btn active has-alert";
   industryTab.textContent = "Sanayi";
+  const industryAlertDot = document.createElement("span");
+  industryAlertDot.className = "alert-dot";
+  industryAlertDot.hidden = true;
+  industryTab.append(industryAlertDot);
   const tradeTab = document.createElement("button");
   tradeTab.type = "button";
   tradeTab.className = "tab-btn";
@@ -268,8 +315,20 @@ export function createRightPanel() {
       else tradeSection.section.hidden = true;
     }
   }
+  function updateIndustryAlertDot() {
+    let hasIdle = false;
+    for (const id of Object.keys(INDUSTRY_DATA)) {
+      if (getIndustryBuilt(id) && getIndustryWorkers(id) < getIndustryMaxWorkers(id)) {
+        hasIdle = true;
+        break;
+      }
+    }
+    industryAlertDot.hidden = !hasIdle;
+  }
   onChange(updatePackGates);
   updatePackGates();
+  onChange(updateIndustryAlertDot);
+  updateIndustryAlertDot();
   return panel;
 }
 

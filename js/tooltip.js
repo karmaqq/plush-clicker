@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import { formatCount, formatDuration } from "./utils.js";
-import { getResourceName, getResourceEmoji } from "./era.js";
+import { getResourceName } from "./era.js";
 
 /* ─────────────────── Aktif Tooltip Kümesi ─────────────────── */
 const activeTooltips = new Set();

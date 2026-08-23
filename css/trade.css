@@ -496,3 +496,40 @@
 .trade-list-wrap::-webkit-scrollbar-thumb:active {
     background: #5a6470;
 }
+
+/* ─────────────────── Boş Durum ─────────────────── */
+
+.trade-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 2.25rem 1rem;
+    text-align: center;
+}
+
+.trade-empty-icon {
+    font-size: clamp(2rem, 4.5vw, 2.75rem);
+    line-height: 1;
+}
+
+.trade-empty-title {
+    font-family: var(--font-ui);
+    font-size: clamp(0.95rem, 1.9vw, 1.15rem);
+    font-weight: 700;
+    color: #d7dde4;
+    letter-spacing: 0.02em;
+}
+
+.trade-empty-subtitle {
+    font-family: var(--font-ui);
+    font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+    font-weight: 600;
+    color: #6b7683;
+}
+
+.trade-empty-timer {
+    color: #8895a3;
+    font-variant-numeric: tabular-nums;
+}

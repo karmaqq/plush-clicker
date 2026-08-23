@@ -31,14 +31,14 @@ export const ERA_CHIP_POP_THRESHOLD = 20;
 export const ERA_DATA = {
   1: {
     name: "Kasaba",
-    populationTarget: 250,
-    goldTarget: 500000,
+    populationTarget: 350,
+    goldTarget: 1000000,
     next: 2,
   },
   2: {
     name: "Teknoloji",
-    populationTarget: 5000,
-    goldTarget: 100000,
+    populationTarget: 450,
+    goldTarget: 20000000,
     next: 3,
   },
   3: {
