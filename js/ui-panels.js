@@ -39,6 +39,7 @@ import {
   createEraChip,
 } from "./ui-chips.js";
 import { createTradeSection } from "./trade.js";
+import { createUpdateButton } from "./updater-ui.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                      MERKEZ PANEL OLUSTURUCU                              */
@@ -361,11 +362,13 @@ export function createHeaderPanel() {
       resetGame();
     }
   });
+  const updateBtn = createUpdateButton();
   right.append(
     barakaChip,
     evChip,
     goldChip.el,
     eraChip.el,
+    updateBtn,
     resetBtn
   );
   panel.append(strip.el, center, right);

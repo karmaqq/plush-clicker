@@ -1,5 +1,51 @@
 {
   "name": "plush-clicker",
+  "version": "1.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "description": "Cag atlali incremental sehir kurma oyunu",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.karmaqq.plushclicker",
+    "productName": "Plush Clicker",
+    "releaseType": "release",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "js/**/*",
+      "css/**/*",
+      "index.html"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "PlushClicker-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "PlushClicker-Portable-${version}.exe"
+    }
+  }
 }

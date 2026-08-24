@@ -1,0 +1,36 @@
+name: Deploy Oyun Guncellemesi
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "release/**"
+      - "dist-web/**"
+      - "*.md"
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu cek
+        uses: actions/checkout@v4
+
+      - name: Node kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Manifest uret ve yayin klasorunu hazirla
+        run: node tools/generate-manifest.mjs dist-web
+
+      - name: GitHub Pages yayinla
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dist-web
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "Deploy oyun guncellemesi ${{ github.sha }}"

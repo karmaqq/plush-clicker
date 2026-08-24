@@ -158,6 +158,36 @@
     background: #45282e;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       GÜNCELLEME BUTONU                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.update-btn {
+    font-family: var(--font-ui);
+    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.92), rgba(139, 92, 246, 0.92));
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    padding: 0.22rem 0.55rem;
+    cursor: pointer;
+    transition:
+        filter 0.12s ease,
+        opacity 0.12s ease;
+    flex: none;
+    white-space: nowrap;
+}
+
+.update-btn:hover {
+    filter: brightness(1.15);
+}
+
+.update-btn.busy {
+    cursor: progress;
+    opacity: 0.85;
+}
+
 .happiness-chip.warn {
     color: #ff8a8a;
     border-color: #5a2f2f;

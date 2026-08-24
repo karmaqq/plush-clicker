@@ -1,2 +1,16 @@
 kurallar/
 .opencode/
+
+node_modules/
+release/
+dist-web/
+dist-test/
+e2e-*.log
+npm-debug.log*
+*.local
+
+.vscode/
+.idea/
+
+Thumbs.db
+.DS_Store
