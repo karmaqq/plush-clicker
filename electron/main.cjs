@@ -92,44 +92,7 @@ function createMainWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
-  mainWindow.webContents.once("did-finish-load", () => {
-    runDevHooks();
-  });
   mainWindow.loadURL(`${APP_ORIGIN}/index.html`);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
-/*                       GELISTIRICI/E2E KANCAALARI                          */
-/* ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────── E2E Kanca Calistirici ─────────────────── */
-async function runDevHooks() {
-  if (process.env.PLUSH_E2E !== "1" || !mainWindow) return;
-  try {
-    if (process.env.PLUSH_E2E_APPLY === "1") {
-      const status = await updater.checkForUpdate();
-      console.log("[e2e] check sonucu:", JSON.stringify(status));
-      if (status && status.available) {
-        const result = await updater.applyUpdate((p) => {
-          console.log(`[e2e] indirildi ${p.done}/${p.total}: ${p.file}`);
-        });
-        console.log("[e2e] uygulandi:", JSON.stringify(result));
-        setTimeout(() => {
-          app.relaunch();
-          app.exit(0);
-        }, 500);
-        return;
-      }
-    }
-    const marker = await mainWindow.webContents.executeJavaScript(
-      "window.__PLUSH_PATCH_TEST === true"
-    );
-    console.log("[e2e] yama isareti:", marker);
-    setTimeout(() => app.exit(0), 300);
-  } catch (err) {
-    console.error("[e2e] hata:", err.message);
-    setTimeout(() => app.exit(1), 300);
-  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
