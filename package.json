@@ -16,7 +16,10 @@
   "build": {
     "appId": "com.karmaqq.plushclicker",
     "productName": "Plush Clicker",
-    "releaseType": "release",
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
     "directories": {
       "output": "release"
     },
