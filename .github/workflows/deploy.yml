@@ -11,7 +11,6 @@ on:
 permissions:
   contents: write
   pages: write
-  administration: write
 
 jobs:
   deploy:
@@ -44,12 +43,17 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/pages)
           echo "Mevcut pages durumu kodu: $CODE"
           if [ "$CODE" = "404" ]; then
-            RESP=$(curl -sf -X POST \
+            HTTP=$(curl -s -o /tmp/pages-resp.json -w "%{http_code}" -X POST \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               https://api.github.com/repos/${{ github.repository }}/pages \
               -d '{"source":{"branch":"gh-pages","path":"/"},"build_type":"legacy"}')
-            echo "Yanit: $RESP"
+            cat /tmp/pages-resp.json
+            echo "POST durum kodu: $HTTP"
+            if [ "$HTTP" != "201" ] && [ "$HTTP" != "200" ]; then
+              echo "::error::Pages sitesi olusturulamadi (HTTP $HTTP)"
+              exit 1
+            fi
             echo "Pages sitesi olusturuldu"
           else
             echo "Pages zaten etkin"
