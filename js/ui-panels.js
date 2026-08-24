@@ -344,10 +344,10 @@ export function createHeaderPanel() {
   center.className = "header-center";
   const popBlock = createPopBlock();
   const happinessChip = createHappinessChip();
-  center.append(popBlock.el, happinessChip.el);
+  const seasonChip = createSeasonChip();
+  center.append(popBlock.el, happinessChip.el, seasonChip.el);
   const right = document.createElement("div");
   right.className = "header-right";
-  const seasonChip = createSeasonChip();
   const goldChip = createGoldChip();
   const eraChip = createEraChip();
   const barakaChip = createHousingChip("baraka");
@@ -364,7 +364,6 @@ export function createHeaderPanel() {
   right.append(
     barakaChip,
     evChip,
-    seasonChip.el,
     goldChip.el,
     eraChip.el,
     resetBtn

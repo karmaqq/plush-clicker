@@ -6,33 +6,75 @@
 /*                          YAPILANDIRMA                                     */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-export const SEASON_DURATION = 90;
+export const MONTH_DURATION = 45;
+export const MONTHS_PER_SEASON = 3;
+export const SEASON_DURATION = MONTH_DURATION * MONTHS_PER_SEASON;
 export const INDUSTRY_MAX_LEVEL = 5;
+
+/* ─────────────────── Ay Adları ─────────────────── */
+
+export const MONTHS_DATA = [
+  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+];
+
+/* ─────────────────── Ay Gün Sayıları ─────────────────── */
+
+export const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/* ─────────────────── Başlangıç Ayı ─────────────────── */
+
+export const STARTING_MONTH_INDEX = 0;
 
 export const SEASONS_DATA = {
   ilkbahar: {
     name: "İlkbahar",
     emoji: "🌱",
+    months: ["Mart", "Nisan", "Mayıs"],
+    colors: { color: "#f2a0c4" },
     modifiers: { su: 1.0, yiyecek: 1.0, tas: 1.0, ipek: 1.0, kultur: 1.0 },
   },
   yaz: {
     name: "Yaz",
     emoji: "☀️",
+    months: ["Haziran", "Temmuz", "Ağustos"],
+    colors: { color: "#9fd47a" },
     modifiers: { su: 0.8, yiyecek: 1.2, tas: 1.0, ipek: 1.1, kultur: 1.2 },
   },
   sonbahar: {
     name: "Sonbahar",
     emoji: "🍂",
+    months: ["Eylül", "Ekim", "Kasım"],
+    colors: { color: "#bd8a44" },
     modifiers: { su: 1.0, yiyecek: 1.0, tas: 0.9, ipek: 1.0, kultur: 1.0 },
   },
   kis: {
     name: "Kış",
     emoji: "❄️",
+    months: ["Aralık", "Ocak", "Şubat"],
+    colors: { color: "#8ac2dc" },
     modifiers: { su: 0.8, yiyecek: 0.7, tas: 0.9, ipek: 0.7, kultur: 1.0 },
   },
 };
 
 export const SEASON_ORDER = Object.keys(SEASONS_DATA);
+
+/* ─────────────────── Ay İndeksinden Mevsim Durumu ─────────────────── */
+
+export function getSeasonStateForMonth(monthIndex) {
+  for (const id of SEASON_ORDER) {
+    const indexes = SEASONS_DATA[id].months.map((m) => MONTHS_DATA.indexOf(m));
+    const slot = indexes.indexOf(monthIndex);
+    if (slot >= 0) {
+      return {
+        id,
+        timer: Math.round(SEASON_DURATION * (1 - slot / MONTHS_PER_SEASON)),
+        year: 0,
+      };
+    }
+  }
+  return { id: SEASON_ORDER[0], timer: SEASON_DURATION, year: 0 };
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*                          YENİ TİCARET YAPILANDIRMASI                       */

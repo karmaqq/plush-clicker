@@ -3,9 +3,15 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 import {
+  MONTH_DURATION,
   SEASON_DURATION,
   SEASONS_DATA,
   SEASON_ORDER,
+  MONTHS_PER_SEASON,
+  MONTHS_DATA,
+  DAYS_IN_MONTH,
+  STARTING_MONTH_INDEX,
+  getSeasonStateForMonth,
   TRADE_MERCHANT_INTERVAL_MIN,
   TRADE_MERCHANT_INTERVAL_MAX,
   TICKS_PER_SECOND,
@@ -61,10 +67,7 @@ export const state = {
     ilacOk: false,
     wagesPaid: true,
   },
-  season: {
-    id: "ilkbahar",
-    timer: SEASON_DURATION,
-  },
+  season: getSeasonStateForMonth(STARTING_MONTH_INDEX),
   trade: {
     merchants: [],
     spawnTimer: Math.random() * (TRADE_MERCHANT_INTERVAL_MAX - TRADE_MERCHANT_INTERVAL_MIN) + TRADE_MERCHANT_INTERVAL_MIN,
@@ -151,6 +154,48 @@ export function getSeason() {
 
 export function getSeasonTimer() {
   return state.season.timer;
+}
+
+/* ─────────────────── Mevsim Ilerleme Orani Getter'i ─────────────────── */
+
+export function getSeasonProgress() {
+  return Math.min(Math.max(1 - state.season.timer / SEASON_DURATION, 0), 1);
+}
+
+/* ─────────────────── Guncel Ay Adi Getter'i ─────────────────── */
+
+export function getSeasonMonthName() {
+  const season = SEASONS_DATA[state.season.id];
+  if (!season || !season.months) return "";
+  const slot = Math.min(
+    Math.floor(getSeasonProgress() * MONTHS_PER_SEASON),
+    MONTHS_PER_SEASON - 1
+  );
+  return season.months[slot] || "";
+}
+
+/* ─────────────────── Takvim Günü Getter'i ─────────────────── */
+
+export function getCalendarDay() {
+  const season = SEASONS_DATA[state.season.id];
+  if (!season || !season.months) return null;
+  const progress = getSeasonProgress();
+  const slot = Math.min(
+    Math.floor(progress * MONTHS_PER_SEASON),
+    MONTHS_PER_SEASON - 1
+  );
+  const monthIndex = MONTHS_DATA.indexOf(season.months[slot]);
+  if (monthIndex < 0) return null;
+  const daysInMonth = DAYS_IN_MONTH[monthIndex];
+  const fraction = Math.min(progress * MONTHS_PER_SEASON - slot, 1);
+  const day = Math.min(Math.floor(fraction * daysInMonth) + 1, daysInMonth);
+  return { day, monthIndex };
+}
+
+/* ─────────────────── Yil Getter'i ─────────────────── */
+
+export function getYear() {
+  return state.season.year;
 }
 
 /* ─────────────────── Cag Getter'i ─────────────────── */
@@ -1049,7 +1094,15 @@ export function produce(silent) {
   if (applyPopulationLifecycle()) changed = true;
   if (autoSellSurplus()) changed = true;
 
+  const prevSeasonTimer = state.season.timer;
   state.season.timer -= 1 / TICKS_PER_SECOND;
+  if (
+    state.season.id === SEASON_ORDER[SEASON_ORDER.length - 1] &&
+    prevSeasonTimer > SEASON_DURATION - MONTH_DURATION &&
+    state.season.timer <= SEASON_DURATION - MONTH_DURATION
+  ) {
+    state.season.year += 1;
+  }
   if (state.season.timer <= 0) {
     const idx = SEASON_ORDER.indexOf(state.season.id);
     state.season.id = SEASON_ORDER[(idx + 1) % SEASON_ORDER.length];
@@ -1165,7 +1218,11 @@ function loadSeason(saved) {
   if (!saved || typeof saved !== "object") return;
   if (SEASONS_DATA[saved.id]) state.season.id = saved.id;
   if (Number.isFinite(saved.timer))
-    state.season.timer = Math.max(0, saved.timer);
+    state.season.timer = Math.min(Math.max(0, saved.timer), SEASON_DURATION);
+  state.season.year =
+    Number.isFinite(saved.year) && saved.year >= 0
+      ? Math.floor(saved.year)
+      : 0;
 }
 
 function loadEra(saved) {
@@ -1321,10 +1378,7 @@ export function resetGame() {
     wagesPaid: true,
   };
 
-  state.season = {
-    id: "ilkbahar",
-    timer: SEASON_DURATION,
-  };
+  state.season = getSeasonStateForMonth(STARTING_MONTH_INDEX);
 
   state.era = {
     current: 1,

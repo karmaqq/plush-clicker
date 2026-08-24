@@ -19,6 +19,10 @@ import {
   BUILDINGS_DATA,
   HOUSING_DATA,
   INDUSTRY_DATA,
+  SEASONS_DATA,
+  SEASON_ORDER,
+  SEASON_DURATION,
+  MONTHS_DATA,
 } from "./game-data.js";
 import {
   state,
@@ -35,10 +39,10 @@ import {
   sellOne,
   getNetRate,
   getSeasonMultiplier,
-  getIndustryOutputById,
-  getIndustryWorkers,
   getSeason,
-  getSeasonTimer,
+  getSeasonProgress,
+  getCalendarDay,
+  getYear,
   getUnlock,
   buyBuilding,
   getAltin,
@@ -472,32 +476,112 @@ function createEraTooltipRow(labelText) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*                       MEVSIM CIP ARAYUZU                                  */
+/*                       MEVSIM PENCERESI ARAYUZU                            */
 /* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── İki Renk Ortalayıcı ─────────────────── */
+
+function mixHex(a, b) {
+  const ca = parseInt(a.slice(1), 16);
+  const cb = parseInt(b.slice(1), 16);
+  const r = Math.round(((ca >> 16) & 255) * 0.5 + ((cb >> 16) & 255) * 0.5);
+  const g = Math.round(((ca >> 8) & 255) * 0.5 + ((cb >> 8) & 255) * 0.5);
+  const bl = Math.round((ca & 255) * 0.5 + (cb & 255) * 0.5);
+  return (
+    "#" +
+    ((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)
+  );
+}
+
+/* ─────────────────── Mevsim Paneli Gradyanı ─────────────────── */
+
+function buildSeasonGradient(id) {
+  const count = SEASON_ORDER.length;
+  const index = SEASON_ORDER.indexOf(id);
+  const prev = SEASONS_DATA[SEASON_ORDER[(index - 1 + count) % count]].colors.color;
+  const self = SEASONS_DATA[id].colors.color;
+  const next = SEASONS_DATA[SEASON_ORDER[(index + 1) % count]].colors.color;
+  return (
+    "linear-gradient(90deg, " +
+    mixHex(prev, self) + " 0%, " + self + " 10%, " +
+    self + " 90%, " + mixHex(self, next) + " 100%)"
+  );
+}
+
+/* ─────────────────── Mevsim Penceresi Oluşturucu ─────────────────── */
 
 export function createSeasonChip() {
   const el = document.createElement("div");
-  el.className = "season-chip";
+  el.className = "season-window";
   el.tabIndex = 0;
   el.dataset.hlSeason = "1";
-  const icon = document.createElement("span");
-  icon.className = "season-chip-icon";
-  el.append(icon);
+  const track = document.createElement("div");
+  track.className = "season-track";
+  const count = SEASON_ORDER.length;
+  const stripIds = [SEASON_ORDER[count - 1]];
+  for (let i = 0; i < 2 * count - 1; i++) {
+    stripIds.push(SEASON_ORDER[i % count]);
+  }
+  for (const id of stripIds) {
+    const panel = document.createElement("div");
+    panel.className = "season-panel season-" + id;
+    panel.style.background = buildSeasonGradient(id);
+    track.appendChild(panel);
+  }
+  const crossline = document.createElement("div");
+  crossline.className = "season-crossline";
+  el.append(track, crossline);
+
   const tooltip = createTooltip("season-tooltip");
   const title = document.createElement("div");
   title.className = "tt-heading";
+  const dateEl = document.createElement("div");
+  dateEl.className = "tt-date";
+  const divider = document.createElement("div");
+  divider.className = "tt-divider";
   const list = document.createElement("div");
   list.className = "tt-list";
-  tooltip.element.append(title, list);
+  tooltip.element.append(title, dateEl, divider, list);
+
   let active = false;
+  let animFrame = 0;
+  let syncPos = 0;
+  let syncTime = performance.now();
+
+  /* ─────────────────── Şerit Konum Hizalayıcı ─────────────────── */
+
+  function resync() {
+    syncPos = SEASON_ORDER.indexOf(state.season.id) + getSeasonProgress();
+    syncTime = performance.now();
+  }
+
+  /* ─────────────────── Şerit Animasyon Karesi ─────────────────── */
+
+  function frame(now) {
+    if (!el.hidden) {
+      let pos = syncPos + (now - syncTime) / (SEASON_DURATION * 1000);
+      while (pos >= SEASON_ORDER.length) {
+        pos -= SEASON_ORDER.length;
+      }
+      const pct = -((pos + 1) * 12.5 - 6.25);
+      track.style.transform = "translateX(" + pct + "%)";
+    }
+    animFrame = requestAnimationFrame(frame);
+  }
+
   el.addEventListener("mouseenter", () => { active = true; refresh(); tooltip.show(el); });
   el.addEventListener("mouseleave", () => { active = false; tooltip.hide(); });
   el.addEventListener("focus", () => { active = true; refresh(); tooltip.show(el); });
   el.addEventListener("blur", () => { active = false; tooltip.hide(); });
   function refresh() {
     const season = getSeason();
-    const timer = getSeasonTimer();
-    title.textContent = season.emoji + " " + season.name + " · değişime " + Math.max(0, Math.ceil(timer)) + " sn";
+    title.textContent = season.emoji + " " + season.name;
+    const info = getCalendarDay();
+    if (info) {
+      dateEl.textContent =
+        info.day + " " + MONTHS_DATA[info.monthIndex] + " · Yıl " + getYear();
+      dateEl.style.color = season.colors.color;
+    }
     while (list.firstChild) list.removeChild(list.firstChild);
     const rows = [
       ["Su", season.modifiers.su],
@@ -529,12 +613,12 @@ export function createSeasonChip() {
     }
   }
   function update() {
-    const season = getSeason();
-    icon.textContent = season.emoji;
+    resync();
     if (active) refresh();
   }
   onChange(update);
   update();
+  animFrame = requestAnimationFrame(frame);
   return { el, update };
 }
 

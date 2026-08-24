@@ -13,7 +13,8 @@ import {
 } from "./game-core.js";
 import {
   RESOURCES,
-  SEASON_DURATION,
+  getSeasonStateForMonth,
+  STARTING_MONTH_INDEX,
   TRADE_MERCHANT_INTERVAL_MIN,
   TRADE_MERCHANT_INTERVAL_MAX,
   PACKS_DATA,
@@ -576,10 +577,7 @@ function resetPopulationState() {
 /* ─────────────────── Mevsim Sıfırlayıcı ─────────────────── */
 
 function resetSeasonState() {
-  state.season = {
-    id: "ilkbahar",
-    timer: SEASON_DURATION,
-  };
+  state.season = getSeasonStateForMonth(STARTING_MONTH_INDEX);
 }
 
 /* ─────────────────── Ticaret Sıfırlayıcı ─────────────────── */

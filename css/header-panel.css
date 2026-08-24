@@ -88,7 +88,6 @@
 
 .housing-chip,
 .happiness-chip,
-.season-chip,
 .gold-chip {
     position: relative;
     display: inline-flex;
@@ -205,5 +204,46 @@
     top: 50%;
     font-size: 1.25rem;
     line-height: 1;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       MEVSİM PENCERESİ                                    */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.season-window {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    width: 7rem;
+    height: 1.75rem;
+    border: 1px solid #3a4450;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: inset 0 0 0.45rem rgba(0, 0, 0, 0.55);
+}
+
+.season-track {
+    display: flex;
+    flex: 0 0 auto;
+    width: 800%;
+    height: 100%;
+    will-change: transform;
+}
+
+.season-panel {
+    flex: 0 0 12.5%;
+    width: 12.5%;
+    height: 100%;
+}
+
+.season-crossline {
+    position: absolute;
+    left: 50%;
+    top: -1px;
+    bottom: -1px;
+    width: 1px;
+    transform: translateX(-50%);
+    background: #3a4450;
     pointer-events: none;
 }

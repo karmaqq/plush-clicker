@@ -234,6 +234,19 @@
     line-height: 1.35;
 }
 
+.tt-date {
+    font-size: var(--tt-fs-row);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    white-space: nowrap;
+    color: #ffffff;
+}
+
+.season-tooltip {
+    gap: 0.25rem;
+}
+
 .tt-unsellable {
     display: inline-block;
     padding: 0.18rem 0.65rem;
