@@ -213,21 +213,28 @@ async function fetchRemoteManifest() {
       throw new Error(`Geçersiz manifest girdisi: ${rel}`);
     }
   }
+  console.log(`[update] remote manifest: v${manifest.version}, ${Object.keys(manifest.files).length} dosya`);
   return manifest;
 }
 
 /* ─────────────────── Guncelleme Denetleyici ─────────────────── */
 async function checkForUpdate() {
   const remote = await fetchRemoteManifest();
+  const currentVersion = getActiveVersion();
   const changedFiles = [];
   for (const [rel, hash] of Object.entries(remote.files)) {
     const localHash = await hashEffectiveFile(rel);
     if (localHash !== hash) changedFiles.push(rel);
   }
+  const versionMismatch = currentVersion !== remote.version;
+  const available = changedFiles.length > 0 || versionMismatch;
+  if (changedFiles.length > 0) {
+    console.log(`[update] ${changedFiles.length} dosya degisti:`, changedFiles.join(", "));
+  }
   return {
-    available: changedFiles.length > 0,
+    available,
     version: remote.version,
-    current: getActiveVersion(),
+    current: currentVersion,
     changedFiles,
   };
 }
@@ -247,8 +254,10 @@ async function applyUpdate(onProgress) {
     if (localHash !== hash) changedFiles.push(rel);
   }
   if (changedFiles.length === 0) {
+    console.log("[update] degisiklik yok, atlaniyor");
     return { ok: true, version: remote.version, files: 0, skipped: true };
   }
+  console.log(`[update] ${changedFiles.length} dosya indirilecek:`, changedFiles.join(", "));
   const updatesRoot = getUpdatesRoot();
   const stagingDir = path.join(updatesRoot, ".staging");
   let stagingCreated = false;
@@ -260,11 +269,14 @@ async function applyUpdate(onProgress) {
     for (const rel of changedFiles) {
       const expectedHash = remote.files[rel];
       const url = `${UPDATE_URL.replace(/\/+$/, "")}/${rel.split("/").map(encodeURIComponent).join("/")}`;
+      const startTime = Date.now();
       const buffer = await fetchBuffer(url);
+      const elapsed = Date.now() - startTime;
       const actualHash = sha256Buffer(buffer);
       if (actualHash !== expectedHash) {
         throw new Error(`Hash dogrulamasi basarisiz: ${rel}`);
       }
+      console.log(`[update] ${rel} indirildi (${buffer.length} bayt, ${elapsed}ms)`);
       const destPath = safeJoin(stagingDir, rel);
       if (!destPath) throw new Error(`Gecersiz hedef yolu: ${rel}`);
       await fsp.mkdir(path.dirname(destPath), { recursive: true });
@@ -282,8 +294,10 @@ async function applyUpdate(onProgress) {
     meta.launchesOnActive = 0;
     writeMeta(meta);
     cleanupOldVersions(2);
+    console.log(`[update] v${remote.version} basariyla uygulandi (${changedFiles.length} dosya)`);
     return { ok: true, version: remote.version, files: changedFiles.length };
   } catch (err) {
+    console.error(`[update] hata: ${err.message}`);
     if (stagingCreated) {
       try { await fsp.rm(stagingDir, { recursive: true, force: true }); } catch {}
     }

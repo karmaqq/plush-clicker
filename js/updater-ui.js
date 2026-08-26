@@ -14,9 +14,11 @@ export function createUpdateButton() {
     .check()
     .then((status) => {
       if (!status || !status.available) return;
+      const cur = status.current ? `v${status.current}` : "v?";
+      const nxt = `v${status.version}`;
       button.hidden = false;
-      button.textContent = `Güncelle v${status.version}`;
-      button.title = "Yeni sürümü indir ve uygula";
+      button.textContent = `\u2B07 ${nxt}`;
+      button.title = `${cur} \u2192 ${nxt}\nGüncellemek için tıkla`;
     })
     .catch(() => {});
   button.addEventListener("click", async () => {

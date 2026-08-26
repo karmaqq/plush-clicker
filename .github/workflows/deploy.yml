@@ -36,11 +36,20 @@ jobs:
           X=$((1 + N / 100))
           Y=$(((N / 10) % 10))
           Z=$((N % 10))
-          echo "version=${X}.${Y}.${Z}" >> "$GITHUB_OUTPUT"
-          sed -i "s|<meta name=\"version\" content=\"[^\"]*\"|<meta name=\"version\" content=\"${X}.${Y}.${Z}\"|" index.html
-          echo "Surum: ${X}.${Y}.${Z} (degisiklik no: $N)"
+          VERSION="${X}.${Y}.${Z}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "[surum] N=${N}, versiyon=v${VERSION}"
 
-      - name: Manifest uret ve yayin klasorunu hazirla
+      - name: Surum dosyalarini guncelle
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          echo "[guncelle] index.html meta tag guncelleniyor..."
+          sed -i "s|<meta name=\"version\" content=\"[^\"]*\"|<meta name=\"version\" content=\"${VERSION}\"|" index.html
+          echo "[guncelle] package.json versiyonu guncelleniyor..."
+          sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"${VERSION}\"|" package.json
+          echo "[guncelle] tamamlandi: v${VERSION}"
+
+      - name: Manifest uret
         run: node tools/generate-manifest.mjs dist-web
         env:
           RELEASE_VERSION: ${{ steps.ver.outputs.version }}
@@ -52,7 +61,25 @@ jobs:
           publish_dir: dist-web
           publish_branch: gh-pages
           force_orphan: true
-          commit_message: "Oyun guncellemesi ${{ steps.ver.outputs.version }}"
+          commit_message: "v${{ steps.ver.outputs.version }} yayinlandi"
+
+      - name: Surum degisikliklerini commit et
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html package.json
+          git diff --cached --quiet && echo "[commit] degisiklik yok, atlanıyor" && exit 0
+          git commit -m "v${VERSION}"
+          git push
+          echo "[commit] v${VERSION} push edildi"
+
+      - name: GitHub Release olustur
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: Plush Clicker v${{ steps.ver.outputs.version }}
+          generate_release_notes: true
 
       - name: Pages durumunu kontrol et
         run: |
@@ -60,7 +87,7 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/pages)
           if [ "$CODE" = "404" ]; then
-            echo "::warning::Pages sitesi henuz etkin degil. Repo > Settings > Pages > Source: gh-pages secin (tek seferlik)."
+            echo "::warning::Pages sitesi henuz etkin degil."
           else
-            echo "Pages etkin ($CODE)"
+            echo "[pages] etkin (${CODE})"
           fi
