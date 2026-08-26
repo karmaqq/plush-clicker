@@ -1,0 +1,279 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      HEADER PANEL STİLLERİ                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.row .panel.header-panel {
+    flex-direction: row;
+    align-items: stretch;
+    overflow: visible;
+    z-index: 100;
+}
+
+.header-panel {
+    position: relative;
+    flex: none;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.625rem;
+    min-height: 3rem;
+}
+
+.header-panel > * {
+    min-height: 1.75rem;
+}
+
+.migration-strip {
+    flex: 1;
+    min-width: 0;
+    align-self: center;
+    height: 2rem;
+    position: relative;
+    overflow: hidden;
+    background: #1a2027;
+    border: 1px solid #2e3742;
+    border-radius: 0.5rem;
+
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      HEADER ORTA BÖLÜM                                    */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.header-center {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.375rem;
+
+}
+
+.pop-block {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: none;
+    font-family: var(--font-ui);
+    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
+    font-weight: 700;
+    color: #d7dde4;
+    background: #232b35;
+    border: 1px solid #3a4450;
+    border-radius: 0.5rem;
+    padding: 0.22rem 0.55rem;
+    white-space: nowrap;
+}
+
+.header-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem;
+
+}
+
+.pop-current {
+    color: #ffffff;
+}
+
+.pop-cap {
+    color: #8895a3;
+}
+
+.housing-chip,
+.happiness-chip,
+.gold-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: none;
+    font-family: var(--font-ui);
+    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
+    font-weight: 700;
+    color: #d7dde4;
+    background: #2b333d;
+    border: 1px solid #3a4450;
+    border-radius: 0.5rem;
+    padding: 0.22rem 0.55rem;
+    white-space: nowrap;
+}
+
+.housing-chip {
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        opacity 0.12s ease;
+}
+
+.housing-chip:hover {
+    background: #3a4450;
+}
+
+.housing-chip.affordable {
+    border-color: #ffffff;
+}
+
+.housing-chip.locked {
+    opacity: 0.45;
+}
+
+.housing-chip-cap {
+    color: #ffffff;
+    white-space: nowrap;
+}
+
+.housing-chip.affordable .housing-chip-cap {
+    color: #ffd166;
+}
+
+.reset-btn {
+    font-family: var(--font-ui);
+    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
+    font-weight: 700;
+    color: #d7dde4;
+    background: #2b333d;
+    border: 1px solid #3a4450;
+    border-radius: 0.5rem;
+    padding: 0.22rem 0.55rem;
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        color 0.12s ease;
+    flex: none;
+}
+
+.reset-btn:hover {
+    background: #3a4450;
+}
+
+.reset-btn:active {
+    background: #45282e;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       GÜNCELLEME BUTONU                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.update-btn {
+    font-family: var(--font-ui);
+    font-size: clamp(0.72rem, 1.4vw, 0.92rem);
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.92), rgba(34, 197, 94, 0.92));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.22rem 0.55rem;
+    cursor: pointer;
+    transition:
+        filter 0.12s ease,
+        opacity 0.12s ease;
+    flex: none;
+    white-space: nowrap;
+}
+
+.update-btn:hover {
+    filter: brightness(1.15);
+}
+
+.update-btn.busy {
+    cursor: progress;
+    opacity: 0.85;
+}
+
+.happiness-chip.warn {
+    color: #ff8a8a;
+    border-color: #5a2f2f;
+}
+
+.happiness-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.happiness-sec-title {
+    font-family: var(--font-ui);
+    font-size: var(--tt-fs-sub, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #8895a3;
+    padding-bottom: 0.125rem;
+}
+
+.happiness-sec:nth-of-type(2) .happiness-sec-title {
+    color: #7ee2a8;
+}
+
+.happiness-sec:nth-of-type(3) .happiness-sec-title {
+    color: #ff8a8a;
+}
+
+.happiness-sec:nth-of-type(2) .tt-line-value {
+    color: #7ee2a8;
+}
+
+.happiness-sec:nth-of-type(3) .tt-line-value {
+    color: #ff8a8a;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       GÖÇMEN ANİMASYONU                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.migrant {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    font-size: 1.25rem;
+    line-height: 1;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       MEVSİM PENCERESİ                                    */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.season-window {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    width: 7rem;
+    height: 1.75rem;
+    border: 1px solid #3a4450;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: inset 0 0 0.45rem rgba(0, 0, 0, 0.55);
+}
+
+.season-track {
+    display: flex;
+    flex: 0 0 auto;
+    width: 800%;
+    height: 100%;
+    will-change: transform;
+}
+
+.season-panel {
+    flex: 0 0 12.5%;
+    width: 12.5%;
+    height: 100%;
+}
+
+.season-crossline {
+    position: absolute;
+    left: 50%;
+    top: -1px;
+    bottom: -1px;
+    width: 1px;
+    transform: translateX(-50%);
+    background: #3a4450;
+    pointer-events: none;
+}

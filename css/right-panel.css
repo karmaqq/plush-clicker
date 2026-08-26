@@ -1,0 +1,151 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                        SAĞ PANEL STİLLERİ                                 */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.right-panel {
+    align-items: stretch;
+}
+
+.upgrade-list {
+    flex: 1;
+    width: 100%;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.trade-section {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+}
+
+.upgrade-card.locked .upgrade-head,
+.upgrade-card.locked .upgrade-desc,
+.upgrade-card.locked .upgrade-effect,
+.upgrade-card.locked .upgrade-btn {
+    visibility: hidden;
+}
+
+.upgrade-card {
+    padding: 0.625rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid #3a4553;
+    background: linear-gradient(145deg, #2a323d, #1d232b);
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: none;
+    position: relative;
+}
+
+.upgrade-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.upgrade-name {
+    font-family: var(--font-ui);
+    font-size: clamp(1rem, 2vw, 1.375rem);
+    font-weight: 700;
+    color: var(--res, #d7dde4);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.upgrade-level {
+    font-family: var(--font-ui);
+    font-size: clamp(0.8rem, 1.6vw, 1rem);
+    font-weight: 700;
+    color: var(--res-bright, #ffffff);
+    white-space: nowrap;
+}
+
+.upgrade-desc {
+    font-family: var(--font-ui);
+    font-size: clamp(0.8rem, 1.5vw, 0.9375rem);
+    font-weight: 500;
+    color: #9aa7b5;
+    line-height: 1.35;
+}
+
+.upgrade-effect {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.375rem;
+    font-family: var(--font-ui);
+    font-size: var(--font-prod-size);
+    font-weight: var(--font-prod-weight);
+    color: var(--res, #2ecc71);
+}
+
+.upgrade-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0;
+    border-radius: 0.375rem;
+    border: 1px solid #4a5563;
+    background: linear-gradient(145deg, #3c4753, #2a323d);
+    color: #e6ebf0;
+    font-family: var(--font-ui);
+    font-size: clamp(0.85rem, 1.7vw, 1.125rem);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        transform 0.08s ease,
+        filter 0.12s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upgrade-btn:hover {
+    filter: brightness(1.15);
+}
+
+.upgrade-btn:active {
+    transform: scale(0.96);
+}
+
+.upgrade-btn.disabled {
+    background: linear-gradient(145deg, #242b33, #1a2027);
+    border-color: #2f3740;
+    color: #5a6470;
+    filter: none;
+}
+
+.upgrade-btn.disabled:active {
+    transform: none;
+}
+
+.upgrade-cost + .upgrade-cost {
+    margin-left: 0.375rem;
+}
+
+.upgrade-cost.cost-ok {
+    color: #ffffff;
+}
+
+.upgrade-cost.cost-missing {
+    color: #ff5a5a;
+}
+
+.pack-tooltip {
+    min-width: 16rem;
+    max-width: 22rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      KİLİT GEREKSİNİMLERİ                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.lock-req-industry {
+    color: #8fc9e8;
+}

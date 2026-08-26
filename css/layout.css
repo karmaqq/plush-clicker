@@ -1,0 +1,57 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                          DÜZEN STİLLERİ                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.panel {
+    border: 1px solid #000;
+    background: linear-gradient(135deg, #21262d, #30363d);
+    min-height: 0;
+    min-width: 0;
+    padding: 0.625rem;
+}
+
+.row {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    margin-top: 0.3125rem;
+}
+
+.row .panel {
+    flex: 1;
+    border-radius: 0.625rem;
+    overflow: hidden;
+    margin: 0 0.3125rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.row .panel:first-child {
+    margin-left: 0;
+}
+
+.row .panel:last-child {
+    margin-right: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       UYGULAMA İSKELETİ                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.app-header-row {
+    flex: none;
+    margin-top: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                   HEADER PANEL MARGIN ÖRTME                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.row .panel.header-panel {
+    margin: 0;
+}

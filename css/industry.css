@@ -1,0 +1,329 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                         SANAYİ STİLLERİ                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.industry-card {
+    padding: 0.625rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid #3a4553;
+    background: linear-gradient(145deg, #2a323d, #1d232b);
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: none;
+    position: relative;
+}
+
+.industry-card.built {
+    border-color: #2f5a36;
+}
+
+.industry-card.locked .upgrade-head,
+.industry-card.locked .upgrade-desc,
+.industry-card.locked .industry-flow,
+.industry-card.locked .industry-build-btn,
+.industry-card.locked .industry-controls,
+.industry-card.locked .industry-warning {
+    visibility: hidden;
+}
+
+.industry-card.locked .lock-overlay {
+    display: flex;
+}
+
+.industry-card.locked .lock-icon {
+    font-size: clamp(1.4rem, 2.8vw, 1.9rem);
+}
+
+.industry-card.locked .lock-name {
+    font-size: clamp(1rem, 2vw, 1.3rem);
+}
+
+.industry-card.locked .lock-desc {
+    font-size: clamp(0.8rem, 1.5vw, 1rem);
+}
+
+.industry-build-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #2c3540;
+}
+
+.industry-card.locked .industry-build-row {
+    visibility: hidden;
+}
+
+.industry-card .upgrade-name {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.industry-card .building-badge {
+    flex: none;
+    margin-left: auto;
+    font-family: var(--font-ui);
+}
+
+.industry-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    text-align: left;
+}
+
+.industry-flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.85rem, 1.6vw, 1rem);
+}
+
+.industry-flow-label {
+    color: #8895a3;
+    font-weight: 600;
+}
+
+.industry-flow-value {
+    font-weight: 700;
+    font-family: var(--font-ui);
+    font-variant-numeric: tabular-nums;
+}
+
+.input-value {
+    color: rgba(235, 111, 111, 0.85);
+}
+
+.output-value {
+    color: rgba(191, 231, 168, 0.85);
+}
+
+.industry-flow-value.idle {
+    color: rgba(157, 173, 189, 0.45);
+}
+
+.industry-warning {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ffb84d;
+    background: #3a2f1e;
+    border-radius: 0.375rem;
+    padding: 0.2rem 0.45rem;
+    text-align: center;
+}
+
+.industry-build-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+    font-weight: 700;
+    line-height: 1.4;
+    color: #d7dde4;
+    background: #2b333d;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    padding: 0.15rem 0.5rem;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.industry-build-btn:hover {
+    background: #3a4450;
+}
+
+.industry-build-btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.industry-cost {
+    color: rgba(235, 111, 111, 0.85);
+}
+
+.industry-cost.cost-ok {
+    color: rgba(191, 231, 168, 0.85);
+}
+
+/* ─────────────────── Uyari Noktasi ─────────────────── */
+
+@keyframes alert-dot-pulse {
+    0%, 100% {
+        opacity: 0.25;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.alert-dot {
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: #eb6f6f;
+    box-shadow: 0 0 0.4rem rgba(235, 111, 111, 0.55);
+    animation: alert-dot-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .alert-dot {
+        animation: none;
+        opacity: 1;
+    }
+}
+
+.tab-btn.has-alert {
+    position: relative;
+}
+
+.tab-btn.has-alert .alert-dot {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.industry-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex: none;
+}
+
+.worker-btn {
+    width: 2.2rem;
+    height: 2rem;
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #d7dde4;
+    background: #2b333d;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.worker-btn:hover:not(:disabled) {
+    background: #3a4450;
+}
+
+.worker-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.worker-count {
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #d7dde4;
+    flex: none;
+    width: 4rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.autosell-btn {
+    flex: none;
+    width: 2.6rem;
+    height: 2rem;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #9daebb;
+    background: #2b333d;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.autosell-btn:hover {
+    background: #3a4450;
+}
+
+.autosell-btn.active {
+    color: #7ee2a8;
+    border-color: #2f5a36;
+    background: #15342a;
+}
+
+.autosell-menu {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1001;
+    width: max-content;
+    min-width: 6.5rem;
+    max-width: 14rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.35rem;
+    background: #232a33;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.45);
+    overflow-y: auto;
+}
+
+.autosell-title {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #8895a3;
+    text-align: center;
+    letter-spacing: 0.03em;
+    padding: 0.15rem 0.5rem 0.2rem;
+}
+
+.autosell-divider {
+    height: 1px;
+    background: #3a4553;
+    margin: 0 0.25rem 0.15rem;
+}
+
+.autosell-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #d7dde4;
+    background: transparent;
+    border: none;
+    border-radius: 0.35rem;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.autosell-option:hover {
+    background: #2e3742;
+}
+
+.autosell-option.active {
+    color: #7ee2a8;
+    background: #15342a;
+}
+
+.autosell-check {
+    font-size: 0.8rem;
+}

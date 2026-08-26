@@ -1,0 +1,248 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                        SOL PANEL STİLLERİ                                 */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.left-panel {
+    align-items: stretch;
+}
+
+.building-list {
+    flex: 1;
+    width: 100%;
+    padding: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
+    gap: 0.5rem;
+    align-content: start;
+    align-items: start;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.building-card {
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid #3a4553;
+    background: linear-gradient(145deg, #2a323d, #1d232b);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+    position: relative;
+    container-type: inline-size;
+}
+
+.building-card.building-bonus {
+    border-color: #3a5f8a;
+    background: linear-gradient(145deg, #233040, #172029);
+}
+
+.building-card.building-storage,
+.building-card.building-capacity-bonus {
+    border-color: #8a5f3a;
+    background: linear-gradient(145deg, #3a2c20, #261c14);
+}
+
+.building-card:not(.locked) {
+    cursor: pointer;
+}
+
+.building-card.locked .building-name,
+.building-card.locked .building-rate {
+    visibility: hidden;
+}
+
+.building-card.locked .lock-overlay {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    text-align: left;
+    padding: 0.375rem 0.5rem;
+}
+
+.building-card.locked .lock-icon {
+    flex: none;
+}
+
+.building-card.locked .lock-name,
+.building-card.locked .lock-desc {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.building-card.locked .lock-desc {
+    font-size: clamp(0.62rem, 1.2vw, 0.75rem);
+}
+
+.building-card.affordable {
+    border-color: #ffffff;
+    cursor: pointer;
+}
+
+.building-name,
+.building-rate,
+.building-badge-row {
+    height: 2rem;
+}
+
+.building-name {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.375rem;
+    text-align: left;
+    font-family: var(--font-ui);
+    overflow: hidden;
+    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: clamp(0.8rem, 9.5cqw, 1.25rem);
+    font-weight: 700;
+    color: #8a93a0;
+}
+
+.building-card-emoji {
+    flex: none;
+    font-size: var(--font-prod-size);
+    line-height: 1;
+}
+
+.building-card.affordable .building-name {
+    color: #ffffff;
+}
+
+.building-name-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.building-rate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    text-align: center;
+    font-family: var(--font-ui);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: none;
+    padding-right: 3.5rem;
+    font-size: var(--font-prod-size);
+    font-weight: var(--font-prod-weight);
+    color: var(--res, #ffd166);
+}
+
+.building-rate-plus {
+    flex: none;
+}
+
+.building-rate .num-display.rate-producer {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.building-rate-suffix {
+    flex: none;
+}
+
+.building-badge-row {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    font-family: var(--font-ui);
+    flex: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.building-badge {
+    font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+    padding: 0.08em 0.4em;
+}
+
+.building-badge.badge-empty {
+    border-color: var(--res, #ffd166);
+    animation: badge-empty-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes badge-empty-breathe {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                     KONUT KARTI STİLLERİ                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.building-card.building-housing {
+    border-color: #4a6a4a;
+    background: linear-gradient(145deg, #25362b, #16241a);
+}
+
+.left-panel .upgrade-list {
+    width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      PAKET GORUNTULEME SAYFASI                            */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.pack-page {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.pack-empty-note {
+    flex: none;
+    padding: 0.5rem 0.5rem 0;
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: clamp(0.75rem, 1.4vw, 0.9rem);
+    color: #6b7683;
+}
+
+.pack-toggle-btn {
+    flex: none;
+    width: 100%;
+    margin-top: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+    font-weight: 700;
+    color: #8895a3;
+    background: #232b35;
+    border: 1.5px solid #3a4553;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.625rem;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.pack-toggle-btn:hover {
+    background: #2b343f;
+    color: #d7dde4;
+}
+
+.left-panel .upgrade-list.finished-view .upgrade-card:not(.finished),
+.left-panel .upgrade-list:not(.finished-view) .upgrade-card.finished {
+    display: none;
+}
