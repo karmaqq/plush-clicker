@@ -1,16 +1,7 @@
-kurallar/
-.opencode/
-
 node_modules/
-release/
-dist-web/
-dist-test/
-e2e-*.log
-npm-debug.log*
-*.local
-
+build/
 .vscode/
-.idea/
+.opencode/
+kurallar/
+release/
 
-Thumbs.db
-.DS_Store

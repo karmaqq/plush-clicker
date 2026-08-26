@@ -13,7 +13,7 @@ permissions:
   pages: write
 
 env:
-  VERSION_ANCHOR: 011d5eff6876d1ce70e144b4995e71a130fb71ef
+  VERSION_OFFSET: 0
 
 jobs:
   deploy:
@@ -32,11 +32,12 @@ jobs:
       - name: Surum numarasi uret
         id: ver
         run: |
-          N=$(git rev-list --count ${VERSION_ANCHOR}..HEAD)
+          N=$(($(git rev-list --count HEAD) - VERSION_OFFSET))
           X=$((1 + N / 100))
           Y=$(((N / 10) % 10))
           Z=$((N % 10))
           echo "version=${X}.${Y}.${Z}" >> "$GITHUB_OUTPUT"
+          sed -i "s|<meta name=\"version\" content=\"[^\"]*\"|<meta name=\"version\" content=\"${X}.${Y}.${Z}\"|" index.html
           echo "Surum: ${X}.${Y}.${Z} (degisiklik no: $N)"
 
       - name: Manifest uret ve yayin klasorunu hazirla

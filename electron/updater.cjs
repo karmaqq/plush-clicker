@@ -87,15 +87,26 @@ function isValidRelativePath(rel) {
   return normalized !== ".." && !normalized.startsWith("../");
 }
 
-async function fetchBuffer(url) {
-  const res = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) {
-    throw new Error(`Indirme basarisiz (${res.status}): ${url}`);
+async function fetchBuffer(url, { retries = 2, retryDelayMs = 1000 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        throw new Error(`Indirme basarisiz (${res.status}): ${url}`);
+      }
+      return Buffer.from(await res.arrayBuffer());
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, retryDelayMs * (attempt + 1)));
+      }
+    }
   }
-  return Buffer.from(await res.arrayBuffer());
+  throw lastError;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -228,7 +239,7 @@ async function applyUpdate(onProgress) {
   };
   const remote = await fetchRemoteManifest();
   if (!VERSION_PATTERN.test(remote.version)) {
-    throw new Error(`Geçersiz sürüm adı: ${remote.version}`);
+    throw new Error(`Gecersiz surum: ${remote.version}`);
   }
   const changedFiles = [];
   for (const [rel, hash] of Object.entries(remote.files)) {
@@ -240,42 +251,81 @@ async function applyUpdate(onProgress) {
   }
   const updatesRoot = getUpdatesRoot();
   const stagingDir = path.join(updatesRoot, ".staging");
-  await fsp.rm(stagingDir, { recursive: true, force: true });
-  await fsp.mkdir(stagingDir, { recursive: true });
-  let done = 0;
-  for (const rel of changedFiles) {
-    const expectedHash = remote.files[rel];
-    const url = `${UPDATE_URL.replace(/\/+$/, "")}/${rel.split("/").map(encodeURIComponent).join("/")}`;
-    const buffer = await fetchBuffer(url);
-    const actualHash = sha256Buffer(buffer);
-    if (actualHash !== expectedHash) {
-      throw new Error(`Hash doğrulaması başarısız: ${rel}`);
+  let stagingCreated = false;
+  try {
+    await fsp.rm(stagingDir, { recursive: true, force: true });
+    await fsp.mkdir(stagingDir, { recursive: true });
+    stagingCreated = true;
+    let done = 0;
+    for (const rel of changedFiles) {
+      const expectedHash = remote.files[rel];
+      const url = `${UPDATE_URL.replace(/\/+$/, "")}/${rel.split("/").map(encodeURIComponent).join("/")}`;
+      const buffer = await fetchBuffer(url);
+      const actualHash = sha256Buffer(buffer);
+      if (actualHash !== expectedHash) {
+        throw new Error(`Hash dogrulamasi basarisiz: ${rel}`);
+      }
+      const destPath = safeJoin(stagingDir, rel);
+      if (!destPath) throw new Error(`Gecersiz hedef yolu: ${rel}`);
+      await fsp.mkdir(path.dirname(destPath), { recursive: true });
+      await fsp.writeFile(destPath, buffer);
+      done += 1;
+      report({ done, total: changedFiles.length, file: rel });
     }
-    const destPath = safeJoin(stagingDir, rel);
-    if (!destPath) throw new Error(`Geçersiz hedef yolu: ${rel}`);
-    await fsp.mkdir(path.dirname(destPath), { recursive: true });
-    await fsp.writeFile(destPath, buffer);
-    done += 1;
-    report({ done, total: changedFiles.length, file: rel });
+    const targetDir = path.join(updatesRoot, remote.version);
+    await fsp.rm(targetDir, { recursive: true, force: true });
+    await fsp.rename(stagingDir, targetDir);
+    stagingCreated = false;
+    writeJsonFile(getPointerPath(), { version: remote.version });
+    const meta = readMeta();
+    meta.lastGood = null;
+    meta.launchesOnActive = 0;
+    writeMeta(meta);
+    cleanupOldVersions(2);
+    return { ok: true, version: remote.version, files: changedFiles.length };
+  } catch (err) {
+    if (stagingCreated) {
+      try { await fsp.rm(stagingDir, { recursive: true, force: true }); } catch {}
+    }
+    throw err;
   }
-  const targetDir = path.join(updatesRoot, remote.version);
-  await fsp.rm(targetDir, { recursive: true, force: true });
-  await fsp.rename(stagingDir, targetDir);
-  writeJsonFile(getPointerPath(), { version: remote.version });
-  const meta = readMeta();
-  meta.lastGood = null;
-  meta.launchesOnActive = 0;
-  writeMeta(meta);
-  return { ok: true, version: remote.version, files: changedFiles.length };
+}
+
+/* ─────────────────── Eski Surum Temizleyici ─────────────────── */
+function cleanupOldVersions(keepLatest = 2) {
+  const root = getUpdatesRoot();
+  let entries;
+  try { entries = fs.readdirSync(root); } catch { return; }
+  const versions = entries
+    .filter((d) => /^[0-9]+\.[0-9]+\.[0-9]+/.test(d))
+    .sort()
+    .reverse();
+  const active = getActiveVersion();
+  const toDelete = versions.filter((v) => v !== active).slice(keepLatest);
+  for (const v of toDelete) {
+    try { fs.rmSync(path.join(root, v), { recursive: true, force: true }); } catch {}
+  }
 }
 
 /* ─────────────────── IPC Kaydedici ─────────────────── */
+let isApplying = false;
+
 function registerUpdaterIpc({ onApplySuccess }) {
   ipcMain.handle("updater:check", () => checkForUpdate());
-  ipcMain.handle("updater:apply", async () => {
-    const result = await applyUpdate(() => {});
-    if (typeof onApplySuccess === "function") onApplySuccess(result);
-    return result;
+  ipcMain.handle("updater:apply", async (event) => {
+    if (isApplying) {
+      throw new Error("Guncelleme zaten devam ediyor");
+    }
+    isApplying = true;
+    try {
+      const result = await applyUpdate((progress) => {
+        event.sender.send("updater:progress", progress);
+      });
+      if (typeof onApplySuccess === "function") onApplySuccess(result);
+      return result;
+    } finally {
+      isApplying = false;
+    }
   });
 }
 

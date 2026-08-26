@@ -33,15 +33,18 @@ export function createUpdateButton() {
       if (result && result.ok) {
         button.textContent = "Yeniden başlatılıyor…";
       }
-    } catch {
+    } catch (err) {
       stopProgress();
       delete button.dataset.busy;
       button.classList.remove("busy");
-      button.textContent = "Başarısız";
+      const msg = err?.message || "Bilinmeyen hata";
+      button.textContent = `Başarısız: ${msg}`;
+      button.title = msg;
       setTimeout(() => {
         button.hidden = true;
         button.textContent = "";
-      }, 4000);
+        button.title = "";
+      }, 6000);
     }
   });
   return button;
